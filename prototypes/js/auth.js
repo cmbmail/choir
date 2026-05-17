@@ -10,7 +10,21 @@
     return "http://127.0.0.1:5000/api";
   }
 
+  function isMobileDevice() {
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.matchMedia && window.matchMedia("(max-width: 768px)").matches)
+    );
+  }
+
+  function uiBase() {
+    return window.CHOIR_UI_BASE || "/ui/";
+  }
+
   function loginPath() {
+    if (isMobileDevice()) {
+      return uiBase() + "极简中式-手机登录.html";
+    }
     if (location.pathname.includes("/ui/")) return "/login.html";
     return "login.html";
   }

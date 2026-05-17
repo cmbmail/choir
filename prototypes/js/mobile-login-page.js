@@ -125,6 +125,9 @@
       document.getElementById("loginForm").hidden = false;
       document.getElementById("identity-picker-mobile").hidden = true;
     });
+    document.querySelector(".register-link")?.addEventListener("click", () => {
+      location.href = "/register.html";
+    });
 
     if (ChoirAuth.getToken()) {
       ChoirAuth.refreshUser().then((u) => {

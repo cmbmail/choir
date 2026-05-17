@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>注册 — 弦歌合唱团</title>
+  <title>注册 — 雅歌</title>
   <link rel="stylesheet" href="css/theme.css" />
   <script>
   if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
@@ -15,21 +15,17 @@
 <body>
   <div class="auth-card">
     <h1>邀请码注册</h1>
-    <p class="sub">注册后为团员权限，管理角色由超管分配</p>
+    <p class="sub" id="welcome-sub">请输入邀请码，验证后将显示团队名称</p>
     <form id="reg-form">
-      <label for="choir_slug">合唱团 slug</label>
-      <input id="choir_slug" required />
       <label for="invite_code">邀请码（8 位）</label>
-      <input id="invite_code" required maxlength="8" />
+      <input id="invite_code" required maxlength="8" autocomplete="off" />
       <label for="username">手机号</label>
-      <input id="username" type="text" inputmode="numeric" required />
+      <input id="username" type="text" inputmode="numeric" required autocomplete="tel" />
       <label for="name">真实姓名</label>
-      <input id="name" required />
-      <label for="voice_part">声部（1–8，可选）</label>
-      <input id="voice_part" type="number" min="1" max="8" />
+      <input id="name" required autocomplete="name" />
       <label for="password">密码</label>
-      <input id="password" type="password" required />
-      <button type="submit">注册</button>
+      <input id="password" type="password" required autocomplete="new-password" />
+      <button type="submit" id="submit-btn">注册</button>
       <p class="msg" id="msg"></p>
     </form>
     <p class="links"><a href="login.html">已有账号登录</a></p>
@@ -37,22 +33,75 @@
   <script src="js/api.js"></script>
   <script>
     const params = new URLSearchParams(location.search);
-    if (params.get("choir")) document.getElementById("choir_slug").value = params.get("choir");
-    if (params.get("code")) document.getElementById("invite_code").value = params.get("code");
+    const inviteInput = document.getElementById("invite_code");
+    const welcomeSub = document.getElementById("welcome-sub");
+    const submitBtn = document.getElementById("submit-btn");
+    let previewTimer = null;
+    let choirName = null;
+
+    if (params.get("code")) inviteInput.value = params.get("code");
+
+    function setWelcomePending() {
+      choirName = null;
+      welcomeSub.textContent = "请输入邀请码，验证后将显示团队名称";
+      welcomeSub.classList.remove("welcome-ready");
+      submitBtn.disabled = false;
+    }
+
+    function setWelcomeReady(name) {
+      choirName = name;
+      welcomeSub.textContent = `欢迎您加入「${name}」`;
+      welcomeSub.classList.add("welcome-ready");
+    }
+
+    async function previewInvite() {
+      const code = inviteInput.value.trim();
+      if (code.length < 8) {
+        setWelcomePending();
+        return;
+      }
+      try {
+        const data = await ChoirAPI.get(`/auth/invite-preview?code=${encodeURIComponent(code)}`);
+        setWelcomeReady(data.choir_name);
+      } catch {
+        choirName = null;
+        welcomeSub.textContent = "邀请码无效或已过期，请核对后重试";
+        welcomeSub.classList.remove("welcome-ready");
+      }
+    }
+
+    inviteInput.addEventListener("input", () => {
+      clearTimeout(previewTimer);
+      if (inviteInput.value.trim().length < 8) {
+        setWelcomePending();
+        return;
+      }
+      previewTimer = setTimeout(previewInvite, 400);
+    });
+
+    if (inviteInput.value.trim().length === 8) previewInvite();
 
     document.getElementById("reg-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const msg = document.getElementById("msg");
       msg.textContent = "";
-      const vp = document.getElementById("voice_part").value;
+      const code = inviteInput.value.trim();
+      if (code.length !== 8) {
+        msg.textContent = "请输入 8 位邀请码";
+        return;
+      }
+      if (!choirName) await previewInvite();
+      if (!choirName) {
+        msg.textContent = "邀请码无效或已过期";
+        return;
+      }
       const body = {
-        choir_slug: document.getElementById("choir_slug").value.trim(),
-        invite_code: document.getElementById("invite_code").value.trim(),
+        invite_code: code,
         username: document.getElementById("username").value.trim(),
         name: document.getElementById("name").value.trim(),
         password: document.getElementById("password").value,
       };
-      if (vp) body.voice_part = parseInt(vp, 10);
+      submitBtn.disabled = true;
       try {
         await ChoirAPI.post("/auth/register", body);
         msg.style.color = "#8c8";
@@ -61,6 +110,7 @@
       } catch (err) {
         msg.style.color = "";
         msg.textContent = err.message;
+        submitBtn.disabled = false;
       }
     });
   </script>

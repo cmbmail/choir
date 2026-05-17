@@ -102,7 +102,6 @@ def test_register_with_invite(client, app):
     res = client.post(
         "/api/auth/register",
         json={
-            "choir_slug": "choir_test",
             "invite_code": plain,
             "username": "13800138000",
             "name": "新团员",
@@ -111,6 +110,54 @@ def test_register_with_invite(client, app):
     )
     assert res.status_code == 201
     assert res.get_json()["user"]["username"] == "13800138000"
+
+
+def test_invite_preview(client, app):
+    with app.app_context():
+        choir = User.query.filter_by(username="13900000001").first().choir
+        choir_name = choir.name
+        plain = generate_plain_code()
+        invite = InvitationCode(
+            choir_id=choir.choir_id,
+            code_hash=hash_code(plain),
+            max_uses=1,
+            expires_at=datetime.utcnow() + timedelta(days=7),
+        )
+        db.session.add(invite)
+        db.session.commit()
+
+    res = client.get(f"/api/auth/invite-preview?code={plain}")
+    assert res.status_code == 200
+    assert res.get_json()["choir_name"] == choir_name
+
+
+def test_register_ignores_client_voice_part(client, app):
+    with app.app_context():
+        choir = User.query.filter_by(username="13900000001").first().choir
+        plain = generate_plain_code()
+        invite = InvitationCode(
+            choir_id=choir.choir_id,
+            code_hash=hash_code(plain),
+            max_uses=1,
+            expires_at=datetime.utcnow() + timedelta(days=7),
+        )
+        db.session.add(invite)
+        db.session.commit()
+
+    res = client.post(
+        "/api/auth/register",
+        json={
+            "invite_code": plain,
+            "username": "13800138001",
+            "name": "声部待分配",
+            "password": "TestPass1",
+            "voice_part": 3,
+        },
+    )
+    assert res.status_code == 201
+    with app.app_context():
+        user = User.query.filter_by(username="13800138001").first()
+        assert user.voice_part is None
 
 
 def test_change_password_invalidates_token(client, choir_admin_headers):

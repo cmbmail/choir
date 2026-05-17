@@ -81,7 +81,7 @@ def invites_create():
     db.session.commit()
 
     base = request.host_url.rstrip("/")
-    register_url = f"{base}/register.html?choir={choir.slug}&code={plain}"
+    register_url = f"{base}/register.html?code={plain}"
     return jsonify(
         {
             "invite_id": invite.invite_id,

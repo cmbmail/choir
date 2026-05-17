@@ -185,10 +185,31 @@ def login():
     return jsonify({"need_identity_select": True, "identities": identities})
 
 
+def _resolve_invite(invite_plain: str):
+    invite_plain = (invite_plain or "").strip()
+    if not invite_plain:
+        return None, None, "邀请码必填"
+    invite = InvitationCode.query.filter_by(code_hash=hash_code(invite_plain)).first()
+    if not invite or not invite.is_valid():
+        return None, None, "邀请码无效或已过期"
+    choir = Choir.query.filter_by(choir_id=invite.choir_id, status="active").first()
+    if not choir:
+        return None, None, "邀请码无效"
+    return invite, choir, None
+
+
+@api_bp.get("/auth/invite-preview")
+def invite_preview():
+    invite_plain = (request.args.get("code") or "").strip()
+    invite, choir, err = _resolve_invite(invite_plain)
+    if err:
+        return jsonify({"error": err}), 400
+    return jsonify({"choir_name": choir.name})
+
+
 @api_bp.post("/auth/register")
 def register():
     data = request.get_json(silent=True) or {}
-    choir_slug = data.get("choir_slug")
     invite_plain = (data.get("invite_code") or "").strip()
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
@@ -199,21 +220,14 @@ def register():
         return jsonify({"error": err}), 400
     if not name:
         return jsonify({"error": "真实姓名必填"}), 400
-    if not choir_slug or not invite_plain:
-        return jsonify({"error": "团队与邀请码必填"}), 400
 
-    choir = Choir.query.filter_by(slug=choir_slug, status="active").first()
-    if not choir:
-        return jsonify({"error": "邀请码无效"}), 400
+    invite, choir, err = _resolve_invite(invite_plain)
+    if err:
+        return jsonify({"error": err}), 400
 
     member_count = User.query.filter_by(choir_id=choir.choir_id).count()
     if member_count >= choir.max_members:
         return jsonify({"error": "该团已满员"}), 400
-
-    code_hash = hash_code(invite_plain)
-    invite = InvitationCode.query.filter_by(choir_id=choir.choir_id, code_hash=code_hash).first()
-    if not invite or not invite.is_valid():
-        return jsonify({"error": "邀请码无效或已过期"}), 400
 
     if User.query.filter_by(choir_id=choir.choir_id, username=username).first():
         return jsonify({"error": "该手机号已在团内注册"}), 409
@@ -222,9 +236,7 @@ def register():
     if not member_role:
         return jsonify({"error": "团队角色未初始化"}), 500
 
-    voice_part = data.get("voice_part")
-    if voice_part is None and invite.voice_part is not None:
-        voice_part = invite.voice_part
+    voice_part = invite.voice_part
 
     user = User(
         choir_id=choir.choir_id,

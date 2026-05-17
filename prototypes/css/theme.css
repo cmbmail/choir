@@ -43,6 +43,11 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
+.sub.welcome-ready {
+  color: var(--silk);
+  font-size: 1rem;
+}
+
 label {
   display: block;
   font-size: 0.85rem;
