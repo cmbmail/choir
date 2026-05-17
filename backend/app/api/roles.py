@@ -4,7 +4,17 @@ from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required, require_permission
 from app.extensions import db
 from app.models import ChoirRole, User
-from app.services.permissions import has_permission
+from app.services.operation_log import write_operation_log
+from app.services.permissions import ALL_PHASE1_PERMISSIONS, has_permission
+
+
+@api_bp.get("/choir/permissions")
+@login_required
+def permissions_catalog():
+    user = get_current_user()
+    if not user.system_super_admin and not has_permission(user, "roles.manage"):
+        return jsonify({"error": "无权限"}), 403
+    return jsonify({"permissions": ALL_PHASE1_PERMISSIONS})
 
 
 @api_bp.get("/choir/roles")
@@ -49,6 +59,15 @@ def roles_create():
         is_builtin=False,
     )
     db.session.add(role)
+    db.session.flush()
+    write_operation_log(
+        "role.create",
+        user=user,
+        choir_id=choir_id,
+        resource_type="role",
+        resource_id=role.role_id,
+        detail={"role_code": role_code, "name": name},
+    )
     db.session.commit()
     return jsonify(role.to_dict()), 201
 
@@ -64,9 +83,22 @@ def roles_update(role_id: int):
     data = request.get_json(silent=True) or {}
     if "name" in data:
         role.name = (data.get("name") or role.name).strip()
+    old_perms = list(role.permissions or [])
     if "permissions" in data:
         role.permissions = data.get("permissions") or []
 
+    write_operation_log(
+        "role.update",
+        user=user,
+        choir_id=role.choir_id,
+        resource_type="role",
+        resource_id=role.role_id,
+        detail={
+            "role_code": role.role_code,
+            "permissions_before": old_perms,
+            "permissions_after": role.permissions,
+        },
+    )
     db.session.commit()
     return jsonify(role.to_dict())
 
@@ -82,6 +114,14 @@ def roles_delete(role_id: int):
         return jsonify({"error": "内置角色不可删除"}), 400
     if User.query.filter_by(role_id=role.role_id).count():
         return jsonify({"error": "仍有成员使用该角色"}), 400
+    write_operation_log(
+        "role.delete",
+        user=user,
+        choir_id=role.choir_id,
+        resource_type="role",
+        resource_id=role.role_id,
+        detail={"role_code": role.role_code, "name": role.name},
+    )
     db.session.delete(role)
     db.session.commit()
     return jsonify({"ok": True})

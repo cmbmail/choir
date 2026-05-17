@@ -66,6 +66,7 @@
     get: (p) => api(p),
     post: (p, body) => api(p, { method: "POST", body: JSON.stringify(body) }),
     put: (p, body) => api(p, { method: "PUT", body: JSON.stringify(body) }),
+    patch: (p, body) => api(p, { method: "PATCH", body: JSON.stringify(body) }),
     del: (p) => api(p, { method: "DELETE" }),
     fetchCsrf,
     setCsrfToken,

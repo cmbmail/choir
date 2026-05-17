@@ -416,6 +416,8 @@
       const btnInv = document.getElementById("btn-invites");
       if (btnInv) btnInv.hidden = false;
     }
+    const btnRoles = document.getElementById("btn-roles");
+    if (btnRoles) btnRoles.hidden = !can("roles.manage");
 
     await setupChoirFilter();
     const inviteChoirSel = document.getElementById("invite-choir-id");
@@ -424,8 +426,20 @@
         loadInvites().catch((e) => toast(e.message, true))
       );
     }
+    await loadRoles(currentUser.choir_id);
     await loadMembers();
   }
+
+  window.ChoirMembersPage = {
+    getCurrentUser: () => currentUser,
+    reloadRoles: async () => {
+      const cid =
+        currentUser?.system_super_admin
+          ? document.getElementById("filter-choir")?.value
+          : currentUser?.choir_id;
+      await loadRoles(cid ? +cid : currentUser?.choir_id);
+    },
+  };
 
   async function init() {
     const user = await ChoirAppShell.init({

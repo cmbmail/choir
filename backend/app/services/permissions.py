@@ -14,6 +14,18 @@ FULL_ADMIN = [
 
 CONDUCTOR_DEFAULT = [p for p in FULL_ADMIN if p != "choir.suspend"]
 
+ALL_PHASE1_PERMISSIONS = [
+    "choir.rename",
+    "choir.suspend",
+    "members.read",
+    "members.write",
+    "members.assign_role",
+    "invites.create",
+    "invites.revoke",
+    "roles.manage",
+    "system.monitor",
+]
+
 BUILTIN_ROLE_TEMPLATES = [
     ("super_admin", "团内超管", FULL_ADMIN),
     ("conductor", "指挥", CONDUCTOR_DEFAULT),

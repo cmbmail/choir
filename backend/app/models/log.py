@@ -6,7 +6,7 @@ from app.extensions import db
 class OperationLog(db.Model):
     __tablename__ = "operation_logs"
 
-    log_id = db.Column(db.BigInteger, primary_key=True)
+    log_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     choir_id = db.Column(db.Integer, index=True)
     user_id = db.Column(db.Integer, index=True)
     action = db.Column(db.String(64), nullable=False)

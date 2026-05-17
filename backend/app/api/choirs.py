@@ -5,6 +5,8 @@ from app.auth.decorators import get_current_user, login_required, require_permis
 from app.extensions import db
 from app.models import Choir
 from app.services.choir_bootstrap import next_choir_slug, seed_builtin_roles
+from app.services.operation_log import write_operation_log
+from app.services.permissions import has_permission
 
 
 @api_bp.get("/choirs/public")
@@ -63,6 +65,14 @@ def choirs_create():
     db.session.add(choir)
     db.session.flush()
     seed_builtin_roles(choir)
+    write_operation_log(
+        "choir.create",
+        user=user,
+        choir_id=choir.choir_id,
+        resource_type="choir",
+        resource_id=choir.choir_id,
+        detail={"name": choir.name, "slug": choir.slug},
+    )
     db.session.commit()
     return jsonify({"choir_id": choir.choir_id, "slug": choir.slug, "name": choir.name}), 201
 
@@ -77,16 +87,67 @@ def choirs_update(choir_id: int):
     if not name:
         return jsonify({"error": "团名不能为空"}), 400
 
-    from app.services.permissions import has_permission
-
     if user.system_super_admin:
+        old_name = choir.name
         choir.name = name
+        write_operation_log(
+            "choir.rename",
+            user=user,
+            choir_id=choir.choir_id,
+            resource_type="choir",
+            resource_id=choir.choir_id,
+            detail={"from": old_name, "to": name},
+        )
         db.session.commit()
         return jsonify(choir.to_dict())
 
     if user.choir_id != choir_id or not has_permission(user, "choir.rename"):
         return jsonify({"error": "无权限"}), 403
 
+    old_name = choir.name
     choir.name = name
+    write_operation_log(
+        "choir.rename",
+        user=user,
+        choir_id=choir.choir_id,
+        resource_type="choir",
+        resource_id=choir.choir_id,
+        detail={"from": old_name, "to": name},
+    )
+    db.session.commit()
+    return jsonify(choir.to_dict())
+
+
+@api_bp.patch("/choirs/<int:choir_id>/status")
+@login_required
+def choirs_set_status(choir_id: int):
+    user = get_current_user()
+    choir = Choir.query.get_or_404(choir_id)
+    data = request.get_json(silent=True) or {}
+    status = (data.get("status") or "").strip()
+    if status not in ("active", "suspended"):
+        return jsonify({"error": "status 须为 active 或 suspended"}), 400
+
+    if user.system_super_admin:
+        pass
+    elif user.choir_id == choir_id and has_permission(user, "choir.suspend"):
+        pass
+    else:
+        return jsonify({"error": "无权限", "required": "choir.suspend"}), 403
+
+    if choir.status == status:
+        return jsonify(choir.to_dict())
+
+    old_status = choir.status
+    choir.status = status
+    action = "choir.activate" if status == "active" else "choir.suspend"
+    write_operation_log(
+        action,
+        user=user,
+        choir_id=choir.choir_id,
+        resource_type="choir",
+        resource_id=choir.choir_id,
+        detail={"from": old_status, "to": status, "name": choir.name},
+    )
     db.session.commit()
     return jsonify(choir.to_dict())

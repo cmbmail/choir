@@ -7,6 +7,7 @@ from app.auth.decorators import get_current_user, login_required, require_permis
 from app.extensions import db
 from app.models import Choir, InvitationCode
 from app.services.invite_code import generate_plain_code, hash_code
+from app.services.operation_log import write_operation_log
 from app.services.permissions import has_permission
 
 
@@ -68,6 +69,15 @@ def invites_create():
         created_by=None if user.system_super_admin else user.user_id,
     )
     db.session.add(invite)
+    db.session.flush()
+    write_operation_log(
+        "invite.create",
+        user=user,
+        choir_id=choir.choir_id,
+        resource_type="invite",
+        resource_id=invite.invite_id,
+        detail={"max_uses": invite.max_uses, "expires_at": invite.expires_at.isoformat()},
+    )
     db.session.commit()
 
     base = request.host_url.rstrip("/")
@@ -113,5 +123,12 @@ def invites_revoke(invite_id: int):
         return jsonify({"error": "仅可作废自己签发的邀请码"}), 403
 
     invite.revoked_at = datetime.utcnow()
+    write_operation_log(
+        "invite.revoke",
+        user=user,
+        choir_id=invite.choir_id,
+        resource_type="invite",
+        resource_id=invite.invite_id,
+    )
     db.session.commit()
     return jsonify({"ok": True})

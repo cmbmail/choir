@@ -5,6 +5,7 @@ from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
 from app.models import ChoirRole, User
+from app.services.operation_log import write_operation_log
 from app.services.permissions import (
     can_access_member,
     can_write_member,
@@ -109,6 +110,14 @@ def members_update(user_id: int):
         elif _full_members_write(actor):
             target.status = st
 
+    write_operation_log(
+        "member.update",
+        user=actor,
+        choir_id=target.choir_id,
+        resource_type="user",
+        resource_id=target.user_id,
+        detail={"name": target.name, "status": target.status},
+    )
     db.session.commit()
     return jsonify(target.to_member_dict(include_security=True))
 
@@ -124,6 +133,13 @@ def members_unlock(user_id: int):
 
     target.failed_login_count = 0
     target.locked_until = None
+    write_operation_log(
+        "member.unlock",
+        user=actor,
+        choir_id=target.choir_id,
+        resource_type="user",
+        resource_id=target.user_id,
+    )
     db.session.commit()
     return jsonify({"ok": True})
 
@@ -138,6 +154,14 @@ def members_delete(user_id: int):
     if not actor.system_super_admin:
         if not _full_members_write(actor) or actor.choir_id != target.choir_id:
             return jsonify({"error": "无权限"}), 403
+    write_operation_log(
+        "member.delete",
+        user=actor,
+        choir_id=target.choir_id,
+        resource_type="user",
+        resource_id=target.user_id,
+        detail={"name": target.name, "username": target.username},
+    )
     db.session.delete(target)
     db.session.commit()
     return jsonify({"ok": True})

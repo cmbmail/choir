@@ -13,6 +13,7 @@ from app.services.captcha import create_captcha, verify_captcha
 from app.services.choir_bootstrap import get_member_role
 from app.services.invite_code import hash_code, verify_code
 from app.services.jwt_tokens import issue_token
+from app.services.operation_log import write_operation_log
 from app.services.password import (
     check_password,
     hash_password,
@@ -124,6 +125,13 @@ def login():
     user.failed_login_count = 0
     user.locked_until = None
     user.last_login = datetime.utcnow()
+    write_operation_log(
+        "auth.login",
+        user=user,
+        resource_type="user",
+        resource_id=user.user_id,
+        detail={"username": user.username},
+    )
     db.session.commit()
     return _auth_response(user)
 
@@ -181,6 +189,14 @@ def register():
     )
     db.session.add(user)
     invite.use_count += 1
+    write_operation_log(
+        "member.register",
+        user=user,
+        choir_id=choir.choir_id,
+        resource_type="user",
+        resource_id=user.user_id,
+        detail={"username": username, "name": name},
+    )
     db.session.commit()
     return jsonify({"user": user.to_me_dict()}), 201
 
@@ -195,6 +211,14 @@ def me():
 @api_bp.post("/auth/logout")
 @login_required
 def logout():
+    user = get_current_user()
+    write_operation_log(
+        "auth.logout",
+        user=user,
+        resource_type="user",
+        resource_id=user.user_id,
+    )
+    db.session.commit()
     resp = jsonify({"ok": True})
     resp.delete_cookie("access_token")
     return resp
@@ -215,5 +239,11 @@ def change_password():
     user.password_hash = hash_password(new)
     user.password_changed_at = datetime.utcnow()
     user.token_version += 1
+    write_operation_log(
+        "auth.password_change",
+        user=user,
+        resource_type="user",
+        resource_id=user.user_id,
+    )
     db.session.commit()
     return jsonify({"ok": True})

@@ -128,6 +128,11 @@ a{color:inherit;text-decoration:none}
 .tag-lock{color:var(--error);font-size:0.7rem;margin-left:0.5rem}
 #invite-result{margin-top:0.75rem;padding:0.75rem;background:var(--silk-cream);font-size:0.8rem;word-break:break-all}
 .invite-list{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;max-height:240px;overflow-y:auto}
+.role-row{display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0;border-bottom:1px solid var(--border)}
+.role-row:last-child{border-bottom:none}
+.perm-check{display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;font-size:0.85rem}
+#role-perm-checks{display:grid;grid-template-columns:1fr 1fr;gap:0.25rem 1rem;margin:0.75rem 0}
+#role-editor[hidden]{display:none!important}
 .invite-table{width:100%;border-collapse:collapse;font-size:0.75rem}
 .invite-table th,.invite-table td{padding:0.4rem 0.35rem;border-bottom:1px solid var(--border);text-align:left}
 .invite-table th{color:var(--text-muted);font-weight:400}
@@ -201,6 +206,7 @@ a{color:inherit;text-decoration:none}
         <button type="button" class="btn btn-outline" id="btn-refresh">刷新</button>
         <button type="button" class="btn btn-outline" id="btn-export" hidden>导出名单</button>
         <button type="button" class="btn btn-outline" id="btn-invites" hidden>邀请码</button>
+        <button type="button" class="btn btn-outline" id="btn-roles" hidden>角色权限</button>
         <button type="button" class="btn btn-gold" id="btn-add-member">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           添加成员
@@ -309,6 +315,25 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
+<div id="modal-roles" class="modal-overlay">
+  <div class="modal-box" style="width:min(560px,100%)">
+    <h2>角色权限</h2>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem">内置角色不可删除，可调整权限项</p>
+    <div id="roles-list"></div>
+    <div id="role-editor" hidden>
+      <h3 id="role-editor-title" style="font-size:0.95rem;margin:1rem 0 0.5rem"></h3>
+      <div id="role-perm-checks"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close-roles>取消编辑</button>
+        <button type="button" class="btn btn-gold" id="btn-save-role-perms">保存权限</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button type="button" class="btn btn-outline" data-close-roles>关闭</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" hidden></div>
 
 <footer class="footer">
@@ -320,6 +345,7 @@ a{color:inherit;text-decoration:none}
 <script src="/prototypes/js/permissions.js"></script>
 <script src="/prototypes/js/app-shell.js"></script>
 <script src="/prototypes/js/members-page.js"></script>
+<script src="/prototypes/js/roles-page.js"></script>
 <script>
 const userDropdown = document.getElementById('userDropdown');
 userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
