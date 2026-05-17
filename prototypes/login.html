@@ -51,8 +51,8 @@
       const isSystem = modeEl.value === "system";
       slugEl.disabled = isSystem;
       slugEl.required = !isSystem;
-      slugEl.closest("label")?.previousElementSibling;
-      document.querySelector('label[for="choir_slug"]').style.opacity = isSystem ? "0.5" : "1";
+      const choirLabel = document.querySelector('label[for="choir_slug"]');
+      if (choirLabel) choirLabel.style.opacity = isSystem ? "0.5" : "1";
     }
 
     modeEl.addEventListener("change", syncChoirSelect);
