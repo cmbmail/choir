@@ -31,23 +31,168 @@
 
 ---
 
-## 零、本机上传代码（Mac）
+## 完整流程（推荐：Git 拉代码）
+
+> 分支：`cursor/requirements-v2.1-multitenant-plan`  
+> 仓库：`git@github.com:cmbmail/choir.git`（私有库需配置 SSH 或 Token）
+
+### 步骤总览
+
+| 步 | 做什么 | 命令 |
+|----|--------|------|
+| 1 | SSH 登录 | `ssh root@47.98.105.70` |
+| 2 | 克隆代码 | `bash clone-on-server.sh`（见下） |
+| 3 | 装系统包 | `bash deploy/install-acl3-deps.sh` |
+| 4 | 建 MySQL | 第三节 SQL |
+| 5 | 配置 `.env` | `cp .env.production-ip.example .env && vi .env` |
+| 6 | 建表 + seed | `schema.sql` + `seed.py` |
+| 7 | 启服务 | `bash deploy/install-ip.sh` |
+| 8 | 浏览器验证 | http://47.98.105.70/login.html |
+
+---
+
+### 1. SSH 登录
+
+```bash
+ssh root@47.98.105.70
+```
+
+### 2. 克隆仓库（二选一）
+
+**方式 A — SSH（推荐，仓库 Deploy key）**
+
+```bash
+dnf install -y git
+export GIT_CLONE_MODE=ssh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/cmbmail/choir/cursor/requirements-v2.1-multitenant-plan/deploy/clone-on-server.sh)" 
+```
+
+若 raw 不可用（私有库），在 clone 之后用本机 scp 脚本：
+
+```bash
+# 已在 /opt/choir 有代码时跳过；否则先 scp 整个项目到 /opt/choir 再：
+cd /opt/choir
+export GIT_CLONE_MODE=ssh
+bash deploy/clone-on-server.sh
+```
+
+脚本会打印 **SSH 公钥**，请到 GitHub 添加：
+
+- **Deploy key**（仅本仓库）：`cmbmail/choir` → Settings → Deploy keys → Add（勾选 Allow write 仅在你需要服务器 push 时）
+- 或 **账户 SSH key**：GitHub 头像 → Settings → SSH and GPG keys
+
+然后脚本执行：
+
+```git
+git clone -b cursor/requirements-v2.1-multitenant-plan git@github.com:cmbmail/choir.git /opt/choir
+```
+
+**方式 B — HTTPS + Token（私有库）**
+
+```bash
+cd /tmp
+git clone -b cursor/requirements-v2.1-multitenant-plan \
+  https://<你的GitHub用户名>:<Personal_Access_Token>@github.com/cmbmail/choir.git /opt/choir
+cd /opt/choir && git remote set-url origin https://github.com/cmbmail/choir.git
+```
+
+或：
+
+```bash
+export GIT_CLONE_MODE=https
+bash /opt/choir/deploy/clone-on-server.sh
+```
+
+Token 创建：GitHub → Settings → Developer settings → Personal access tokens → 勾选 `repo` 读权限。
+
+**方式 C — 本机打包上传（无法访问 GitHub 时）**
+
+在 Mac 上：
 
 ```bash
 cd /Users/admin/Cursor/Choir01
-tar czf /tmp/choir.tgz --exclude backend/.venv --exclude .git .
+git archive --format=tar.gz -o /tmp/choir.tgz cursor/requirements-v2.1-multitenant-plan
 scp /tmp/choir.tgz root@47.98.105.70:/tmp/
 ```
 
+在服务器上：
+
+```bash
+mkdir -p /opt/choir && tar xzf /tmp/choir.tgz -C /opt/choir
+```
+
 ---
+
+### 3–7. 安装与启动（复制整段）
+
+```bash
+cd /opt/choir
+
+# 3. 系统依赖
+bash deploy/install-acl3-deps.sh
+
+# 4. MySQL（把 YourStrongPassword 换成强密码）
+mysql -u root -p <<'SQL'
+CREATE DATABASE IF NOT EXISTS choir_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'choir'@'127.0.0.1' IDENTIFIED BY 'YourStrongPassword';
+GRANT ALL ON choir_db.* TO 'choir'@'127.0.0.1';
+FLUSH PRIVILEGES;
+SQL
+
+mysql -u choir -pYourStrongPassword choir_db < scripts/schema.sql
+
+# 5. 环境变量
+cp .env.production-ip.example .env
+chmod 600 .env
+vi .env
+```
+
+`.env` 最少修改：
+
+```env
+DATABASE_URL=mysql+pymysql://choir:YourStrongPassword@127.0.0.1:3306/choir_db?charset=utf8mb4
+SECRET_KEY=<openssl rand -hex 32>
+JWT_SECRET=<openssl rand -hex 32>
+INVITE_CODE_PEPPER=<openssl rand -hex 32>
+SYSTEM_SUPER_ADMIN_USERNAME=你的手机号
+SYSTEM_SUPER_ADMIN_PASSWORD=你的强密码
+```
+
+```bash
+# 6. 种子数据
+cd /opt/choir
+source backend/.venv/bin/activate
+python3.11 scripts/seed.py || python3 scripts/seed.py
+
+# 7. Gunicorn + Nginx
+useradd -r -s /sbin/nologin choir 2>/dev/null || true
+chown -R choir:choir /opt/choir
+bash deploy/install-ip.sh
+
+# SELinux（若页面 403）
+dnf install -y policycoreutils-python-utils
+semanage fcontext -a -t httpd_sys_content_t '/opt/choir(/.*)?' 2>/dev/null || true
+restorecon -Rv /opt/choir
+setsebool -P httpd_can_network_connect 1
+
+# 8. 验证
+curl -s http://47.98.105.70/health
+curl -s http://47.98.105.70/api/choirs/public
+```
+
+浏览器打开：**http://47.98.105.70/login.html**
+
+---
+
+## 附录：分步说明
+
+## 零、本机上传代码（Mac，见上方式 C）
 
 ## 一、SSH 登录
 
 ```bash
 ssh root@47.98.105.70
 ```
-
----
 
 ## 二、安装系统依赖（仅首次）
 
