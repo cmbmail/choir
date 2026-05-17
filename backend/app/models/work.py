@@ -15,6 +15,7 @@ class Work(db.Model):
     recordings = db.relationship(
         "Recording", back_populates="work", cascade="all, delete-orphan"
     )
+    documents = db.relationship("Document", back_populates="work")
 
     def to_dict(self, include_recordings: bool = False) -> Dict[str, Any]:
         row: Dict[str, Any] = {

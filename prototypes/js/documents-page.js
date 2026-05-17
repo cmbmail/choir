@@ -23,6 +23,8 @@
 
   let currentUser = null;
   let docs = [];
+  let works = [];
+  let selectedWorkId = "";
   let currentTab = "all";
   let searchKeyword = "";
   let filterCategory = "all";
@@ -60,11 +62,50 @@
     alert(msg);
   }
 
+  function isScoreTab() {
+    return currentTab === "score";
+  }
+
+  async function loadWorks() {
+    const data = await ChoirAPI.get("/works?include_recordings=0");
+    works = data.works || [];
+    const sel = document.getElementById("scoreWorkSelect");
+    if (!sel) return;
+    const prev = selectedWorkId || sel.value;
+    sel.innerHTML =
+      '<option value="">— 请选择作品 —</option>' +
+      works
+        .map(
+          (w) =>
+            `<option value="${w.work_id}">${esc(w.name)}${w.composer ? " · " + esc(w.composer) : ""}（${w.score_count || 0} 份乐谱）</option>`
+        )
+        .join("");
+    if (prev && works.some((w) => String(w.work_id) === String(prev))) {
+      sel.value = prev;
+      selectedWorkId = prev;
+    }
+  }
+
+  function updateScoreUi() {
+    const scoreMode = isScoreTab();
+    const bar = document.getElementById("scoreWorkBar");
+    const sf = document.getElementById("scoreFilters");
+    const thWork = document.getElementById("thWork");
+    const btnNew = document.getElementById("btnNewWork");
+    const label = document.getElementById("uploadBtnLabel");
+    if (bar) bar.style.display = scoreMode ? "flex" : "none";
+    if (sf) sf.style.display = scoreMode ? "flex" : "none";
+    if (thWork) thWork.hidden = !scoreMode;
+    if (btnNew) btnNew.hidden = !scoreMode || !canWrite();
+    if (label) label.textContent = scoreMode ? "上传乐谱" : "上传资料";
+  }
+
   async function loadDocs() {
     const p = new URLSearchParams();
     if (currentTab !== "all") p.set("type", currentTab);
     if (filterCategory !== "all") p.set("category", filterCategory);
     if (filterCollection !== "all") p.set("collection", filterCollection);
+    if (isScoreTab() && selectedWorkId) p.set("work_id", selectedWorkId);
     if (searchKeyword) p.set("q", searchKeyword);
     const qs = p.toString() ? `?${p}` : "";
     const data = await ChoirAPI.get(`/documents${qs}`);
@@ -87,8 +128,14 @@
         const eiCls = extIcon[ext] || extIcon.doc;
         const tc = tagCls[d.doc_type] || tagCls[d.type] || tagCls.other;
         const title = d.title || d.name || "未命名";
-        let actionHtml = "";
         const isScore = d.doc_type === "score" || d.type === "score";
+        const workCol = isScoreTab()
+          ? "<td>" +
+            esc(d.work_name || "—") +
+            (d.work_composer ? '<br><span style="font-size:0.65rem;color:var(--text-muted)">' + esc(d.work_composer) + "</span>" : "") +
+            "</td>"
+          : "";
+        let actionHtml = "";
         if (isScore) {
           actionHtml =
             '<a class="doc-action-btn" href="极简中式-乐谱详情.html?id=' +
@@ -124,6 +171,7 @@
           '<div><div class="doc-name-text">' +
           esc(title) +
           "</div></div></div></td>" +
+          workCol +
           '<td><span class="doc-tag ' +
           tc.cls +
           '">' +
@@ -175,13 +223,13 @@
 
   function bindTabs() {
     document.querySelectorAll(".tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
+      tab.addEventListener("click", async () => {
         document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
         currentTab = tab.dataset.tab;
-        const sf = document.getElementById("scoreFilters");
-        if (sf) sf.style.display = currentTab === "score" ? "flex" : "none";
-        loadDocs();
+        updateScoreUi();
+        if (isScoreTab()) await loadWorks();
+        await loadDocs();
       });
     });
   }
@@ -201,14 +249,48 @@
     });
   }
 
+  async function createWork() {
+    const name = prompt("作品名称");
+    if (!name || !name.trim()) return;
+    const composer = prompt("作曲者（可选）", "") || "";
+    try {
+      const res = await ChoirAPI.post("/works", {
+        name: name.trim(),
+        composer: composer.trim(),
+      });
+      await loadWorks();
+      const sel = document.getElementById("scoreWorkSelect");
+      if (sel && res.work_id) {
+        sel.value = String(res.work_id);
+        selectedWorkId = String(res.work_id);
+      }
+      await loadDocs();
+      toast("作品已创建");
+    } catch (e) {
+      toast(e.message || "创建失败", true);
+    }
+  }
+
   async function onUpload(file) {
     if (!file) return;
+    const docType = currentTab === "all" ? "other" : currentTab;
+    if (docType === "score") {
+      const wid = selectedWorkId || document.getElementById("scoreWorkSelect")?.value;
+      if (!wid) {
+        toast("请先选择或新建作品，再上传乐谱", true);
+        return;
+      }
+    }
     const fd = new FormData();
     fd.append("file", file);
     fd.append("title", file.name);
-    fd.append("doc_type", currentTab === "all" ? "other" : currentTab);
+    fd.append("doc_type", docType);
+    if (docType === "score") {
+      fd.append("work_id", selectedWorkId || document.getElementById("scoreWorkSelect").value);
+    }
     try {
       await ChoirAPI.postForm("/documents/upload", fd);
+      await loadWorks();
       await loadDocs();
       toast("上传成功");
     } catch (e) {
@@ -249,6 +331,18 @@
         loadDocs();
       });
     }
+    const workSel = document.getElementById("scoreWorkSelect");
+    if (workSel) {
+      workSel.addEventListener("change", () => {
+        selectedWorkId = workSel.value;
+        loadDocs();
+      });
+    }
+    const btnNew = document.getElementById("btnNewWork");
+    if (btnNew && canWrite()) {
+      btnNew.addEventListener("click", createWork);
+    }
+    updateScoreUi();
     await loadDocs();
   }
 

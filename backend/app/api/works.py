@@ -7,7 +7,7 @@ from flask import jsonify, request, send_file
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
-from app.models import Recording, Work
+from app.models import Document, Recording, Work
 from app.services.cde_service import (
     CdeError,
     delete_file,
@@ -16,7 +16,12 @@ from app.services.cde_service import (
     upload_file,
     verify_stream_token,
 )
-from app.services.document_access import can_read_recordings, can_write_recordings
+from app.services.document_access import (
+    can_read_documents,
+    can_read_recordings,
+    can_write_documents,
+    can_write_recordings,
+)
 from app.services.operation_log import write_operation_log
 from app.services.permissions import has_permission
 from app.services.upload_validation import validate_upload
@@ -32,13 +37,21 @@ def _choir_id(user):
 @login_required
 def works_list():
     user = get_current_user()
-    if not can_read_recordings(user):
-        return jsonify({"error": "无权限", "required": "recordings.read"}), 403
+    if not can_read_recordings(user) and not can_read_documents(user):
+        return jsonify({"error": "无权限"}), 403
     choir_id = _choir_id(user)
     if not choir_id:
         return jsonify({"works": []})
+    include_recordings = request.args.get("include_recordings", "1") != "0"
     rows = Work.query.filter_by(choir_id=choir_id).order_by(Work.created_at.desc()).all()
-    return jsonify({"works": [w.to_dict(include_recordings=True) for w in rows]})
+    works = []
+    for w in rows:
+        item = w.to_dict(include_recordings=include_recordings)
+        item["score_count"] = Document.query.filter_by(
+            work_id=w.work_id, doc_type="score"
+        ).count()
+        works.append(item)
+    return jsonify({"works": works})
 
 
 @api_bp.get("/works/<int:work_id>")
@@ -48,7 +61,7 @@ def works_get(work_id: int):
     work = Work.query.get_or_404(work_id)
     if not user.system_super_admin and work.choir_id != user.choir_id:
         return jsonify({"error": "无权限"}), 403
-    if not can_read_recordings(user):
+    if not can_read_recordings(user) and not can_read_documents(user):
         return jsonify({"error": "无权限"}), 403
     return jsonify(work.to_dict(include_recordings=True))
 
@@ -57,10 +70,8 @@ def works_get(work_id: int):
 @login_required
 def works_create():
     user = get_current_user()
-    if not can_write_recordings(user) and not (
-        user.system_super_admin or has_permission(user, "recordings.write")
-    ):
-        return jsonify({"error": "无权限", "required": "recordings.write"}), 403
+    if not can_write_recordings(user) and not can_write_documents(user):
+        return jsonify({"error": "无权限"}), 403
 
     data = request.get_json(silent=True) or {}
     choir_id = user.choir_id if not user.system_super_admin else data.get("choir_id") or user.choir_id

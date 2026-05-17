@@ -39,6 +39,12 @@
       $("viewerTitle").textContent = (doc.file_name || doc.title || "乐谱") + "";
     }
 
+    if ($("diWork")) {
+      const workLabel = doc.work_name
+        ? doc.work_name + (doc.work_composer ? " · " + doc.work_composer : "")
+        : "—";
+      $("diWork").textContent = workLabel;
+    }
     if ($("diCategory")) $("diCategory").textContent = doc.category || "—";
     if ($("diStyle")) $("diStyle").textContent = doc.style || "—";
     if ($("diCollection")) $("diCollection").textContent = doc.collection || doc.collection_name || "—";

@@ -14,6 +14,14 @@ def app_phase2(app):
 
 
 def test_documents_upload_list_stream(client, choir_admin_headers, app_phase2):
+    res = client.post(
+        "/api/works",
+        json={"name": "测试乐谱作品", "composer": "测试"},
+        headers=choir_admin_headers,
+    )
+    assert res.status_code == 201, res.get_json()
+    work_id = res.get_json()["work_id"]
+
     data = b"%PDF-1.4 test choir document"
     res = client.post(
         "/api/documents/upload",
@@ -21,6 +29,7 @@ def test_documents_upload_list_stream(client, choir_admin_headers, app_phase2):
             "file": (io.BytesIO(data), "test-score.pdf"),
             "title": "测试乐谱",
             "doc_type": "score",
+            "work_id": str(work_id),
             "category": "古诗词",
         },
         headers=choir_admin_headers,

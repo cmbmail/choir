@@ -6,7 +6,7 @@ from flask import jsonify, request, send_file
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
-from app.models import Document, User
+from app.models import Document, User, Work
 from app.services.cde_service import (
     CdeError,
     delete_file,
@@ -57,6 +57,9 @@ def documents_list():
         q = q.filter_by(category=category)
     if collection and collection != "all":
         q = q.filter_by(collection_name=collection)
+    work_id = request.args.get("work_id", type=int)
+    if work_id:
+        q = q.filter_by(work_id=work_id)
     if search:
         q = q.filter(Document.title.contains(search))
 
@@ -115,6 +118,20 @@ def documents_upload():
     if is_section_leader_upload_restricted(user, voice_parts):
         return jsonify({"error": "声部长只能上传本声部资料"}), 403
 
+    work_id = request.form.get("work_id", type=int)
+    if doc_type == "score":
+        if not work_id:
+            return jsonify({"error": "上传乐谱须先选择或新建作品"}), 400
+        work = Work.query.filter_by(work_id=work_id, choir_id=choir_id).first()
+        if not work:
+            return jsonify({"error": "作品不存在或不属于本团"}), 400
+    elif work_id:
+        work = Work.query.filter_by(work_id=work_id, choir_id=choir_id).first()
+        if not work:
+            return jsonify({"error": "作品不存在或不属于本团"}), 400
+    else:
+        work_id = None
+
     data = f.read()
     size = len(data)
     ok, msg = validate_upload(f.filename or "", size, f.mimetype)
@@ -132,6 +149,7 @@ def documents_upload():
 
     doc = Document(
         choir_id=choir_id,
+        work_id=work_id,
         title=title,
         doc_type=doc_type,
         category=category,
@@ -153,7 +171,7 @@ def documents_upload():
         user=user,
         resource_type="document",
         resource_id=str(doc.document_id),
-        detail={"title": title, "doc_type": doc_type},
+        detail={"title": title, "doc_type": doc_type, "work_id": work_id},
     )
     return jsonify(doc.to_dict(include_stream=True)), 201
 

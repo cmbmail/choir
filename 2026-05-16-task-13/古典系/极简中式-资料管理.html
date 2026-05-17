@@ -238,9 +238,10 @@ a{color:inherit;text-decoration:none}
         <p class="page-subtitle">合唱团文档、乐谱、演出资料集中管理</p>
       </div>
       <div class="page-actions">
-        <button class="btn btn-gold" id="uploadBtn" data-perm="documents.write">
+        <button type="button" class="btn btn-outline" id="btnNewWork" data-perm="documents.write" hidden>新建作品</button>
+        <button type="button" class="btn btn-gold" id="uploadBtn" data-perm="documents.write">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          上传资料
+          <span id="uploadBtnLabel">上传资料</span>
         </button>
       </div>
     </div>
@@ -270,6 +271,14 @@ a{color:inherit;text-decoration:none}
       <div class="tab" data-tab="perf">演出资料</div>
       <div class="tab" data-tab="rehearsal">排练资料</div>
       <div class="tab" data-tab="rule">规章制度</div>
+    </div>
+
+    <div class="filter-bar" id="scoreWorkBar" style="display:none;margin-bottom:1rem;align-items:center;gap:0.75rem;flex-wrap:wrap">
+      <span class="filter-label">所属作品 <span style="color:var(--error)">*</span></span>
+      <select class="filter-select" id="scoreWorkSelect" style="min-width:220px">
+        <option value="">— 请选择作品 —</option>
+      </select>
+      <span style="font-size:0.75rem;color:var(--text-muted)">须先新建作品，再上传乐谱资料</span>
     </div>
 
     <!-- 乐谱子筛选栏，仅乐谱tab可见 -->
@@ -323,6 +332,7 @@ a{color:inherit;text-decoration:none}
         <thead>
           <tr>
             <th>资料名称</th>
+            <th id="thWork" hidden>所属作品</th>
             <th>分类</th>
             <th>上传人</th>
             <th>上传时间</th>

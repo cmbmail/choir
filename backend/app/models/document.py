@@ -8,6 +8,7 @@ class Document(db.Model):
 
     document_id = db.Column(db.Integer, primary_key=True)
     choir_id = db.Column(db.Integer, db.ForeignKey("choirs.choir_id"), nullable=False)
+    work_id = db.Column(db.Integer, db.ForeignKey("works.work_id"), nullable=True, index=True)
     title = db.Column(db.String(200), nullable=False)
     doc_type = db.Column(db.String(32), nullable=False, default="other")
     category = db.Column(db.String(64))
@@ -23,6 +24,7 @@ class Document(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     uploader = db.relationship("User", foreign_keys=[uploaded_by])
+    work = db.relationship("Work", foreign_keys=[work_id], back_populates="documents")
 
     def to_dict(self, include_stream: bool = False) -> Dict[str, Any]:
         uploader_name = self.uploader.name if self.uploader else None
@@ -32,6 +34,9 @@ class Document(db.Model):
         row: Dict[str, Any] = {
             "document_id": self.document_id,
             "choir_id": self.choir_id,
+            "work_id": self.work_id,
+            "work_name": self.work.name if self.work else "",
+            "work_composer": self.work.composer if self.work else "",
             "title": self.title,
             "doc_type": self.doc_type,
             "type": self.doc_type,
