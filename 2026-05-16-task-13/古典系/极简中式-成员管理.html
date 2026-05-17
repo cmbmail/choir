@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>成员管理 · 弦歌合唱团</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+:root{--ink-black:#1C1C1C;--ink-gold:#B8860B;--ink-gold-light:#D4A84B;--silk-white:#F8F6F0;--silk-cream:#EDE8DC;--border:rgba(28,28,28,0.1);--border-gold:rgba(184,134,11,0.3);--text-primary:#1C1C1C;--text-secondary:#5a5548;--text-muted:#9c9490;--success:#3a7d44;--warning:#c07a1e;--error:#b03030;--font-mono:'Space Grotesk','Noto Sans SC',sans-serif;--transition:200ms ease;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{height:100vh;font-family:var(--font-mono);font-weight:300;background:var(--silk-white);color:var(--text-primary);display:flex;flex-direction:column;overflow:hidden}
+button{cursor:pointer;border:none;background:none;font:inherit;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--ink-gold);outline-offset:2px}
+a{color:inherit;text-decoration:none}
+*{scrollbar-width:thin;scrollbar-color:var(--ink-gold) transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-thumb{background:var(--ink-gold);border-radius:99px}
+
+.topbar{height:64px;background:var(--ink-black);display:flex;align-items:center;padding:0 2rem;gap:1.5rem;flex-shrink:0;border-bottom:1px solid rgba(184,134,11,0.2);position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+.brand-icon{width:40px;height:40px;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:1.2rem;color:var(--ink-gold);position:relative}
+.brand-icon::before,.brand-icon::after{content:'';position:absolute;width:6px;height:6px}
+.brand-icon::before{top:-3px;left:-3px;border-top:1px solid var(--ink-gold);border-left:1px solid var(--ink-gold);}
+.brand-icon::after{bottom:-3px;right:-3px;border-bottom:1px solid var(--ink-gold);border-right:1px solid var(--ink-gold);}
+.brand-text{display:flex;flex-direction:column}
+.brand-name{font-size:0.9rem;font-weight:400;color:var(--ink-gold);letter-spacing:0.15em;text-transform:uppercase}
+.brand-sub{font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase}
+.topnav{display:flex;align-items:center;gap:0.25rem;flex:1}
+.nav-item{padding:0.5rem 1rem;font-size:0.8rem;font-weight:400;color:rgba(255,255,255,0.5);border-radius:4px;transition:all var(--transition);display:flex;align-items:center;gap:0.4rem;letter-spacing:0.05em}
+.nav-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.nav-item:hover{color:#fff}
+.nav-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.1)}
+.topbar-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto}
+.user-dropdown{position:relative}
+.user-avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;color:var(--ink-gold);cursor:pointer;transition:all var(--transition)}
+.user-avatar:hover{border-color:var(--ink-gold-light)}
+.user-dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--silk-white);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px rgba(28,28,28,0.12);min-width:160px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:200}
+.user-dropdown.open .user-dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;color:var(--text-primary);cursor:pointer;transition:background var(--transition)}
+.dropdown-item:hover{background:rgba(184,134,11,0.06)}
+.dropdown-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dropdown-item.danger{color:var(--error)}
+.dropdown-divider{height:1px;background:var(--border);margin:4px 0}
+
+.page-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.sidebar{width:220px;background:var(--silk-white);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;flex-shrink:0}
+.sidebar-nav{flex:1;padding:1.5rem 0;overflow-y:auto;min-height:0}
+.sidebar-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;color:var(--text-secondary);font-size:0.85rem;transition:all var(--transition);cursor:pointer;border-left:3px solid transparent;font-weight:300}
+.sidebar-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sidebar-item:hover{color:var(--ink-gold);background:rgba(184,134,11,0.03)}
+.sidebar-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.05);border-left-color:var(--ink-gold)}
+.sidebar-user{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:0.75rem;flex-shrink:0;background:var(--silk-white)}
+.sidebar-user-top{display:flex;align-items:center;gap:0.75rem}
+.sidebar-user-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--ink-black);border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;font-weight:400;color:var(--ink-gold)}
+.sidebar-user-info{flex:1;min-width:0}
+.sidebar-user-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-role{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
+
+.content{flex:1;padding:2rem;overflow-y:auto;min-height:0;max-width:1400px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;gap:1rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.page-title-group{display:flex;flex-direction:column;gap:0.25rem}
+.page-title{font-size:1.5rem;font-weight:300;color:var(--ink-black);letter-spacing:0.05em}
+.page-subtitle{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.05em}
+.page-actions{display:flex;gap:0.75rem;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 1.125rem;border-radius:4px;font-size:0.8rem;font-weight:400;transition:all var(--transition);cursor:pointer;border:1px solid transparent;letter-spacing:0.03em}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--ink-black);color:var(--silk-white);border-color:var(--ink-black)}
+.btn-gold{background:var(--ink-gold);color:#fff;box-shadow:0 4px 12px rgba(184,134,11,0.25)}
+.btn-gold:hover{background:var(--ink-gold-light)}
+.btn-outline{border-color:var(--border);color:var(--text-secondary);background:var(--silk-white)}
+.btn-outline:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+
+.filter-bar{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-select{padding:0.5rem 2rem 0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;font-size:0.8rem;background:var(--silk-white);color:var(--text-primary);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c9490' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center}
+.search-input{padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;font-size:0.8rem;width:200px;background:var(--silk-white)}
+.filter-label{font-size:0.75rem;color:var(--text-muted)}
+.filter-group{display:flex;align-items:center;gap:0.5rem}
+
+.voice-section{margin-bottom:2rem}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)}
+.section-title{display:flex;align-items:center;gap:0.75rem}
+.section-title h3{font-size:0.9rem;font-weight:400;color:var(--text-primary)}
+.section-count{font-size:0.75rem;color:var(--text-muted)}
+.section-actions{display:flex;gap:0.5rem}
+
+.member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.member-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;padding:1.25rem;transition:all var(--transition);cursor:pointer}
+.member-card:hover{border-color:var(--ink-gold);box-shadow:0 4px 12px rgba(28,28,28,0.08)}
+.member-top{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.member-avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:1.1rem;font-weight:400;border:1px solid var(--border-gold);flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:0.95rem;font-weight:400;color:var(--text-primary);margin-bottom:0.25rem}
+.member-id{font-size:0.7rem;color:var(--text-muted)}
+.member-voice{display:inline-flex;padding:0.2rem 0.5rem;border-radius:2px;font-size:0.7rem;font-weight:400;border:1px solid currentColor;margin-top:0.375rem}
+.vb-soprano{color:#9d174d;border-color:rgba(157,23,61,0.3);background:rgba(252,231,243,0.3)}
+.vb-alto{color:#92400e;border-color:rgba(146,64,14,0.3);background:rgba(254,243,199,0.3)}
+.vb-tenor{color:#1e40af;border-color:rgba(30,64,175,0.3);background:rgba(219,234,254,0.3)}
+.vb-bass{color:#065f46;border-color:rgba(6,95,70,0.3);background:rgba(209,250,229,0.3)}
+.member-meta{display:flex;flex-wrap:wrap;gap:0.75rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem}
+.member-meta span{display:flex;align-items:center;gap:0.25rem}
+.member-meta svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.member-footer{display:flex;justify-content:space-between;align-items:center;padding-top:0.75rem;border-top:1px solid var(--border)}
+.member-status{display:flex;align-items:center;gap:0.375rem;font-size:0.75rem}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.dot-active{background:var(--success)}
+.dot-leave{background:var(--warning)}
+.dot-inactive{background:var(--text-muted)}
+.member-actions{display:flex;gap:0.375rem}
+.btn-xs{padding:0.25rem 0.5rem;font-size:0.65rem}
+.btn-xs svg{width:10px;height:10px}
+
+.footer{background:var(--silk-white);border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;flex-shrink:0}
+.footer-text{font-size:0.7rem;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase}
+
+@media(max-width:1200px){.sidebar{display:none}.page-body{flex-direction:column}}
+@media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.filter-bar{flex-direction:column;align-items:stretch}.search-input{width:100%}.member-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">♪</div>
+    <div class="brand-text">
+      <span class="brand-name">极简中式</span>
+      <span class="brand-sub">Choir Management</span>
+    </div>
+  </div>
+  <nav class="topnav">
+    <a class="nav-item" href="极简中式-桌面端.html"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>首页</a>
+    <a class="nav-item" href="极简中式-成员管理.html"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>成员管理</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-avatar" title="刘">刘</div>
+      <div class="user-dropdown-menu">
+        <div class="dropdown-item"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>修改密码</span></div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>退出登录</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-body">
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <a class="sidebar-item" href="极简中式-桌面端.html"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>我的首页</a>
+      <a class="sidebar-item" href="极简中式-排练计划.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/></svg>排练计划</a>
+      <a class="sidebar-item" href="极简中式-献唱计划.html"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>献唱计划</a>
+      <a class="sidebar-item" href="极简中式-作业提交.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>作业提交</a>
+      <a class="sidebar-item active" href="#"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>成员管理</a>
+      <a class="sidebar-item" href="极简中式-系统管理.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>系统管理</a>
+      <a class="sidebar-item" href="极简中式-资料管理.html"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>资料管理</a>
+      <a class="sidebar-item" href="极简中式-录音管理.html"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>录音管理</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-top">
+        <div class="sidebar-user-avatar">刘</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">刘管理员</div>
+          <div class="sidebar-user-role">系统管理员</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">成员管理</h1>
+        <p class="page-subtitle">合唱团成员信息管理 · 共42人</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出名单
+        </button>
+        <button class="btn btn-gold">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加成员
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label">声部</span>
+        <select class="filter-select">
+          <option value="">全部声部</option>
+          <option value="soprano">女高音</option>
+          <option value="alto">女低音</option>
+          <option value="tenor">男高音</option>
+          <option value="bass">男低音</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">状态</span>
+        <select class="filter-select">
+          <option value="">全部状态</option>
+          <option value="active">正常</option>
+          <option value="leave">请假</option>
+          <option value="inactive">停用</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">年份</span>
+        <select class="filter-select">
+          <option value="">全部年份</option>
+          <option value="2024">2024年入团</option>
+          <option value="2023">2023年入团</option>
+          <option value="2022">2022年入团</option>
+          <option value="older">更早</option>
+        </select>
+      </div>
+      <input type="text" class="search-input" placeholder="搜索姓名、学号...">
+    </div>
+
+    <!-- 女高音 -->
+    <div class="voice-section">
+      <div class="section-header">
+        <div class="section-title">
+          <h3>女高音 Soprano</h3>
+          <span class="section-count">12人</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-outline btn-xs">查看全部</button>
+        </div>
+      </div>
+      <div class="member-grid">
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#fef3c7;color:#d97706">陈</div>
+            <div class="member-info">
+              <div class="member-name">陈小慧</div>
+              <div class="member-id">CH001</div>
+              <span class="member-voice vb-soprano">女高音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2022年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 95%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#dbeafe;color:#1d4ed8">刘</div>
+            <div class="member-info">
+              <div class="member-name">刘音乐</div>
+              <div class="member-id">CH002</div>
+              <span class="member-voice vb-soprano">女高音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2020年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 92%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#e0f2fe;color:#0369a1">吴</div>
+            <div class="member-info">
+              <div class="member-name">吴明月</div>
+              <div class="member-id">CH010</div>
+              <span class="member-voice vb-soprano">女高音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2024年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 98%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 女低音 -->
+    <div class="voice-section">
+      <div class="section-header">
+        <div class="section-title">
+          <h3>女低音 Alto</h3>
+          <span class="section-count">10人</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-outline btn-xs">查看全部</button>
+        </div>
+      </div>
+      <div class="member-grid">
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#fef3c7;color:#92400e">张</div>
+            <div class="member-info">
+              <div class="member-name">张丽雯</div>
+              <div class="member-id">CH004</div>
+              <span class="member-voice vb-alto">女低音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2019年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 76%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#d1fae5;color:#065f46">林</div>
+            <div class="member-info">
+              <div class="member-name">林晓燕</div>
+              <div class="member-id">CH005</div>
+              <span class="member-voice vb-alto">女低音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2023年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 91%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 男高音 -->
+    <div class="voice-section">
+      <div class="section-header">
+        <div class="section-title">
+          <h3>男高音 Tenor</h3>
+          <span class="section-count">10人</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-outline btn-xs">查看全部</button>
+        </div>
+      </div>
+      <div class="member-grid">
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#dbeafe;color:#1e40af">李</div>
+            <div class="member-info">
+              <div class="member-name">李大明</div>
+              <div class="member-id">CH006</div>
+              <span class="member-voice vb-tenor">男高音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2021年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 70%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-leave"></span>请假中</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#ede9fe;color:#5b21b6">赵</div>
+            <div class="member-info">
+              <div class="member-name">赵强强</div>
+              <div class="member-id">CH007</div>
+              <span class="member-voice vb-tenor">男高音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2020年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 85%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 男低音 -->
+    <div class="voice-section">
+      <div class="section-header">
+        <div class="section-title">
+          <h3>男低音 Bass</h3>
+          <span class="section-count">10人</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-outline btn-xs">查看全部</button>
+        </div>
+      </div>
+      <div class="member-grid">
+        <div class="member-card">
+          <div class="member-top">
+            <div class="member-avatar" style="background:#d1fae5;color:#065f46">周</div>
+            <div class="member-info">
+              <div class="member-name">周建国</div>
+              <div class="member-id">CH009</div>
+              <span class="member-voice vb-bass">男低音</span>
+            </div>
+          </div>
+          <div class="member-meta">
+            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2018年入团</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 60%</span>
+          </div>
+          <div class="member-footer">
+            <div class="member-status"><span class="status-dot dot-inactive"></span>已停用</div>
+            <div class="member-actions">
+              <button class="btn btn-outline btn-xs">编辑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="footer">
+  <p class="footer-text">极简中式 · 弦歌合唱团管理系统 © 2026</p>
+</footer>
+
+<script>
+const userDropdown = document.getElementById('userDropdown');
+userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
+  e.stopPropagation();
+  userDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => userDropdown.classList.remove('open'));
+</script>
+</body>
+</html>

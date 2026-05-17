@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>弦歌合唱团 · 团员管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Flat SVG icon helper -->
+  <style>
+    .icon { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .icon svg { display:block; }
+  </style>
+
+  <style>
+    /* ─── Design Tokens ─── */
+    :root {
+      --gold-100: #fdf6e3;
+      --gold-200: #f5e6b2;
+      --gold-300: #e8c66e;
+      --gold-400: #c9a227;
+      --gold-500: #a07820;
+      --gold-600: #7a5a14;
+
+      --navy-50:  #f2f4f8;
+      --navy-100: #dde3ee;
+      --navy-200: #b8c3d8;
+      --navy-500: #3d5280;
+      --navy-700: #243060;
+      --navy-900: #0e1a40;
+
+      --cream-bg:  #faf8f4;
+      --cream-card: #fffdf9;
+      --border: #e8e2d8;
+
+      --text-primary: #1c1a18;
+      --text-secondary: #5a5548;
+      --text-muted: #9c9490;
+
+      --success: #3a7d44;
+      --warning: #c07a1e;
+      --error:   #b03030;
+
+      --radius-sm: 0.25rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1.25rem;
+
+      --shadow-xs: 0 1px 2px rgba(14,26,64,.06);
+      --shadow-sm: 0 2px 8px rgba(14,26,64,.08);
+      --shadow-md: 0 4px 16px rgba(14,26,64,.12);
+      --shadow-lg: 0 8px 32px rgba(14,26,64,.16);
+
+      --sidebar-w: 240px;
+      --header-h: 64px;
+      --font-serif: 'Playfair Display', 'Noto Serif SC', serif;
+      --font-sans:  'Source Sans 3', 'PingFang SC', sans-serif;
+      --transition: 200ms ease;
+    }
+
+    /* ─── Reset ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--cream-bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    input, select, textarea { font: inherit; }
+    :focus-visible { outline: 2px solid var(--gold-400); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+
+    /* ─── Layout Shell ─── */
+    .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--header-h) 1fr; min-height: 100vh; }
+
+    /* ─── Top Header ─── */
+    .header {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      background: var(--navy-900);
+      border-bottom: 1px solid rgba(201,162,39,.25);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(14,26,64,.3);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--gold-300), var(--gold-500));
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 0 3px rgba(201,162,39,.2);
+    }
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .brand-name {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold-300);
+      letter-spacing: 0.04em;
+    }
+    .brand-sub {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,.45);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .header-btn {
+      width: 36px; height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: rgba(255,255,255,.65);
+      transition: all var(--transition);
+    }
+    .header-btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .header-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .notification-dot { position: relative; }
+    .notification-dot::after {
+      content: '';
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: var(--gold-400);
+      border-radius: 50%;
+      border: 1.5px solid var(--navy-900);
+    }
+    .header-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--navy-500), var(--navy-700));
+      border: 2px solid var(--gold-400);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-serif);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold-300);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .header-avatar:hover { border-color: var(--gold-300); box-shadow: 0 0 0 3px rgba(201,162,39,.2); }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      grid-column: 1;
+      grid-row: 2;
+      background: var(--navy-900);
+      border-right: 1px solid rgba(201,162,39,.12);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,162,39,.2) transparent;
+    }
+    .nav-section {
+      margin-bottom: 1.75rem;
+    }
+    .nav-section-label {
+      padding: 0 1.25rem 0.4rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.28);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.5rem 1.25rem;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 400;
+      border-left: 3px solid transparent;
+      transition: all var(--transition);
+      cursor: pointer;
+    }
+    .nav-item:hover { color: rgba(255,255,255,.9); background: rgba(255,255,255,.05); }
+    .nav-item.active {
+      color: var(--gold-300);
+      background: rgba(201,162,39,.1);
+      border-left-color: var(--gold-400);
+      font-weight: 500;
+    }
+    .nav-icon { width: 1.25rem; height: 1.25rem; display:flex; align-items:center; justify-content:center; flex-shrink: 0; color: inherit; }
+    .nav-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--gold-500);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 99px;
+      min-width: 1.3rem;
+      text-align: center;
+    }
+    .sidebar-divider { height: 1px; background: rgba(255,255,255,.07); margin: 0.5rem 1.25rem 1rem; }
+
+    /* ─── Main Content ─── */
+    .main {
+      grid-column: 2;
+      grid-row: 2;
+      padding: 2rem 2.5rem;
+      min-height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+    }
+
+    /* ─── Page Header ─── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .page-title-group {}
+    .page-breadcrumb {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--navy-900);
+      letter-spacing: -0.01em;
+    }
+    .page-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
+      color: #fff;
+      box-shadow: var(--shadow-xs);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--gold-300), var(--gold-400)); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-outline {
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+      background: var(--cream-card);
+    }
+    .btn-outline:hover { border-color: var(--gold-400); color: var(--gold-500); background: var(--gold-100); }
+    .btn-ghost { color: var(--text-secondary); padding: 0.4rem 0.75rem; }
+    .btn-ghost:hover { color: var(--navy-700); background: var(--navy-50); }
+    .btn-icon {
+      width: 2rem; height: 2rem;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+    }
+
+    /* ─── Stats Cards Row ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--cream-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-xs);
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-300), var(--gold-500));
+    }
+    .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy-900);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .stat-change {
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .stat-change.up { color: var(--success); }
+    .stat-change.down { color: var(--error); }
+    .stat-change.neutral { color: var(--text-muted); }
+    .stat-icon {
+      position: absolute;
+      right: 1.25rem;
+      bottom: 1rem;
+      opacity: 0.1;
+      color: var(--navy-700);
+    }
+    .stat-icon svg { width:40px; height:40px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* ─── Content Grid ─── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.5rem;
+    }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--cream-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--navy-900);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card-title-icon { color: var(--gold-500); display:inline-flex; align-items:center; }
+    .card-title-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .card-body { padding: 1.25rem 1.5rem; }
+
+    /* ─── Search & Filter Bar ─── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      display:flex;
+      align-items:center;
+    }
+    .search-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .search-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      background: var(--cream-bg);
+      color: var(--text-primary);
+      transition: all var(--transition);
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--gold-400);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(201,162,39,.12);
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .filter-select {
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      background: var(--cream-card);
+      color: var(--text-secondary);
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c9490' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      transition: all var(--transition);
+    }
+    .filter-select:focus { outline: none; border-color: var(--gold-400); }
+
+    /* ─── Member Table ─── */
+    .member-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .member-table thead th {
+      padding: 0.625rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1.5px solid var(--border);
+      white-space: nowrap;
+    }
+    .member-table tbody tr {
+      border-bottom: 1px solid rgba(232,226,216,.5);
+      transition: background var(--transition);
+    }
+    .member-table tbody tr:last-child { border-bottom: none; }
+    .member-table tbody tr:hover { background: var(--gold-100); }
+    .member-table td { padding: 0.75rem 1rem; vertical-align: middle; }
+    .member-info { display: flex; align-items: center; gap: 0.75rem; }
+    .member-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-serif);
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(201,162,39,.25);
+    }
+    .member-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .member-id {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Voice part badges */
+    .voice-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .voice-soprano  { background: #fce7f3; color: #9d174d; }
+    .voice-mezzo    { background: #ffe4e6; color: #9f1239; }
+    .voice-alto     { background: #fef3c7; color: #92400e; }
+    .voice-tenor    { background: #dbeafe; color: #1e40af; }
+    .voice-baritone { background: #e0e7ff; color: #3730a3; }
+    .voice-bass     { background: #d1fae5; color: #065f46; }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .status-badge::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-active   { background: #d1fae5; color: var(--success); }
+    .status-leave    { background: #fef3c7; color: var(--warning); }
+    .status-inactive { background: #f3f4f6; color: var(--text-muted); }
+
+    /* Row actions */
+    .row-actions { display: flex; gap: 0.35rem; opacity: 0; transition: opacity var(--transition); }
+    .member-table tbody tr:hover .row-actions { opacity: 1; }
+    .action-btn {
+      width: 28px; height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      transition: all var(--transition);
+    }
+    .action-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .action-btn:hover.edit   { color: var(--navy-700); background: var(--navy-50); }
+    .action-btn:hover.delete { color: var(--error); background: #fef2f2; }
+
+    /* ─── Pagination ─── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 0.5rem;
+    }
+    .page-info { font-size: 0.8rem; color: var(--text-muted); }
+    .page-controls { display: flex; gap: 0.375rem; align-items: center; }
+    .page-btn {
+      width: 30px; height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      transition: all var(--transition);
+      background: var(--cream-card);
+    }
+    .page-btn:hover { border-color: var(--gold-400); color: var(--gold-500); background: var(--gold-100); }
+    .page-btn.active { background: var(--gold-400); border-color: var(--gold-400); color: #fff; }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── Right Panel: Upcoming Rehearsal ─── */
+    .rehearsal-list { display: flex; flex-direction: column; gap: 0.875rem; }
+    .rehearsal-item {
+      display: flex;
+      gap: 0.875rem;
+      padding: 0.875rem;
+      background: var(--cream-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition);
+    }
+    .rehearsal-item:hover { border-color: var(--gold-300); box-shadow: var(--shadow-sm); }
+    .rehearsal-date {
+      flex-shrink: 0;
+      width: 48px;
+      text-align: center;
+      background: linear-gradient(135deg, var(--navy-700), var(--navy-900));
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0;
+      color: #fff;
+    }
+    .rehearsal-month { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-300); }
+    .rehearsal-day { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; line-height: 1; }
+    .rehearsal-weekday { font-size: 0.6rem; color: rgba(255,255,255,.5); margin-top: 0.15rem; }
+    .rehearsal-info { flex: 1; min-width: 0; }
+    .rehearsal-title { font-weight: 500; font-size: 0.875rem; color: var(--text-primary); margin-bottom: 0.2rem; }
+    .rehearsal-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.15rem; }
+    .rehearsal-type {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.1rem 0.5rem;
+      border-radius: 99px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    .type-regular { background: var(--navy-50); color: var(--navy-500); }
+    .type-performance { background: var(--gold-100); color: var(--gold-600); }
+    .type-sectional { background: #f0fdf4; color: var(--success); }
+
+    /* ─── Section Distribution Chart ─── */
+    .section-chart { padding: 0.25rem 0; }
+    .section-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.875rem;
+    }
+    .section-row:last-child { margin-bottom: 0; }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      width: 64px;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+    }
+    .section-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: var(--navy-50);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .section-bar {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.8s ease;
+    }
+    .section-count {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      width: 24px;
+      text-align: right;
+    }
+
+    /* ─── Activity Feed ─── */
+    .activity-feed { display: flex; flex-direction: column; }
+    .activity-item {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(232,226,216,.5);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 0.45rem;
+      flex-shrink: 0;
+    }
+    .activity-content { flex: 1; }
+    .activity-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+    .activity-text strong { color: var(--text-primary); font-weight: 500; }
+    .activity-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    /* ─── Member Modal Overlay ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(14,26,64,.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+    .modal-overlay.open { opacity: 1; visibility: visible; }
+    .modal {
+      background: var(--cream-card);
+      border-radius: var(--radius-xl);
+      width: min(560px, calc(100vw - 2rem));
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95) translateY(1rem);
+      transition: transform 0.25s ease;
+      border: 1px solid var(--border);
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--navy-900);
+    }
+    .modal-close {
+      width: 32px; height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-size: 1rem;
+      transition: all var(--transition);
+    }
+    .modal-close:hover { background: var(--navy-50); color: var(--text-primary); }
+    .modal-body { padding: 1.5rem; }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─── Form ─── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-field { display: flex; flex-direction: column; gap: 0.375rem; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+    }
+    .form-label .required { color: var(--error); margin-left: 0.15rem; }
+    .form-input-styled {
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      background: var(--cream-bg);
+      color: var(--text-primary);
+      transition: all var(--transition);
+    }
+    .form-input-styled:focus {
+      outline: none;
+      border-color: var(--gold-400);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(201,162,39,.1);
+    }
+    .form-hint { font-size: 0.7rem; color: var(--text-muted); }
+    .section-divider {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+      grid-column: 1 / -1;
+    }
+
+    /* ─── Toast ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.75rem 1rem;
+      background: var(--navy-900);
+      color: #fff;
+      border-radius: var(--radius-lg);
+      font-size: 0.875rem;
+      box-shadow: var(--shadow-lg);
+      border-left: 3px solid var(--gold-400);
+      transform: translateX(120%);
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+      min-width: 260px;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast-icon { display:inline-flex; align-items:center; flex-shrink:0; }
+    .toast-text { flex: 1; }
+    .toast-success { border-left-color: #34d399; }
+    .toast-error   { border-left-color: #f87171; }
+
+    /* ─── Calendar Mini ─── */
+    .mini-calendar { padding: 0.25rem 0; }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .cal-month {
+      font-family: var(--font-serif);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy-900);
+    }
+    .cal-nav {
+      width: 26px; height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      transition: all var(--transition);
+    }
+    .cal-nav:hover { background: var(--navy-50); color: var(--navy-700); }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      padding: 0.3rem 0;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+    }
+    .cal-day:hover { background: var(--gold-100); color: var(--gold-600); }
+    .cal-day.other-month { color: var(--text-muted); opacity: 0.4; }
+    .cal-day.today { background: var(--navy-900); color: #fff; font-weight: 600; }
+    .cal-day.has-event::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%; transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold-400);
+    }
+    .cal-day.today.has-event::after { background: var(--gold-300); }
+
+    /* ─── Tabs ─── */
+    .tabs { display: flex; gap: 0; border-bottom: 1.5px solid var(--border); margin-bottom: 1.25rem; }
+    .tab-btn {
+      padding: 0.625rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1.5px;
+      transition: all var(--transition);
+    }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--gold-500); border-bottom-color: var(--gold-400); }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+      .main { padding: 1.5rem; }
+    }
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field.full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ▸ Header -->
+  <header class="header">
+    <a class="header-brand" href="#">
+      <div class="brand-icon">
+        <!-- music note flat icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">弦歌合唱团</span>
+        <span class="brand-sub">Choir Management</span>
+      </div>
+    </a>
+    <div class="header-actions">
+      <button class="header-btn notification-dot" title="通知">
+        <!-- bell icon -->
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <button class="header-btn" title="帮助">
+        <!-- help-circle icon -->
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+      <div class="header-avatar" title="刘音乐 · 团长" onclick="showToast('已打开个人资料', 'success')">刘</div>
+    </div>
+  </header>
+
+  <!-- ▸ Sidebar -->
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-section-label">总览</div>
+      <a class="nav-item active" onclick="setPage('dashboard')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> 仪表盘
+      </a>
+      <a class="nav-item" onclick="setPage('members')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> 团员管理
+        <span class="nav-badge">42</span>
+      </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="nav-section">
+      <div class="nav-section-label">排练</div>
+      <a class="nav-item" onclick="setPage('schedule')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> 排练日历
+      </a>
+      <a class="nav-item" onclick="setPage('attendance')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> 出席记录
+        <span class="nav-badge">3</span>
+      </a>
+      <a class="nav-item" onclick="setPage('repertoire')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> 乐谱库
+      </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="nav-section">
+      <div class="nav-section-label">演出</div>
+      <a class="nav-item" onclick="setPage('performance')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> 演出管理
+      </a>
+      <a class="nav-item" onclick="setPage('finance')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> 财务账目
+      </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="nav-section">
+      <div class="nav-section-label">设置</div>
+      <a class="nav-item" onclick="setPage('settings')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> 团队设置
+      </a>
+    </div>
+  </nav>
+
+  <!-- ▸ Main Content -->
+  <main class="main" id="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="page-title-group">
+        <div class="page-breadcrumb">
+          <span>弦歌合唱团</span>
+          <span>›</span>
+          <span id="breadcrumb-current">仪表盘</span>
+        </div>
+        <h1 class="page-title" id="page-title">团务总览</h1>
+        <p class="page-subtitle" id="page-subtitle">2026年5月 · 第二学期排练周期</p>
+      </div>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn btn-outline" onclick="showToast('导出功能开发中…')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          导出报告
+        </button>
+        <button class="btn btn-primary" onclick="openModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加团员
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">总团员数</div>
+        <div class="stat-value">42</div>
+        <div class="stat-change up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          3 较上月
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">本月出席率</div>
+        <div class="stat-value">87%</div>
+        <div class="stat-change up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          5% 较上月
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">本月排练场数</div>
+        <div class="stat-value">8</div>
+        <div class="stat-change neutral">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          计划10场
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">下次演出</div>
+        <div class="stat-value" style="font-size:1.3rem">6月21日</div>
+        <div class="stat-change neutral">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          还有36天
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="content-grid">
+
+      <!-- Left: Member Table -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <span class="card-title-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            团员名单
+          </span>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-ghost btn-icon" onclick="showToast('切换列表视图')" title="列表视图">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-icon" onclick="showToast('切换卡片视图')" title="卡片视图">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <button class="tab-btn active" onclick="setTab(this,'all')">全部 (42)</button>
+            <button class="tab-btn" onclick="setTab(this,'soprano')">女高音</button>
+            <button class="tab-btn" onclick="setTab(this,'alto')">女低音</button>
+            <button class="tab-btn" onclick="setTab(this,'tenor')">男高音</button>
+            <button class="tab-btn" onclick="setTab(this,'bass')">男低音</button>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <div class="search-box">
+              <span class="search-icon">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input class="search-input" type="text" placeholder="搜索姓名或编号…" oninput="filterTable(this.value)" />
+            </div>
+            <select class="filter-select" onchange="showToast('筛选条件：'+this.options[this.selectedIndex].text)">
+              <option>全部状态</option>
+              <option>在团</option>
+              <option>请假</option>
+              <option>停团</option>
+            </select>
+            <select class="filter-select">
+              <option>全部声部</option>
+              <option>女高音 Soprano</option>
+              <option>次女高音 Mezzo</option>
+              <option>女中音 Alto</option>
+              <option>男高音 Tenor</option>
+              <option>男中音 Baritone</option>
+              <option>男低音 Bass</option>
+            </select>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x:auto">
+            <table class="member-table" id="member-table">
+              <thead>
+                <tr>
+                  <th>团员</th>
+                  <th>声部</th>
+                  <th>入团年份</th>
+                  <th>出席率</th>
+                  <th>状态</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="member-tbody">
+                <!-- rows generated by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination">
+            <span class="page-info">共 42 位团员，显示第 1–10 条</span>
+            <div class="page-controls">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn" onclick="showToast('第2页')">2</button>
+              <button class="page-btn" onclick="showToast('第3页')">3</button>
+              <span style="font-size:.8rem;color:var(--text-muted);padding:0 .25rem">…</span>
+              <button class="page-btn" onclick="showToast('第5页')">5</button>
+              <button class="page-btn" onclick="showToast('下一页')">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+        <!-- Mini Calendar -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><span class="card-title-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> 排练日历</span>
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:.25rem .6rem" onclick="showToast('查看完整日历')">查看全部</button>
+          </div>
+          <div class="card-body">
+            <div class="mini-calendar" id="mini-cal"></div>
+          </div>
+        </div>
+
+        <!-- Upcoming Rehearsals -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><span class="card-title-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> 近期排练</span>
+          </div>
+          <div class="card-body">
+            <div class="rehearsal-list">
+              <div class="rehearsal-item">
+                <div class="rehearsal-date">
+                  <div class="rehearsal-month">MAY</div>
+                  <div class="rehearsal-day">18</div>
+                  <div class="rehearsal-weekday">周一</div>
+                </div>
+                <div class="rehearsal-info">
+                  <span class="rehearsal-type type-regular">常规排练</span>
+                  <div class="rehearsal-title">全团声部合练</div>
+                  <div class="rehearsal-meta">
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>19:00 – 21:00</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>艺术楼 A302</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>预计出席 38 人</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rehearsal-item">
+                <div class="rehearsal-date">
+                  <div class="rehearsal-month">MAY</div>
+                  <div class="rehearsal-day">22</div>
+                  <div class="rehearsal-weekday">周五</div>
+                </div>
+                <div class="rehearsal-info">
+                  <span class="rehearsal-type type-sectional">声部分练</span>
+                  <div class="rehearsal-title">男声部专项训练</div>
+                  <div class="rehearsal-meta">
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>18:30 – 20:00</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>音乐室 B105</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>男声 18 人</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rehearsal-item">
+                <div class="rehearsal-date">
+                  <div class="rehearsal-month">MAY</div>
+                  <div class="rehearsal-day">25</div>
+                  <div class="rehearsal-weekday">周一</div>
+                </div>
+                <div class="rehearsal-info">
+                  <span class="rehearsal-type type-performance">演出彩排</span>
+                  <div class="rehearsal-title">六月汇演全程彩排</div>
+                  <div class="rehearsal-meta">
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>14:00 – 18:00</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>大礼堂主舞台</span>
+                    <span><svg style="display:inline;vertical-align:middle;margin-right:3px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>全体 42 人</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Distribution -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><span class="card-title-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> 声部分布</span>
+          </div>
+          <div class="card-body">
+            <div class="section-chart">
+              <div class="section-row">
+                <span class="section-label">女高音</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:40%;background:linear-gradient(90deg,#f9a8d4,#ec4899)"></div></div>
+                <span class="section-count">10</span>
+              </div>
+              <div class="section-row">
+                <span class="section-label">次女高</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:24%;background:linear-gradient(90deg,#fca5a5,#ef4444)"></div></div>
+                <span class="section-count">6</span>
+              </div>
+              <div class="section-row">
+                <span class="section-label">女低音</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:36%;background:linear-gradient(90deg,#fcd34d,#f59e0b)"></div></div>
+                <span class="section-count">9</span>
+              </div>
+              <div class="section-row">
+                <span class="section-label">男高音</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:32%;background:linear-gradient(90deg,#93c5fd,#3b82f6)"></div></div>
+                <span class="section-count">8</span>
+              </div>
+              <div class="section-row">
+                <span class="section-label">男中音</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:28%;background:linear-gradient(90deg,#a5b4fc,#6366f1)"></div></div>
+                <span class="section-count">7</span>
+              </div>
+              <div class="section-row">
+                <span class="section-label">男低音</span>
+                <div class="section-bar-bg"><div class="section-bar" style="width:8%;background:linear-gradient(90deg,#6ee7b7,#10b981)"></div></div>
+                <span class="section-count">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><span class="card-title-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> 最近动态</span>
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:.25rem .6rem">全部</button>
+          </div>
+          <div class="card-body" style="padding-top:.5rem;padding-bottom:.5rem">
+            <div class="activity-feed">
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#34d399"></div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>陈小慧</strong> 加入了女高音声部</div>
+                  <div class="activity-time">2小时前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:var(--gold-400)"></div>
+                <div class="activity-content">
+                  <div class="activity-text">5月18日排练已更新曲目：《春江花月夜》</div>
+                  <div class="activity-time">昨天 14:32</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#93c5fd"></div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>李大明</strong> 提交了请假申请（5月22日）</div>
+                  <div class="activity-time">昨天 10:05</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#f87171"></div>
+                <div class="activity-content">
+                  <div class="activity-text">5月15日排练出席率：81%，低于预期</div>
+                  <div class="activity-time">5月15日</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /content-grid -->
+
+  </main><!-- /main -->
+
+</div><!-- /app -->
+
+<!-- ─── Add Member Modal ─── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" style="display:flex;align-items:center;gap:.5rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-500)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        添加新团员
+      </span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="section-divider">基本信息</div>
+        <div class="form-field">
+          <label class="form-label">姓名<span class="required">*</span></label>
+          <input class="form-input-styled" type="text" placeholder="请输入真实姓名" id="f-name" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">手机号</label>
+          <input class="form-input-styled" type="tel" placeholder="138 0000 0000" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">电子邮件</label>
+          <input class="form-input-styled" type="email" placeholder="name@example.com" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">入团年份<span class="required">*</span></label>
+          <input class="form-input-styled" type="number" placeholder="2026" value="2026" min="2000" max="2030" />
+        </div>
+
+        <div class="section-divider">音乐信息</div>
+        <div class="form-field">
+          <label class="form-label">声部<span class="required">*</span></label>
+          <select class="form-input-styled" id="f-voice">
+            <option value="">请选择声部</option>
+            <option value="soprano">女高音 Soprano</option>
+            <option value="mezzo">次女高音 Mezzo-Soprano</option>
+            <option value="alto">女低音 Alto</option>
+            <option value="tenor">男高音 Tenor</option>
+            <option value="baritone">男中音 Baritone</option>
+            <option value="bass">男低音 Bass</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">音乐程度</label>
+          <select class="form-input-styled">
+            <option>请选择…</option>
+            <option>初学</option>
+            <option>有一定基础</option>
+            <option>专业水准</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label class="form-label">备注</label>
+          <textarea class="form-input-styled" rows="3" placeholder="特殊技能、排练时间偏好、其他说明…" style="resize:vertical"></textarea>
+          <span class="form-hint">最多 200 字</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitMember()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        确认添加
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  /* ─── Member Data ─── */
+  const VOICE_MAP = {
+    soprano:  { label: '女高音',  cls: 'voice-soprano',  color: '#d97706' },
+    mezzo:    { label: '次女高',  cls: 'voice-mezzo',    color: '#b91c1c' },
+    alto:     { label: '女低音',  cls: 'voice-alto',     color: '#92400e' },
+    tenor:    { label: '男高音',  cls: 'voice-tenor',    color: '#1d4ed8' },
+    baritone: { label: '男中音',  cls: 'voice-baritone', color: '#4338ca' },
+    bass:     { label: '男低音',  cls: 'voice-bass',     color: '#065f46' },
+  };
+  const AVATAR_COLORS = [
+    ['#fef3c7','#d97706'],['#dbeafe','#1d4ed8'],['#d1fae5','#065f46'],
+    ['#ede9fe','#5b21b6'],['#fee2e2','#b91c1c'],['#e0f2fe','#0369a1'],
+  ];
+  const STATUS_MAP = {
+    active:   { label: '在团',   cls: 'status-active' },
+    leave:    { label: '请假中', cls: 'status-leave' },
+    inactive: { label: '停团',   cls: 'status-inactive' },
+  };
+
+  const members = [
+    { id:'CH001', name:'陈小慧', voice:'soprano',  year:2022, att:95, status:'active'   },
+    { id:'CH002', name:'刘音乐', voice:'soprano',  year:2020, att:92, status:'active'   },
+    { id:'CH003', name:'王芳芳', voice:'mezzo',    year:2021, att:88, status:'active'   },
+    { id:'CH004', name:'张丽雯', voice:'alto',     year:2019, att:76, status:'active'   },
+    { id:'CH005', name:'林晓燕', voice:'alto',     year:2023, att:91, status:'active'   },
+    { id:'CH006', name:'李大明', voice:'tenor',    year:2021, att:70, status:'leave'    },
+    { id:'CH007', name:'赵强强', voice:'tenor',    year:2020, att:85, status:'active'   },
+    { id:'CH008', name:'孙浩宇', voice:'baritone', year:2022, att:80, status:'active'   },
+    { id:'CH009', name:'周建国', voice:'bass',     year:2018, att:60, status:'inactive' },
+    { id:'CH010', name:'吴明月', voice:'soprano',  year:2024, att:98, status:'active'   },
+  ];
+
+  let filteredMembers = [...members];
+
+  function renderTable(data) {
+    const tbody = document.getElementById('member-tbody');
+    tbody.innerHTML = data.map((m, i) => {
+      const v = VOICE_MAP[m.voice];
+      const s = STATUS_MAP[m.status];
+      const [bg, fg] = AVATAR_COLORS[i % AVATAR_COLORS.length];
+      const attColor = m.att >= 90 ? '#065f46' : m.att >= 75 ? '#92400e' : '#b91c1c';
+      return `
+        <tr>
+          <td>
+            <div class="member-info">
+              <div class="member-avatar" style="background:${bg};color:${fg}">${m.name[0]}</div>
+              <div>
+                <div class="member-name">${m.name}</div>
+                <div class="member-id">${m.id}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="voice-badge ${v.cls}">${v.label}</span></td>
+          <td style="color:var(--text-secondary);font-size:.875rem">${m.year} 年</td>
+          <td>
+            <span style="font-size:.875rem;font-weight:600;color:${attColor}">${m.att}%</span>
+          </td>
+          <td><span class="status-badge ${s.cls}">${s.label}</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn edit" title="编辑" onclick="showToast('编辑 ${m.name}')">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="action-btn delete" title="移除" onclick="showToast('已移除 ${m.name}', 'error')">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filterTable(q) {
+    const term = q.trim().toLowerCase();
+    filteredMembers = members.filter(m =>
+      m.name.toLowerCase().includes(term) || m.id.toLowerCase().includes(term)
+    );
+    renderTable(filteredMembers);
+  }
+
+  renderTable(members);
+
+  /* ─── Tabs ─── */
+  function setTab(btn, filter) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (filter === 'all') {
+      filteredMembers = [...members];
+    } else {
+      filteredMembers = members.filter(m => m.voice === filter || m.voice.startsWith(filter));
+    }
+    renderTable(filteredMembers);
+  }
+
+  /* ─── Nav ─── */
+  function setPage(page) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    const titles = {
+      dashboard: ['团务总览','2026年5月 · 第二学期排练周期'],
+      members:   ['团员管理','共 42 位在册团员'],
+      schedule:  ['排练日历','2026年5月排练安排'],
+      attendance:['出席记录','近30天考勤汇总'],
+      repertoire:['乐谱库','当前排练曲目管理'],
+      performance:['演出管理','六月汇演倒计时 36 天'],
+      finance:   ['财务账目','2026 年度收支记录'],
+      settings:  ['团队设置','基础信息与权限管理'],
+    };
+    const [title, sub] = titles[page] || ['未知页面',''];
+    document.getElementById('page-title').textContent = title;
+    document.getElementById('page-subtitle').textContent = sub;
+    document.getElementById('breadcrumb-current').textContent = title;
+    showToast('已切换至：' + title);
+  }
+
+  /* ─── Mini Calendar ─── */
+  function renderMiniCal() {
+    const now = new Date(2026, 4, 16); // May 16 2026
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const rehearsalDays = new Set([18,22,25,29]);
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const dows = ['日','一','二','三','四','五','六'];
+
+    let html = `<div class="cal-header">
+      <button class="cal-nav" onclick="showToast('上月')">‹</button>
+      <span class="cal-month">${year}年 ${monthNames[month]}</span>
+      <button class="cal-nav" onclick="showToast('下月')">›</button>
+    </div>
+    <div class="cal-grid">
+      ${dows.map(d => `<div class="cal-dow">${d}</div>`).join('')}`;
+
+    let startOffset = (firstDay === 0 ? 7 : firstDay) - 1; // Mon-start
+    if (startOffset < 0) startOffset = 6;
+
+    for (let i = 0; i < startOffset; i++) {
+      const d = daysInPrev - startOffset + 1 + i;
+      html += `<div class="cal-day other-month">${d}</div>`;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      let cls = 'cal-day';
+      if (d === 16) cls += ' today';
+      if (rehearsalDays.has(d)) cls += ' has-event';
+      html += `<div class="${cls}" onclick="showToast('${month+1}月${d}日${rehearsalDays.has(d)?'：有排练安排':''}')">${d}</div>`;
+    }
+    const remaining = 42 - startOffset - daysInMonth;
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="cal-day other-month">${d}</div>`;
+    }
+    html += '</div>';
+    document.getElementById('mini-cal').innerHTML = html;
+  }
+  renderMiniCal();
+
+  /* ─── Modal ─── */
+  function openModal() {
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function closeModalOnBg(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+  function submitMember() {
+    const name = document.getElementById('f-name').value.trim();
+    const voice = document.getElementById('f-voice').value;
+    if (!name) { showToast('请输入团员姓名', 'error'); return; }
+    if (!voice) { showToast('请选择声部', 'error'); return; }
+    closeModal();
+    showToast(`已添加团员：${name}`, 'success');
+  }
+
+  /* ─── Toast ─── */
+  const TOAST_ICONS = {
+    success: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    default: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  };
+  function showToast(text, type = '') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type ? 'toast-'+type : ''}`;
+    const iconHtml = TOAST_ICONS[type] || TOAST_ICONS.default;
+    toast.innerHTML = `<span class="toast-icon" style="display:inline-flex;align-items:center;">${iconHtml}</span><span class="toast-text">${text}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toast.classList.add('show'));
+    });
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 350);
+    }, 2800);
+  }
+
+  /* ─── Keyboard: ESC closes modal ─── */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+</body>
+</html>

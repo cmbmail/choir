@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极简中式 · 弦歌合唱团</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink-black: #1C1C1C;
+      --ink-gold: #B8860B;
+      --silk-white: #F8F6F0;
+      --silk-cream: #EDE8DC;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+      font-weight: 300;
+      background: var(--silk-white);
+      min-height: 100vh;
+      color: var(--ink-black);
+      padding: 0;
+    }
+    .container { max-width: 100%; }
+
+    /* 极简顶栏 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem 4rem;
+      border-bottom: 1px solid rgba(28, 28, 28, 0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--ink-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: var(--ink-gold);
+      position: relative;
+    }
+    /* 角落装饰 */
+    .corner {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+    }
+    .corner-tl { top: -4px; left: -4px; border-top: 1px solid var(--ink-gold); border-left: 1px solid var(--ink-gold); }
+    .corner-tr { top: -4px; right: -4px; border-top: 1px solid var(--ink-gold); border-right: 1px solid var(--ink-gold); }
+    .corner-bl { bottom: -4px; left: -4px; border-bottom: 1px solid var(--ink-gold); border-left: 1px solid var(--ink-gold); }
+    .corner-br { bottom: -4px; right: -4px; border-bottom: 1px solid var(--ink-gold); border-right: 1px solid var(--ink-gold); }
+    
+    .logo-text {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-gold);
+    }
+    .header-meta {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: rgba(28, 28, 28, 0.4);
+      text-transform: uppercase;
+    }
+    
+    /* 主标题区 */
+    .hero {
+      padding: 6rem 4rem;
+      border-bottom: 1px solid rgba(28, 28, 28, 0.1);
+      position: relative;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--ink-black);
+    }
+    .hero-title span {
+      display: block;
+      font-size: 0.12em;
+      letter-spacing: 0.4em;
+      color: var(--ink-gold);
+      margin-top: 1rem;
+      text-transform: uppercase;
+    }
+    .hero-accent {
+      position: absolute;
+      right: 4rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12rem;
+      font-weight: 300;
+      color: rgba(184, 134, 11, 0.06);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    
+    /* 统计区 */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid rgba(28, 28, 28, 0.1);
+    }
+    .stat-item {
+      padding: 3rem 4rem;
+      border-right: 1px solid rgba(28, 28, 28, 0.1);
+      position: relative;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2px;
+      background: var(--ink-gold);
+      transition: width 0.4s ease;
+    }
+    .stat-item:hover::after { width: 60%; }
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 300;
+      color: var(--ink-black);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--ink-gold);
+      text-transform: uppercase;
+    }
+    
+    /* 表格区 */
+    .table-section {
+      padding: 0 4rem;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem 0;
+      border-bottom: 2px solid var(--ink-black);
+      margin-bottom: 0;
+    }
+    .table-title {
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-black);
+    }
+    .table-meta {
+      font-size: 0.7rem;
+      color: rgba(28, 28, 28, 0.4);
+      letter-spacing: 0.1em;
+    }
+    
+    .member-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .member-table th {
+      padding: 1.5rem 0;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-gold);
+      text-align: left;
+      border-bottom: 1px solid rgba(28, 28, 28, 0.1);
+      background: rgba(237, 232, 220, 0.3);
+    }
+    .member-table td {
+      padding: 1.5rem 0;
+      font-size: 0.9rem;
+      font-weight: 300;
+      border-bottom: 1px solid rgba(28, 28, 28, 0.08);
+      color: var(--ink-black);
+    }
+    .member-table tr:last-child td { border-bottom: none; }
+    .member-table tr:hover td { background: rgba(184, 134, 11, 0.05); }
+    
+    .voice-tag {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 0.3rem 0.8rem;
+      border: 1px solid var(--ink-gold);
+      color: var(--ink-gold);
+    }
+    
+    .status-text {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: rgba(28, 28, 28, 0.5);
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 3rem 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(28, 28, 28, 0.1);
+      margin-top: 4rem;
+    }
+    .footer-text {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--ink-gold);
+      text-transform: uppercase;
+    }
+    .footer-line {
+      width: 60px;
+      height: 1px;
+      background: rgba(184, 134, 11, 0.3);
+    }
+    
+    @media (max-width: 768px) {
+      .header, .hero, .stat-item, .table-section, .footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .stat-item { padding: 2rem 1.5rem; border-bottom: 1px solid rgba(28, 28, 28, 0.1); }
+      .stat-item:nth-child(2) { border-right: none; }
+      .hero { padding: 3rem 1.5rem; }
+      .hero-accent { display: none; }
+      .footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <span class="corner corner-tl"></span>
+          <span class="corner corner-tr"></span>
+          <span class="corner corner-bl"></span>
+          <span class="corner corner-br"></span>
+          ♪
+        </div>
+        <span class="logo-text">弦歌合唱团</span>
+      </div>
+      <span class="header-meta">Choir Management System</span>
+    </header>
+    
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title">
+        极简中式
+        <span>Choir Management</span>
+      </h1>
+      <div class="hero-accent">10</div>
+    </section>
+    
+    <!-- Stats -->
+    <section class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Members</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Voices</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">83%</div>
+        <div class="stat-label">Attendance</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Active</div>
+      </div>
+    </section>
+    
+    <!-- Table -->
+    <section class="table-section">
+      <div class="table-header">
+        <span class="table-title">Member List</span>
+        <span class="table-meta">共 10 人</span>
+      </div>
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Voice</th>
+            <th>Year</th>
+            <th>Attendance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="memberTableBody"></tbody>
+      </table>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      <span class="footer-text">极简中式 · 弦歌合唱团管理系统 · 2026</span>
+      <div class="footer-line"></div>
+    </footer>
+  </div>
+  
+  <script>
+    const VOICE_MAP = {
+      soprano: '女高音', mezzo: '女中音', alto: '女低音',
+      tenor: '男高音', baritone: '男中音', bass: '男低音'
+    };
+    const members = [
+      {id:'CH001',name:'陈小慧',voice:'soprano',year:2022,att:95,status:'active'},
+      {id:'CH002',name:'刘音乐',voice:'soprano',year:2020,att:92,status:'active'},
+      {id:'CH003',name:'王芳芳',voice:'mezzo',year:2021,att:88,status:'active'},
+      {id:'CH004',name:'张丽雯',voice:'alto',year:2019,att:76,status:'active'},
+      {id:'CH005',name:'林晓燕',voice:'alto',year:2023,att:91,status:'active'},
+      {id:'CH006',name:'李大明',voice:'tenor',year:2021,att:70,status:'leave'},
+      {id:'CH007',name:'赵强强',voice:'tenor',year:2020,att:85,status:'active'},
+      {id:'CH008',name:'孙浩宇',voice:'baritone',year:2022,att:80,status:'active'},
+      {id:'CH009',name:'周建国',voice:'bass',year:2018,att:60,status:'inactive'},
+      {id:'CH010',name:'吴明月',voice:'soprano',year:2024,att:98,status:'active'},
+    ];
+    
+    const tbody = document.getElementById('memberTableBody');
+    const STATUS_TEXT = { active: 'Active', leave: 'Leave', inactive: 'Inactive' };
+    tbody.innerHTML = members.map(m => `
+      <tr>
+        <td>${m.id}</td>
+        <td>${m.name}</td>
+        <td><span class="voice-tag">${VOICE_MAP[m.voice]}</span></td>
+        <td>${m.year}</td>
+        <td>${m.att}%</td>
+        <td><span class="status-text">${STATUS_TEXT[m.status]}</span></td>
+      </tr>
+    `).join('');
+  </script>
+</body>
+</html>

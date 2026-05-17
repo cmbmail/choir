@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<title>弦歌合唱团</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --gold-100:#fdf6e3;--gold-200:#f5e6b2;--gold-300:#e8c66e;--gold-400:#c9a227;--gold-500:#a07820;--gold-600:#7a5a14;
+  --navy-50:#f2f4f8;--navy-100:#dde3ee;--navy-200:#b8c3d8;--navy-500:#3d5280;--navy-700:#243060;--navy-900:#0e1a40;
+  --cream-bg:#faf8f4;--cream-card:#fffdf9;--border:#e8e2d8;
+  --text-primary:#1c1a18;--text-secondary:#5a5548;--text-muted:#9c9490;
+  --success:#3a7d44;--warning:#c07a1e;--error:#b03030;
+  --radius-sm:0.25rem;--radius-md:0.5rem;--radius-lg:0.75rem;--radius-xl:1.25rem;
+  --font-serif:'Playfair Display','Noto Serif SC',serif;
+  --font-sans:'Source Sans 3','PingFang SC',sans-serif;--transition:200ms ease;
+  --tab-h:64px;--status-bar:44px;
+}
+*,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font-sans);background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
+button{cursor:pointer;border:none;background:none;font:inherit;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--gold-400);outline-offset:2px}
+
+/* Phone frame */
+.phone-frame-outer{min-height:100vh;background:#1a1a2e;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
+.phone-frame{width:390px;height:844px;background:var(--cream-bg);border-radius:48px;box-shadow:0 0 0 12px #2d2d44,0 30px 80px rgba(0,0,0,.6);overflow:hidden;position:relative;display:flex;flex-direction:column}
+@media(min-width:500px){body{background:#1a1a2e;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}}
+@media(max-width:460px){.phone-frame-outer{padding:0;min-height:100vh}.phone-frame{width:100%;height:100vh;height:100dvh;border-radius:0;box-shadow:none}}
+
+/* Status bar */
+.status-bar{height:var(--status-bar);background:var(--navy-900);display:flex;align-items:flex-end;justify-content:space-between;padding:0 1.5rem 0.5rem;flex-shrink:0;color:#fff}
+.status-time{font-size:.875rem;font-weight:600;letter-spacing:.02em;color:#fff}
+.status-icons{display:flex;align-items:center;gap:.375rem}
+.status-icons svg{width:14px;height:14px;fill:#fff}
+
+/* App bar */
+.app-bar{background:var(--navy-900);padding:0.625rem 1.25rem 0.875rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(201,162,39,.2)}
+.app-bar-brand{display:flex;align-items:center;gap:0.625rem}
+.brand-icon-sm{width:32px;height:32px;background:linear-gradient(135deg,var(--gold-300),var(--gold-500));border-radius:10px;display:grid;place-items:center;box-shadow:0 0 0 2px rgba(201,162,39,.3)}
+.brand-icon-sm svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.app-bar-title{font-family:var(--font-serif);font-size:1.05rem;font-weight:600;color:var(--gold-300);letter-spacing:.03em}
+.app-bar-subtitle{font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase}
+.app-bar-actions{display:flex;align-items:center;gap:0.25rem}
+.app-bar-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;color:rgba(255,255,255,.7);transition:all var(--transition)}
+.app-bar-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.app-bar-btn:active{background:rgba(255,255,255,.1)}
+.notif-dot{position:relative}
+.notif-dot::after{content:'';position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--gold-400);border-radius:50%;border:1.5px solid var(--navy-900)}
+.avatar-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy-500),var(--navy-700));border:1.5px solid var(--gold-400);display:grid;place-items:center;font-family:var(--font-serif);font-size:.75rem;font-weight:600;color:var(--gold-300);cursor:pointer}
+
+/* Page sections */
+.page-section{display:none;padding-bottom:calc(var(--tab-h) + 1rem)}
+.page-section.active{display:block}
+.page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.page-scroll::-webkit-scrollbar{display:none}
+
+/* Greeting banner */
+.greeting-banner{background:linear-gradient(135deg,var(--navy-700) 0%,var(--navy-900) 100%);padding:1.25rem 1.25rem 3rem;position:relative;overflow:hidden}
+.greeting-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(201,162,39,.08)}
+.greeting-text{font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:.25rem}
+.greeting-name{font-family:var(--font-serif);font-size:1.4rem;font-weight:600;color:#fff;line-height:1.3}
+.greeting-name span{color:var(--gold-300)}
+.greeting-badge{display:inline-flex;align-items:center;gap:.35rem;margin-top:.6rem;padding:.25rem .625rem;background:rgba(201,162,39,.2);border:1px solid rgba(201,162,39,.3);border-radius:99px;font-size:.7rem;color:var(--gold-300);font-weight:500}
+.greeting-badge svg{width:10px;height:10px;stroke:var(--gold-300);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Stats strip */
+.stats-strip{margin:-1.75rem 1rem 0;display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;position:relative;z-index:2}
+.stat-mini{background:var(--cream-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:.875rem 1rem;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.stat-mini::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold-300),var(--gold-500))}
+.stat-mini-label{font-size:.65rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.35rem}
+.stat-mini-value{font-family:var(--font-serif);font-size:1.6rem;font-weight:700;color:var(--navy-900);line-height:1}
+.stat-mini-sub{font-size:.65rem;color:var(--text-muted);margin-top:.25rem}
+.stat-mini-icon{position:absolute;right:.75rem;bottom:.625rem;opacity:.08}
+.stat-mini-icon svg{width:32px;height:32px;stroke:var(--navy-700);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* Next rehearsal */
+.next-rehearsal{margin:1.25rem 1rem 0;background:var(--navy-900);border-radius:var(--radius-xl);padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+.next-rehearsal::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(201,162,39,.07)}
+.rehearsal-countdown{text-align:center;flex-shrink:0}
+.rehearsal-days{font-family:var(--font-serif);font-size:2rem;font-weight:700;color:var(--gold-300);line-height:1}
+.rehearsal-days-label{font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em}
+.rehearsal-divider{width:1px;height:44px;background:rgba(255,255,255,.1)}
+.rehearsal-detail{flex:1}
+.rehearsal-type-tag{display:inline-flex;padding:.15rem .5rem;background:rgba(201,162,39,.2);border-radius:99px;font-size:.62rem;color:var(--gold-300);font-weight:600;margin-bottom:.25rem}
+.rehearsal-name{font-weight:500;color:#fff;font-size:.875rem}
+.rehearsal-time{font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.15rem;display:flex;align-items:center;gap:.3rem}
+.rehearsal-time svg{width:11px;height:11px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rehearsal-go{width:36px;height:36px;border-radius:50%;background:rgba(201,162,39,.2);display:grid;place-items:center;flex-shrink:0;transition:all var(--transition)}
+.rehearsal-go svg{width:16px;height:16px;stroke:var(--gold-300);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rehearsal-go:active{background:rgba(201,162,39,.35)}
+
+/* Quick actions */
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;padding:0 1rem;margin-top:1.25rem}
+.quick-action{display:flex;flex-direction:column;align-items:center;gap:.4rem;cursor:pointer}
+.quick-action-icon{width:52px;height:52px;border-radius:var(--radius-xl);display:grid;place-items:center;transition:transform var(--transition)}
+.quick-action-icon:active{transform:scale(.92)}
+.quick-action-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.quick-action-label{font-size:.65rem;font-weight:500;color:var(--text-secondary);text-align:center;white-space:nowrap}
+.qa-blue{background:#dbeafe;color:#1d4ed8}
+.qa-gold{background:var(--gold-100);color:var(--gold-600)}
+.qa-green{background:#d1fae5;color:var(--success)}
+.qa-purple{background:#ede9fe;color:#5b21b6}
+
+/* Section head */
+.section-head{padding:1.25rem 1.25rem 0.75rem;display:flex;align-items:center;justify-content:space-between}
+.section-head-title{font-family:var(--font-serif);font-size:1.1rem;font-weight:600;color:var(--navy-900)}
+.section-head-link{font-size:.75rem;color:var(--gold-500);font-weight:500}
+
+/* m-card */
+.m-card{margin:0 1rem;background:var(--cream-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-xs)}
+.m-card + .m-card{margin-top:.875rem}
+.m-card-header{padding:.875rem 1.125rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.m-card-title{font-family:var(--font-serif);font-size:.9rem;font-weight:600;color:var(--navy-900);display:flex;align-items:center;gap:.4rem}
+.m-card-title svg{width:14px;height:14px;stroke:var(--gold-500);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.m-card-more{font-size:.72rem;color:var(--gold-500);font-weight:500}
+
+/* Member row (home) */
+.member-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.125rem;border-bottom:1px solid rgba(232,226,216,.5);transition:background var(--transition)}
+.member-row:last-child{border-bottom:none}
+.member-row:active{background:var(--gold-100)}
+.m-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-serif);font-size:.875rem;font-weight:600;flex-shrink:0;border:1.5px solid rgba(201,162,39,.2)}
+.m-info{flex:1;min-width:0}
+.m-name{font-weight:500;font-size:.875rem;color:var(--text-primary)}
+.m-meta{font-size:.7rem;color:var(--text-muted);margin-top:.1rem}
+.m-right{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem}
+.m-att{font-size:.75rem;font-weight:600}
+.m-chevron{color:var(--text-muted)}
+.m-chevron svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Voice badges */
+.vb{display:inline-flex;padding:.1rem .45rem;border-radius:99px;font-size:.6rem;font-weight:600}
+.vb-soprano{background:#fce7f3;color:#9d174d}
+.vb-mezzo{background:#ffe4e6;color:#9f1239}
+.vb-alto{background:#fef3c7;color:#92400e}
+.vb-tenor{background:#dbeafe;color:#1e40af}
+.vb-baritone{background:#e0e7ff;color:#3730a3}
+.vb-bass{background:#d1fae5;color:#065f46}
+
+/* Status dot */
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot-active{background:var(--success)}
+.dot-leave{background:var(--warning)}
+.dot-inactive{background:var(--text-muted)}
+
+/* Activity */
+.activity-row{display:flex;gap:.75rem;padding:.75rem 1.125rem;border-bottom:1px solid rgba(232,226,216,.5)}
+.activity-row:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:.45rem;flex-shrink:0}
+.act-text{font-size:.8rem;color:var(--text-secondary);line-height:1.5;flex:1}
+.act-text strong{color:var(--text-primary);font-weight:500}
+.act-time{font-size:.67rem;color:var(--text-muted);margin-top:.15rem}
+
+/* MEMBERS PAGE */
+.search-bar{padding:.875rem 1rem;position:sticky;top:0;background:var(--cream-bg);z-index:10;border-bottom:1px solid var(--border)}
+.search-inner{position:relative}
+.search-inner svg{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.search-inner input{width:100%;padding:.625rem .75rem .625rem 2.25rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);font-size:.875rem;background:var(--cream-card);color:var(--text-primary);transition:all var(--transition)}
+.search-inner input:focus{outline:none;border-color:var(--gold-400);box-shadow:0 0 0 3px rgba(201,162,39,.12)}
+.search-inner input::placeholder{color:var(--text-muted)}
+
+/* Segment control */
+.segment{display:flex;gap:0;padding:0 1rem .875rem;overflow-x:auto;scrollbar-width:none}
+.segment::-webkit-scrollbar{display:none}
+.seg-btn{flex-shrink:0;padding:.4rem .875rem;font-size:.78rem;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;white-space:nowrap;transition:all var(--transition);background:none;border-top:none;border-left:none;border-right:none}
+.seg-btn.active{color:var(--gold-500);border-bottom-color:var(--gold-400)}
+.seg-btn:active{opacity:.7}
+
+.members-list{padding:0 0 .5rem}
+.member-list-item{display:flex;align-items:center;gap:.875rem;padding:.875rem 1.25rem;border-bottom:1px solid rgba(232,226,216,.5);transition:background var(--transition)}
+.member-list-item:active{background:var(--gold-100)}
+.ml-avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-serif);font-size:.9rem;font-weight:600;flex-shrink:0;border:1.5px solid rgba(201,162,39,.2)}
+.ml-info{flex:1;min-width:0}
+.ml-name{font-weight:500;font-size:.9rem;color:var(--text-primary)}
+.ml-sub{font-size:.72rem;color:var(--text-muted);margin-top:.1rem;display:flex;align-items:center;gap:.375rem}
+.ml-right{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem}
+.ml-att{font-size:.78rem;font-weight:600}
+.ml-chevron svg{width:14px;height:14px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* FAB */
+.fab{position:absolute;bottom:calc(var(--tab-h) + 1.25rem);right:1.25rem;width:52px;height:52px;background:linear-gradient(135deg,var(--gold-400),var(--gold-500));border-radius:50%;display:grid;place-items:center;box-shadow:0 4px 14px rgba(201,162,39,.45);z-index:20;transition:all var(--transition)}
+.fab:active{transform:scale(.92);box-shadow:0 2px 8px rgba(201,162,39,.3)}
+.fab svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* SCHEDULE PAGE */
+.schedule-month-header{padding:.875rem 1.25rem .5rem;display:flex;align-items:center;justify-content:space-between}
+.month-label{font-family:var(--font-serif);font-size:1.05rem;font-weight:600;color:var(--navy-900)}
+.month-nav{display:flex;gap:.375rem}
+.month-nav-btn{width:30px;height:30px;border-radius:var(--radius-md);display:grid;place-items:center;color:var(--text-muted);transition:all var(--transition);background:none}
+.month-nav-btn:active{background:var(--navy-50);color:var(--navy-700)}
+.month-nav-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.cal-full{padding:0 1rem}
+.cal-dows{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:.25rem}
+.cal-dow{text-align:center;font-size:.65rem;font-weight:600;color:var(--text-muted);padding:.25rem 0}
+.cal-days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--radius-md);cursor:pointer;position:relative;transition:all var(--transition)}
+.cal-cell:active{background:var(--gold-100)}
+.cal-cell-num{font-size:.82rem;color:var(--text-secondary);font-weight:400;line-height:1}
+.cal-cell.other-month .cal-cell-num{color:var(--text-muted);opacity:.4}
+.cal-cell.today{background:var(--navy-900);border-radius:var(--radius-md)}
+.cal-cell.today .cal-cell-num{color:#fff;font-weight:600}
+.cal-cell.has-event::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--gold-400)}
+.cal-cell.today.has-event::after{background:var(--gold-300)}
+.cal-cell.selected{background:rgba(201,162,39,.12)}
+.cal-cell.selected .cal-cell-num{color:var(--gold-600);font-weight:600}
+
+.rehearsal-cards{padding:1rem 1rem 0}
+.rehearsal-card{display:flex;gap:.875rem;padding:.875rem;background:var(--cream-card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:.75rem;box-shadow:var(--shadow-xs)}
+.rc-date{flex-shrink:0;width:44px;background:linear-gradient(135deg,var(--navy-700),var(--navy-900));border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.5rem 0}
+.rc-month{font-size:.55rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-300)}
+.rc-day{font-family:var(--font-serif);font-size:1.4rem;font-weight:700;color:#fff;line-height:1}
+.rc-weekday{font-size:.55rem;color:rgba(255,255,255,.45);margin-top:.1rem}
+.rc-info{flex:1;min-width:0}
+.rc-tag{display:inline-flex;padding:.1rem .45rem;border-radius:99px;font-size:.6rem;font-weight:600;margin-bottom:.2rem}
+.tag-regular{background:var(--navy-50);color:var(--navy-500)}
+.tag-performance{background:var(--gold-100);color:var(--gold-600)}
+.tag-sectional{background:#f0fdf4;color:var(--success)}
+.rc-title{font-weight:500;font-size:.875rem;color:var(--text-primary)}
+.rc-meta{font-size:.7rem;color:var(--text-muted);margin-top:.2rem;display:flex;flex-wrap:wrap;gap:.5rem}
+.rc-meta span{display:flex;align-items:center;gap:.2rem}
+.rc-meta svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ATTENDANCE PAGE */
+.checkin-hero{background:linear-gradient(135deg,var(--navy-700) 0%,var(--navy-900) 100%);padding:1.5rem 1.25rem;text-align:center}
+.checkin-date{font-size:.75rem;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.25rem}
+.checkin-event{font-family:var(--font-serif);font-size:1.2rem;font-weight:600;color:#fff;margin-bottom:.5rem}
+.checkin-progress-wrap{display:flex;align-items:center;justify-content:center;gap:.75rem;margin-bottom:1rem}
+.checkin-num{font-family:var(--font-serif);font-size:2.5rem;font-weight:700;color:var(--gold-300);line-height:1}
+.checkin-sep{font-size:1.5rem;color:rgba(255,255,255,.3)}
+.checkin-total{font-family:var(--font-serif);font-size:1.5rem;color:rgba(255,255,255,.4)}
+.checkin-pct{font-size:.8rem;color:var(--gold-300);margin-bottom:.75rem}
+.progress-bar-outer{height:6px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin:0 auto 1rem;max-width:240px}
+.progress-bar-inner{height:100%;background:linear-gradient(90deg,var(--gold-300),var(--gold-400));border-radius:99px;transition:width 1s ease}
+.checkin-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1.5rem;background:linear-gradient(135deg,var(--gold-400),var(--gold-500));color:#fff;border-radius:99px;font-size:.875rem;font-weight:600;box-shadow:0 4px 12px rgba(201,162,39,.4);transition:all var(--transition)}
+.checkin-btn:active{transform:scale(.96)}
+.checkin-btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+.att-tabs{display:flex;padding:.875rem 1rem 0;gap:.5rem}
+.att-tab{flex:1;padding:.5rem;font-size:.75rem;font-weight:500;border:1.5px solid var(--border);border-radius:var(--radius-lg);color:var(--text-muted);background:var(--cream-card);text-align:center;transition:all var(--transition);cursor:pointer}
+.att-tab.active{border-color:var(--gold-400);color:var(--gold-600);background:var(--gold-100)}
+.att-tab:active{opacity:.75}
+
+.att-member-row{display:flex;align-items:center;gap:.875rem;padding:.75rem 1.25rem;border-bottom:1px solid rgba(232,226,216,.5)}
+.att-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-serif);font-size:.85rem;font-weight:600;flex-shrink:0;border:1.5px solid rgba(201,162,39,.2)}
+.att-info{flex:1}
+.att-name{font-weight:500;font-size:.875rem;color:var(--text-primary)}
+.att-voice{font-size:.7rem;color:var(--text-muted);margin-top:.1rem}
+.att-status-btn{width:70px;padding:.3rem 0;border-radius:var(--radius-lg);font-size:.7rem;font-weight:600;text-align:center;border:1.5px solid;transition:all var(--transition);cursor:pointer}
+.att-status-btn.present{background:#d1fae5;color:var(--success);border-color:#6ee7b7}
+.att-status-btn.absent{background:#fee2e2;color:var(--error);border-color:#fca5a5}
+.att-status-btn.leave{background:#fef3c7;color:var(--warning);border-color:#fcd34d}
+.att-status-btn.unmarked{background:var(--cream-bg);color:var(--text-muted);border-color:var(--border)}
+.att-status-btn:active{opacity:.7}
+
+/* PROFILE PAGE */
+.profile-hero{background:linear-gradient(135deg,var(--navy-700),var(--navy-900));padding:2rem 1.25rem 3.5rem;text-align:center;position:relative}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--navy-500),var(--navy-700));border:3px solid var(--gold-400);display:grid;place-items:center;font-family:var(--font-serif);font-size:1.75rem;font-weight:600;color:var(--gold-300);margin:0 auto .875rem;box-shadow:0 0 0 6px rgba(201,162,39,.15)}
+.profile-name{font-family:var(--font-serif);font-size:1.3rem;font-weight:600;color:#fff}
+.profile-role{font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.2rem}
+.profile-badges{display:flex;justify-content:center;gap:.5rem;margin-top:.75rem}
+.p-badge{padding:.2rem .625rem;border-radius:99px;font-size:.65rem;font-weight:600}
+.p-badge-gold{background:rgba(201,162,39,.25);color:var(--gold-300);border:1px solid rgba(201,162,39,.3)}
+.p-badge-blue{background:rgba(61,82,128,.5);color:var(--navy-200);border:1px solid rgba(61,82,128,.3)}
+
+.profile-stats-strip{display:grid;grid-template-columns:repeat(3,1fr);margin:-1.75rem 1rem 0;background:var(--cream-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm);position:relative;z-index:2}
+.ps-item{padding:.875rem .75rem;text-align:center;border-right:1px solid var(--border)}
+.ps-item:last-child{border-right:none}
+.ps-value{font-family:var(--font-serif);font-size:1.25rem;font-weight:700;color:var(--navy-900)}
+.ps-label{font-size:.62rem;color:var(--text-muted);margin-top:.1rem;text-transform:uppercase;letter-spacing:.04em}
+
+.profile-menu{margin:1.25rem 1rem 0;background:var(--cream-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.profile-menu-item{display:flex;align-items:center;gap:.875rem;padding:.875rem 1.125rem;border-bottom:1px solid rgba(232,226,216,.5);transition:background var(--transition);cursor:pointer}
+.profile-menu-item:last-child{border-bottom:none}
+.profile-menu-item:active{background:var(--gold-100)}
+.pmi-icon{width:36px;height:36px;border-radius:var(--radius-md);display:grid;place-items:center}
+.pmi-icon svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.pmi-label{flex:1;font-size:.875rem;font-weight:500;color:var(--text-primary)}
+.pmi-arrow svg{width:14px;height:14px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pmi-icon-blue{background:#dbeafe;color:#1d4ed8}
+.pmi-icon-gold{background:var(--gold-100);color:var(--gold-600)}
+.pmi-icon-green{background:#d1fae5;color:var(--success)}
+.pmi-icon-red{background:#fee2e2;color:var(--error)}
+.pmi-icon-purple{background:#ede9fe;color:#5b21b6}
+.pmi-icon-gray{background:var(--navy-50);color:var(--navy-500)}
+
+/* Tab bar */
+.tab-bar{height:var(--tab-h);background:var(--cream-card);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch;flex-shrink:0;box-shadow:0 -2px 12px rgba(14,26,64,.06)}
+.tab-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;color:var(--text-muted);cursor:pointer;transition:all var(--transition);position:relative;background:none;border:none;padding:0}
+.tab-item:active{background:rgba(201,162,39,.05)}
+.tab-item.active{color:var(--gold-500)}
+.tab-item.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--gold-400);border-radius:0 0 2px 2px}
+.tab-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tab-item.active .tab-icon svg{stroke-width:2}
+.tab-label{font-size:.62rem;font-weight:500;letter-spacing:.01em}
+.tab-badge{position:absolute;top:8px;right:calc(50% - 18px);background:var(--gold-400);color:#fff;font-size:.58rem;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--cream-card)}
+
+/* Toast */
+.m-toast-container{position:absolute;bottom:calc(var(--tab-h) + .75rem);left:1rem;right:1rem;z-index:300;display:flex;flex-direction:column;gap:.4rem;pointer-events:none}
+.m-toast{display:flex;align-items:center;gap:.5rem;padding:.625rem .875rem;background:var(--navy-900);color:#fff;border-radius:var(--radius-lg);font-size:.8rem;box-shadow:var(--shadow-lg);border-left:3px solid var(--gold-400);transform:translateY(10px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:auto}
+.m-toast.show{transform:translateY(0);opacity:1}
+.m-toast.toast-success{border-left-color:#34d399}
+.m-toast.toast-error{border-left-color:#f87171}
+.m-toast svg{flex-shrink:0}
+
+/* Bottom sheet */
+.sheet-overlay{position:absolute;inset:0;background:rgba(14,26,64,.4);backdrop-filter:blur(3px);z-index:200;opacity:0;visibility:hidden;transition:all .25s ease}
+.sheet-overlay.open{opacity:1;visibility:visible}
+.sheet{position:absolute;bottom:0;left:0;right:0;background:var(--cream-card);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding-bottom:1.5rem;transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.28,.64,1);max-height:90%;overflow-y:auto}
+.sheet-overlay.open .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:99px;margin:.75rem auto 0}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem .75rem;border-bottom:1px solid var(--border)}
+.sheet-title{font-family:var(--font-serif);font-size:1rem;font-weight:600;color:var(--navy-900);display:flex;align-items:center;gap:.4rem}
+.sheet-title svg{width:16px;height:16px;stroke:var(--gold-500);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.sheet-close{width:28px;height:28px;border-radius:var(--radius-md);display:grid;place-items:center;color:var(--text-muted);background:none;cursor:pointer}
+.sheet-close:active{background:var(--navy-50)}
+.sheet-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sheet-body{padding:1rem 1.25rem 0}
+.form-row{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.875rem}
+.form-row label{font-size:.72rem;font-weight:600;color:var(--text-secondary);letter-spacing:.04em}
+.form-row input,.form-row select,.form-row textarea{padding:.625rem .75rem;border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:.875rem;background:var(--cream-bg);color:var(--text-primary);transition:all var(--transition);width:100%}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--gold-400);box-shadow:0 0 0 3px rgba(201,162,39,.1)}
+.form-row textarea{resize:vertical}
+.sheet-footer{display:grid;grid-template-columns:1fr 1.5fr;gap:.75rem;padding:.875rem 1.25rem 0}
+.btn-sheet-cancel{padding:.625rem;border:1.5px solid var(--border);border-radius:var(--radius-lg);font-size:.875rem;color:var(--text-secondary);background:var(--cream-card);text-align:center;cursor:pointer}
+.btn-sheet-cancel:active{background:var(--navy-50)}
+.btn-sheet-submit{padding:.625rem;border-radius:var(--radius-lg);font-size:.875rem;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--gold-400),var(--gold-500));text-align:center;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer;border:none}
+.btn-sheet-submit:active{opacity:.85}
+.btn-sheet-submit svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+
+<div class="phone-frame-outer">
+<div class="phone-frame" id="app">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="status-time">11:00</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="2" y="15" width="3" height="6" rx="0.5" fill="white" opacity="0.4"/><rect x="7" y="11" width="3" height="10" rx="0.5" fill="white" opacity="0.6"/><rect x="12" y="7" width="3" height="14" rx="0.5" fill="white" opacity="0.8"/><rect x="17" y="3" width="3" height="18" rx="0.5" fill="white"/></svg>
+      <div style="width:22px;height:11px;border:1.5px solid rgba(255,255,255,.8);border-radius:2.5px;position:relative;display:flex;align-items:center;padding:1.5px"><div style="height:100%;width:75%;background:#fff;border-radius:1px"></div><div style="position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:2px;height:5px;background:rgba(255,255,255,.8);border-radius:0 1px 1px 0"></div></div>
+    </div>
+  </div>
+
+  <!-- App bar -->
+  <div class="app-bar">
+    <div class="app-bar-brand">
+      <div class="brand-icon-sm">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <div>
+        <div class="app-bar-title">弦歌合唱团</div>
+        <div class="app-bar-subtitle">Choir Management</div>
+      </div>
+    </div>
+    <div class="app-bar-actions">
+      <button class="app-bar-btn notif-dot" onclick="mToast('您有 3 条未读通知')">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <div class="avatar-sm" onclick="switchPage('profile')">刘</div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="page-scroll" id="page-scroll">
+
+    <!-- HOME PAGE -->
+    <div class="page-section active" id="page-home">
+      <div class="greeting-banner">
+        <div class="greeting-text">早上好，</div>
+        <div class="greeting-name">刘音乐 <span>团长</span></div>
+        <div class="greeting-badge">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          六月汇演倒计时 36 天
+        </div>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stat-mini">
+          <div class="stat-mini-label">总团员</div>
+          <div class="stat-mini-value">42</div>
+          <div class="stat-mini-sub">&uarr; 较上月 +3</div>
+          <div class="stat-mini-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">出席率</div>
+          <div class="stat-mini-value">87%</div>
+          <div class="stat-mini-sub">&uarr; 较上月 +5%</div>
+          <div class="stat-mini-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">本月排练</div>
+          <div class="stat-mini-value">8</div>
+          <div class="stat-mini-sub">计划 10 场</div>
+          <div class="stat-mini-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">待审批</div>
+          <div class="stat-mini-value">3</div>
+          <div class="stat-mini-sub">假期申请</div>
+          <div class="stat-mini-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        </div>
+      </div>
+
+      <div class="next-rehearsal" onclick="switchPage('schedule')">
+        <div class="rehearsal-countdown">
+          <div class="rehearsal-days">2</div>
+          <div class="rehearsal-days-label">天后</div>
+        </div>
+        <div class="rehearsal-divider"></div>
+        <div class="rehearsal-detail">
+          <div class="rehearsal-type-tag">常规排练</div>
+          <div class="rehearsal-name">全团声部合练</div>
+          <div class="rehearsal-time">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            周一 · 5月18日 · 19:00–21:00
+          </div>
+        </div>
+        <div class="rehearsal-go">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <div class="quick-action" onclick="switchPage('attend')">
+          <div class="quick-action-icon qa-blue"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="quick-action-label">签到</div>
+        </div>
+        <div class="quick-action" onclick="openSheet()">
+          <div class="quick-action-icon qa-gold"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+          <div class="quick-action-label">新增团员</div>
+        </div>
+        <div class="quick-action" onclick="switchPage('schedule')">
+          <div class="quick-action-icon qa-green"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="quick-action-label">日历</div>
+        </div>
+        <div class="quick-action" onclick="mToast('导出报告功能开发中…')">
+          <div class="quick-action-icon qa-purple"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div class="quick-action-label">导出</div>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:.5rem">
+        <div class="section-head-title">近期团员动态</div>
+        <div class="section-head-link" onclick="switchPage('members')">查看全部</div>
+      </div>
+      <div class="m-card"><div id="home-members-list"></div></div>
+
+      <div class="section-head">
+        <div class="section-head-title">最近动态</div>
+      </div>
+      <div class="m-card" style="margin-bottom:0">
+        <div class="activity-row"><div class="act-dot" style="background:#34d399"></div><div class="act-text"><strong>陈小慧</strong> 加入了女高音声部</div><div class="act-time">2小时前</div></div>
+        <div class="activity-row"><div class="act-dot" style="background:var(--gold-400)"></div><div class="act-text">5月18日排练已更新曲目：《春江花月夜》</div><div class="act-time">昨天 14:32</div></div>
+        <div class="activity-row"><div class="act-dot" style="background:#93c5fd"></div><div class="act-text"><strong>李大明</strong> 提交了请假申请（5月22日）</div><div class="act-time">昨天 10:05</div></div>
+        <div class="activity-row"><div class="act-dot" style="background:#f87171"></div><div class="act-text">5月15日排练出席率：81%，低于预期</div><div class="act-time">5月15日</div></div>
+      </div>
+    </div>
+
+    <!-- MEMBERS PAGE -->
+    <div class="page-section" id="page-members">
+      <div class="search-bar">
+        <div class="search-inner">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="搜索姓名或编号…" oninput="filterMemberList(this.value)" />
+        </div>
+      </div>
+      <div class="segment" id="member-tabs">
+        <button class="seg-btn active" onclick="setMemberTab(this,'all')">全部 (42)</button>
+        <button class="seg-btn" onclick="setMemberTab(this,'soprano')">女高音</button>
+        <button class="seg-btn" onclick="setMemberTab(this,'alto')">女低音</button>
+        <button class="seg-btn" onclick="setMemberTab(this,'tenor')">男高音</button>
+        <button class="seg-btn" onclick="setMemberTab(this,'bass')">男低音</button>
+      </div>
+      <div class="members-list" id="members-list"></div>
+    </div>
+
+    <!-- SCHEDULE PAGE -->
+    <div class="page-section" id="page-schedule">
+      <div class="schedule-month-header">
+        <div class="month-label">2026 年 5 月</div>
+        <div class="month-nav">
+          <button class="month-nav-btn" onclick="mToast('上月')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="month-nav-btn" onclick="mToast('下月')"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+      <div class="cal-full" id="mobile-cal"></div>
+      <div class="rehearsal-cards">
+        <div class="m-card-header" style="padding:.5rem 0 .75rem;border:none">
+          <span class="m-card-title"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>本月排练安排</span>
+        </div>
+        <div class="rehearsal-card">
+          <div class="rc-date"><div class="rc-month">MAY</div><div class="rc-day">18</div><div class="rc-weekday">周一</div></div>
+          <div class="rc-info"><div class="rc-tag tag-regular">常规排练</div><div class="rc-title">全团声部合练</div><div class="rc-meta"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>19:00–21:00</span><span><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>艺术楼 A302</span></div></div>
+        </div>
+        <div class="rehearsal-card">
+          <div class="rc-date"><div class="rc-month">MAY</div><div class="rc-day">22</div><div class="rc-weekday">周五</div></div>
+          <div class="rc-info"><div class="rc-tag tag-sectional">声部分练</div><div class="rc-title">男声部专项训练</div><div class="rc-meta"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>18:30–20:00</span><span><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>音乐室 B105</span></div></div>
+        </div>
+        <div class="rehearsal-card">
+          <div class="rc-date"><div class="rc-month">MAY</div><div class="rc-day">25</div><div class="rc-weekday">周一</div></div>
+          <div class="rc-info"><div class="rc-tag tag-performance">演出彩排</div><div class="rc-title">六月汇演全程彩排</div><div class="rc-meta"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>14:00–18:00</span><span><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>大礼堂主舞台</span></div></div>
+        </div>
+        <div class="rehearsal-card">
+          <div class="rc-date"><div class="rc-month">MAY</div><div class="rc-day">29</div><div class="rc-weekday">周五</div></div>
+          <div class="rc-info"><div class="rc-tag tag-regular">常规排练</div><div class="rc-title">汇演前最终合排</div><div class="rc-meta"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>19:00–21:00</span><span><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>艺术楼 A302</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE PAGE -->
+    <div class="page-section" id="page-attend">
+      <div class="checkin-hero">
+        <div class="checkin-date">2026年5月16日 · 周六</div>
+        <div class="checkin-event">全团声部合练</div>
+        <div class="checkin-progress-wrap">
+          <div class="checkin-num" id="ci-checked">31</div>
+          <div class="checkin-sep">/</div>
+          <div class="checkin-total">42</div>
+        </div>
+        <div class="checkin-pct" id="ci-pct">已签到 73.8%</div>
+        <div class="progress-bar-outer"><div class="progress-bar-inner" id="ci-bar" style="width:73.8%"></div></div>
+        <button class="checkin-btn" onclick="doCheckIn()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          标记我已出席
+        </button>
+      </div>
+      <div class="att-tabs">
+        <button class="att-tab active" onclick="setAttTab(this,'all')">全部 (42)</button>
+        <button class="att-tab" onclick="setAttTab(this,'present')">已到 (31)</button>
+        <button class="att-tab" onclick="setAttTab(this,'absent')">缺席 (8)</button>
+        <button class="att-tab" onclick="setAttTab(this,'leave')">请假 (3)</button>
+      </div>
+      <div id="att-list" style="margin-top:.5rem;background:var(--cream-card);border-top:1px solid var(--border)"></div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div class="page-section" id="page-profile">
+      <div class="profile-hero">
+        <div class="profile-avatar">刘</div>
+        <div class="profile-name">刘音乐</div>
+        <div class="profile-role">团长 · 女高音 Soprano</div>
+        <div class="profile-badges">
+          <span class="p-badge p-badge-gold">资深团员</span>
+          <span class="p-badge p-badge-blue">团长</span>
+        </div>
+      </div>
+      <div class="profile-stats-strip">
+        <div class="ps-item"><div class="ps-value">92%</div><div class="ps-label">出席率</div></div>
+        <div class="ps-item"><div class="ps-value">6年</div><div class="ps-label">团龄</div></div>
+        <div class="ps-item"><div class="ps-value">24</div><div class="ps-label">参演场次</div></div>
+      </div>
+      <div class="section-head" style="margin-top:1.25rem"><div class="section-head-title">我的</div></div>
+      <div class="profile-menu">
+        <div class="profile-menu-item" onclick="mToast('个人资料设置')"><div class="pmi-icon pmi-icon-blue"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="pmi-label">个人资料</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="profile-menu-item" onclick="mToast('出席记录')"><div class="pmi-icon pmi-icon-green"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pmi-label">我的出席记录</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="profile-menu-item" onclick="mToast('请假申请')"><div class="pmi-icon pmi-icon-gold"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="pmi-label">提交请假申请</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="profile-menu-item" onclick="mToast('乐谱库')"><div class="pmi-icon pmi-icon-purple"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="pmi-label">乐谱库</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      </div>
+      <div class="section-head" style="margin-top:.75rem"><div class="section-head-title">系统</div></div>
+      <div class="profile-menu">
+        <div class="profile-menu-item" onclick="mToast('通知设置')"><div class="pmi-icon pmi-icon-gray"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="pmi-label">通知设置</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="profile-menu-item" onclick="mToast('帮助与反馈')"><div class="pmi-icon pmi-icon-gray"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="pmi-label">帮助与反馈</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="profile-menu-item" onclick="mToast('即将登出…','error')"><div class="pmi-icon pmi-icon-red"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="pmi-label" style="color:var(--error)">退出登录</div><div class="pmi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      </div>
+    </div>
+
+  </div><!-- /page-scroll -->
+
+  <!-- FAB -->
+  <button class="fab" id="fab" style="display:none" onclick="openSheet()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-item active" id="tab-home" onclick="switchPage('home')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <span class="tab-label">首页</span>
+    </button>
+    <button class="tab-item" id="tab-members" onclick="switchPage('members')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <span class="tab-badge" id="members-badge" style="display:none">42</span>
+      <span class="tab-label">团员</span>
+    </button>
+    <button class="tab-item" id="tab-schedule" onclick="switchPage('schedule')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <span class="tab-badge" style="display:flex;top:8px">4</span>
+      <span class="tab-label">排练</span>
+    </button>
+    <button class="tab-item" id="tab-attend" onclick="switchPage('attend')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <span class="tab-badge" id="att-badge" style="display:none">3</span>
+      <span class="tab-label">出席</span>
+    </button>
+  </div>
+
+  <!-- Bottom sheet (Add Member) -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheetOnBg(event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span class="sheet-title">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          添加新团员
+        </span>
+        <button class="sheet-close" onclick="closeSheet()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="sheet-body">
+        <div class="form-row"><label>姓名 <span style="color:var(--error)">*</span></label><input type="text" placeholder="请输入真实姓名" id="m-name" /></div>
+        <div class="form-row"><label>手机号</label><input type="tel" placeholder="138 0000 0000" /></div>
+        <div class="form-row"><label>声部 <span style="color:var(--error)">*</span></label>
+          <select id="m-voice">
+            <option value="">请选择声部</option>
+            <option value="soprano">女高音 Soprano</option>
+            <option value="mezzo">次女高音 Mezzo</option>
+            <option value="alto">女低音 Alto</option>
+            <option value="tenor">男高音 Tenor</option>
+            <option value="baritone">男中音 Baritone</option>
+            <option value="bass">男低音 Bass</option>
+          </select>
+        </div>
+        <div class="form-row"><label>备注</label><textarea rows="2" placeholder="特殊说明（可选）"></textarea></div>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn-sheet-cancel" onclick="closeSheet()">取消</button>
+        <button class="btn-sheet-submit" onclick="submitSheet()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          确认添加
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="m-toast-container" id="m-toast-container"></div>
+
+</div><!-- /phone-frame -->
+</div><!-- /phone-frame-outer -->
+
+<script>
+const VOICE_MAP = {
+  soprano:{label:'女高音',cls:'vb-soprano'},
+  mezzo:{label:'次女高',cls:'vb-mezzo'},
+  alto:{label:'女低音',cls:'vb-alto'},
+  tenor:{label:'男高音',cls:'vb-tenor'},
+  baritone:{label:'男中音',cls:'vb-baritone'},
+  bass:{label:'男低音',cls:'vb-bass'},
+};
+const AVATAR_COLORS=[['#fef3c7','#d97706'],['#dbeafe','#1d4ed8'],['#d1fae5','#065f46'],['#ede9fe','#5b21b6'],['#fee2e2','#b91c1c'],['#e0f2fe','#0369a1']];
+const members=[
+  {id:'CH001',name:'陈小慧',voice:'soprano',year:2022,att:95,status:'active'},
+  {id:'CH002',name:'刘音乐',voice:'soprano',year:2020,att:92,status:'active'},
+  {id:'CH003',name:'王芳芳',voice:'mezzo',year:2021,att:88,status:'active'},
+  {id:'CH004',name:'张丽雯',voice:'alto',year:2019,att:76,status:'active'},
+  {id:'CH005',name:'林晓燕',voice:'alto',year:2023,att:91,status:'active'},
+  {id:'CH006',name:'李大明',voice:'tenor',year:2021,att:70,status:'leave'},
+  {id:'CH007',name:'赵强强',voice:'tenor',year:2020,att:85,status:'active'},
+  {id:'CH008',name:'孙浩宇',voice:'baritone',year:2022,att:80,status:'active'},
+  {id:'CH009',name:'周建国',voice:'bass',year:2018,att:60,status:'inactive'},
+  {id:'CH010',name:'吴明月',voice:'soprano',year:2024,att:98,status:'active'},
+];
+const attData=[
+  {name:'陈小慧',voice:'soprano',status:'present'},
+  {name:'刘音乐',voice:'soprano',status:'present'},
+  {name:'王芳芳',voice:'mezzo',status:'present'},
+  {name:'张丽雯',voice:'alto',status:'absent'},
+  {name:'林晓燕',voice:'alto',status:'present'},
+  {name:'李大明',voice:'tenor',status:'leave'},
+  {name:'赵强强',voice:'tenor',status:'present'},
+  {name:'孙浩宇',voice:'baritone',status:'absent'},
+  {name:'周建国',voice:'bass',status:'absent'},
+  {name:'吴明月',voice:'soprano',status:'present'},
+];
+
+/* Render home members */
+function renderHomeMembers(){
+  const el=document.getElementById('home-members-list');
+  el.innerHTML=members.slice(0,5).map((m,i)=>{
+    const v=VOICE_MAP[m.voice];
+    const [bg,fg]=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const attC=m.att>=90?'#065f46':m.att>=75?'#92400e':'#b91c1c';
+    const dotCls=m.status==='active'?'dot-active':m.status==='leave'?'dot-leave':'dot-inactive';
+    return '<div class="member-row" onclick="mToast(\'查看 '+m.name+' 的详情\')">'
+      +'<div class="m-avatar" style="background:'+bg+';color:'+fg+'">'+m.name[0]+'</div>'
+      +'<div class="m-info"><div class="m-name">'+m.name+'</div>'
+      +'<div class="m-meta"><span class="vb '+v.cls+'">'+v.label+'</span> · '+m.id+'</div></div>'
+      +'<div class="m-right"><span class="m-att" style="color:'+attC+'">'+m.att+'%</span>'
+      +'<span class="status-dot '+dotCls+'"></span></div>'
+      +'<div class="m-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>';
+  }).join('');
+}
+
+/* Member list page */
+let memberFilter='all', memberSearch='';
+function renderMemberList(){
+  let data=[...members];
+  if(memberFilter!=='all') data=data.filter(m=>m.voice===memberFilter);
+  if(memberSearch) data=data.filter(m=>m.name.includes(memberSearch)||m.id.toLowerCase().includes(memberSearch.toLowerCase()));
+  const el=document.getElementById('members-list');
+  el.innerHTML=data.map((m,i)=>{
+    const v=VOICE_MAP[m.voice];
+    const [bg,fg]=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const attC=m.att>=90?'#065f46':m.att>=75?'#92400e':'#b91c1c';
+    const dotCls=m.status==='active'?'dot-active':m.status==='leave'?'dot-leave':'dot-inactive';
+    return '<div class="member-list-item" onclick="mToast(\'查看 '+m.name+' 的详情\')">'
+      +'<div class="ml-avatar" style="background:'+bg+';color:'+fg+'">'+m.name[0]+'</div>'
+      +'<div class="ml-info"><div class="ml-name">'+m.name+'</div>'
+      +'<div class="ml-sub"><span class="vb '+v.cls+'">'+v.label+'</span>'
+      +'<span class="status-dot '+dotCls+'" style="margin:0 2px"></span>'
+      +m.id+' · '+m.year+'年入团</div></div>'
+      +'<div class="ml-right"><span class="ml-att" style="color:'+attC+'">'+m.att+'%</span>'
+      +'<div class="ml-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div></div>';
+  }).join('')||'<div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem">未找到匹配团员</div>';
+}
+function filterMemberList(q){memberSearch=q.trim();renderMemberList()}
+function setMemberTab(btn,filter){
+  document.querySelectorAll('#member-tabs .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');memberFilter=filter;renderMemberList();
+}
+
+/* Mobile calendar */
+function renderMobileCal(){
+  const year=2026, month=4;
+  const rehearsalDays=new Set([18,22,25,29]);
+  let fd=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysInPrev=new Date(year,month,0).getDate();
+  let html='<div class="cal-dows"><div class="cal-dow">日</div><div class="cal-dow">一</div><div class="cal-dow">二</div><div class="cal-dow">三</div><div class="cal-dow">四</div><div class="cal-dow">五</div><div class="cal-dow">六</div></div>';
+  html+='<div class="cal-days-grid">';
+  for(let i=0;i<fd;i++){html+='<div class="cal-cell other-month"><span class="cal-cell-num">'+(daysInPrev-fd+1+i)+'</span></div>'}
+  for(let d=1;d<=daysInMonth;d++){
+    let cls='cal-cell';
+    if(d===16) cls+=' today';
+    if(rehearsalDays.has(d)) cls+=' has-event';
+    html+='<div class="'+cls+'" onclick="calDayClick('+d+','+rehearsalDays.has(d)+')"><span class="cal-cell-num">'+d+'</span></div>';
+  }
+  const total=fd+daysInMonth, rem=total%7===0?0:7-(total%7);
+  for(let d=1;d<=rem;d++){html+='<div class="cal-cell other-month"><span class="cal-cell-num">'+d+'</span></div>'}
+  html+='</div>';
+  document.getElementById('mobile-cal').innerHTML=html;
+}
+function calDayClick(d,hasEvent){
+  document.querySelectorAll('.cal-cell').forEach(c=>c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  if(hasEvent) mToast('5月'+d+'日有排练安排','success');
+  else mToast('5月'+d+'日暂无排练安排');
+}
+
+/* Attendance */
+let attFilter='all', ciChecked=31;
+function renderAttList(){
+  let data=attFilter==='all'?[...attData]:attData.filter(a=>a.status===attFilter);
+  const labels={present:'已到',absent:'缺席',leave:'请假'};
+  const el=document.getElementById('att-list');
+  el.innerHTML=data.map((a,i)=>{
+    const v=VOICE_MAP[a.voice];
+    const [bg,fg]=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    return '<div class="att-member-row">'
+      +'<div class="att-avatar" style="background:'+bg+';color:'+fg+'">'+a.name[0]+'</div>'
+      +'<div class="att-info"><div class="att-name">'+a.name+'</div>'
+      +'<div class="att-voice"><span class="vb '+v.cls+'">'+v.label+'</span></div></div>'
+      +'<button class="att-status-btn '+a.status+'" onclick="toggleAttStatus(this)">'+labels[a.status]+'</button></div>';
+  }).join('');
+}
+function setAttTab(btn,filter){
+  document.querySelectorAll('.att-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');attFilter=filter;renderAttList();
+}
+function doCheckIn(){
+  ciChecked=Math.min(ciChecked+1,42);
+  const pct=(ciChecked/42*100).toFixed(1);
+  document.getElementById('ci-checked').textContent=ciChecked;
+  document.getElementById('ci-pct').textContent='已签到 '+pct+'%';
+  document.getElementById('ci-bar').style.width=pct+'%';
+  mToast('签到成功！','success');
+}
+function toggleAttStatus(btn){
+  const statuses=['present','absent','leave'];
+  const labels={present:'已到',absent:'缺席',leave:'请假'};
+  let cur=statuses.indexOf(btn.className.replace('att-status-btn ',''));
+  let next=statuses[(cur+1)%statuses.length];
+  btn.className='att-status-btn '+next;
+  btn.textContent=labels[next];
+  mToast('已标记为：'+labels[next]);
+}
+
+/* Page navigation */
+const PAGES=['home','members','schedule','attend','profile'];
+let currentPage='home';
+function switchPage(p){
+  if(!PAGES.includes(p)) return;
+  currentPage=p;
+  document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('tab-'+p);
+  if(tab) tab.classList.add('active');
+  document.getElementById('fab').style.display=p==='members'?'grid':'none';
+  document.getElementById('page-scroll').scrollTop=0;
+}
+
+/* Sheet */
+function openSheet(){
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('page-scroll').style.overflow='hidden';
+}
+function closeSheet(){
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('page-scroll').style.overflow='';
+}
+function closeSheetOnBg(e){
+  if(e.target===document.getElementById('sheet-overlay')) closeSheet();
+}
+function submitSheet(){
+  const name=document.getElementById('m-name').value.trim();
+  const voice=document.getElementById('m-voice').value;
+  if(!name){mToast('请输入团员姓名','error');return}
+  if(!voice){mToast('请选择声部','error');return}
+  closeSheet();
+  mToast('已添加团员：'+name,'success');
+}
+
+/* Toast */
+const TOAST_ICONS={
+  success:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+  default:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+};
+function mToast(text,type){
+  const c=document.getElementById('m-toast-container');
+  const t=document.createElement('div');
+  t.className='m-toast '+(type?'toast-'+type:'');
+  t.innerHTML=(TOAST_ICONS[type]||TOAST_ICONS.default)+' <span>'+text+'</span>';
+  c.appendChild(t);
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>t.classList.add('show'))});
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350)},2600);
+}
+
+/* Init */
+renderHomeMembers();
+renderMemberList();
+renderMobileCal();
+renderAttList();
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+</script>
+</body>
+</html>

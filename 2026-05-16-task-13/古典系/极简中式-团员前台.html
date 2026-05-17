@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>弦歌合唱团 · 团员前台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+:root{
+  --bg-sidebar:#1C1C1C;
+  --bg-sidebar-hover:rgba(255,255,255,0.08);
+  --bg-sidebar-active:rgba(184,134,11,0.12);
+  --text-sidebar:#ffffffcc;
+  --text-sidebar-muted:#ffffff55;
+  --accent:#B8860B;
+  --accent-light:#D4A84B;
+  --border-sidebar:rgba(255,255,255,0.08);
+  --ink-black:#1C1C1C;
+  --ink-gold:#B8860B;
+  --silk-white:#F8F6F0;
+  --silk-cream:#EDE8DC;
+  --border:rgba(28,28,28,0.1);
+  --border-gold:rgba(184,134,11,0.3);
+  --text-primary:#1C1C1C;
+  --text-secondary:#5a5548;
+  --text-muted:#9c9490;
+  --success:#3a7d44;
+  --font-mono:'Space Grotesk','Noto Sans SC',sans-serif;
+  --transition:200ms ease;
+  --sidebar-width:240px;
+  --sidebar-collapsed:68px;
+  --header-height:64px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{min-height:100vh;font-family:var(--font-mono);font-weight:300;background:var(--silk-white);color:var(--text-primary);overflow-x:hidden}
+
+/* === SIDEBAR === */
+.sidebar{
+  position:fixed;left:0;top:0;
+  width:var(--sidebar-width);height:100vh;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border-sidebar);
+  display:flex;flex-direction:column;
+  z-index:100;transition:width 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.sidebar.collapsed{width:var(--sidebar-collapsed)}
+
+.logo{
+  height:var(--header-height);
+  display:flex;align-items:center;
+  padding:0 20px;gap:12px;
+  border-bottom:1px solid var(--border-sidebar);
+  overflow:hidden;flex-shrink:0;
+}
+.logo-icon{
+  width:36px;height:36px;flex-shrink:0;
+  border:1.5px solid var(--accent);border-radius:4px;
+  display:grid;place-items:center;
+  font-size:1rem;color:var(--accent);position:relative;
+}
+.logo-icon::before,.logo-icon::after{
+  content:'';position:absolute;width:5px;height:5px;
+}
+.logo-icon::before{top:-3px;left:-3px;border-top:1px solid var(--accent);border-left:1px solid var(--accent);}
+.logo-icon::after{bottom:-3px;right:-3px;border-bottom:1px solid var(--accent);border-right:1px solid var(--accent);}
+.logo-text{
+  font-family:var(--font-mono);font-size:14px;font-weight:500;
+  color:var(--text-sidebar);white-space:nowrap;
+  opacity:1;transition:opacity 0.2s;
+  letter-spacing:0.08em;
+}
+.sidebar.collapsed .logo-text{opacity:0;width:0;overflow:hidden}
+
+.nav-menu{flex:1;padding:12px 12px;overflow-y:auto;overflow-x:hidden}
+.nav-menu::-webkit-scrollbar{width:4px}
+.nav-menu::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:99px}
+
+/* Nav item with toggle inside */
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:6px;
+  color:var(--text-sidebar-muted);text-decoration:none;
+  margin-bottom:2px;transition:all var(--transition);
+  cursor:pointer;position:relative;overflow:hidden;
+  font-size:14px;font-weight:400;letter-spacing:0.03em;
+}
+.nav-item:hover{background:var(--bg-sidebar-hover);color:#fff}
+.nav-item.active{background:var(--bg-sidebar-active);color:var(--accent)}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:50%;
+  transform:translateY(-50%);
+  width:3px;height:20px;
+  background:var(--accent);border-radius:0 3px 3px 0;
+}
+
+/* First nav item with toggle button inside */
+.nav-item-first{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:6px;
+  color:var(--text-sidebar-muted);text-decoration:none;
+  margin-bottom:2px;transition:all var(--transition);
+  cursor:pointer;position:relative;overflow:hidden;
+  font-size:14px;font-weight:400;letter-spacing:0.03em;
+}
+.nav-item-first:hover{background:var(--bg-sidebar-hover);color:#fff}
+.nav-item-first.active{background:var(--bg-sidebar-active);color:var(--accent)}
+.nav-item-first.active::before{
+  content:'';position:absolute;left:28px;top:50%;
+  transform:translateY(-50%);
+  width:3px;height:20px;
+  background:var(--accent);border-radius:0 3px 3px 0;
+}
+
+/* Toggle button inside first nav item */
+.nav-toggle-btn{
+  width:24px;height:24px;flex-shrink:0;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+  border-radius:4px;color:var(--text-sidebar-muted);
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--transition);cursor:pointer;
+  margin-left:auto;
+}
+.nav-toggle-btn:hover{background:var(--bg-sidebar-hover);color:#fff}
+.nav-toggle-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+.nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-text{white-space:nowrap;opacity:1;transition:opacity 0.2s;font-weight:400}
+.sidebar.collapsed .nav-text{opacity:0;width:0;overflow:hidden}
+
+.nav-divider{height:1px;background:var(--border-sidebar);margin:12px 8px}
+
+/* Sidebar user card at bottom */
+.sidebar-user-bottom{
+  padding:16px 20px;border-top:1px solid var(--border-sidebar);
+  display:flex;align-items:center;gap:12px;overflow:hidden;
+  transition:padding 0.3s;flex-shrink:0;
+}
+.sidebar.collapsed .sidebar-user-bottom{padding:16px 0;justify-content:center}
+.sidebar-user-avatar{
+  width:36px;height:36px;border-radius:6px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--ink-gold),#d97706);
+  display:grid;place-items:center;
+  font-size:0.85rem;font-weight:500;color:#fff;
+}
+.sidebar-user-info{overflow:hidden;white-space:nowrap;transition:opacity 0.2s}
+.sidebar.collapsed .sidebar-user-info{opacity:0;width:0;overflow:hidden}
+.sidebar-user-name{font-size:0.85rem;font-weight:400;color:var(--text-sidebar)}
+.sidebar-user-voice{font-size:0.65rem;color:var(--text-sidebar-muted);letter-spacing:0.05em;margin-top:2px}
+
+/* === MAIN LAYOUT === */
+.main-content{
+  margin-left:var(--sidebar-width);min-height:100vh;
+  transition:margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.sidebar.collapsed ~ .main-content{margin-left:var(--sidebar-collapsed)}
+
+/* === HEADER === */
+.header{
+  height:var(--header-height);
+  background:var(--silk-white);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:sticky;top:0;z-index:50;
+}
+.header-left{display:flex;align-items:center;gap:16px}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-muted)}
+.breadcrumb-sep{color:var(--text-muted);opacity:0.5}
+.breadcrumb-current{color:var(--text-primary);font-weight:400}
+
+.header-right{display:flex;align-items:center;gap:12px}
+.search-box{
+  display:flex;align-items:center;gap:10px;
+  background:var(--silk-white);border:1px solid var(--border);
+  border-radius:6px;padding:8px 14px;width:220px;transition:all var(--transition);
+}
+.search-box:focus-within{border-color:var(--ink-gold);box-shadow:0 0 0 3px rgba(184,134,11,0.08)}
+.search-box svg{width:16px;height:16px;stroke:var(--text-muted);fill:none;flex-shrink:0}
+.search-box input{background:none;border:none;outline:none;color:var(--text-primary);font-size:14px;width:100%;font-family:var(--font-mono)}
+.search-box input::placeholder{color:var(--text-muted)}
+
+.header-btn{
+  width:38px;height:38px;border-radius:6px;
+  background:var(--silk-white);border:1px solid var(--border);
+  color:var(--text-muted);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;transition:all var(--transition);
+}
+.header-btn:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+.header-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.notif-dot::after{
+  content:'';position:absolute;top:7px;right:7px;
+  width:8px;height:8px;background:var(--ink-gold);border-radius:50%;
+  border:2px solid var(--silk-white);
+}
+
+/* User dropdown menu */
+.user-dropdown{position:relative}
+.user-avatar{
+  width:36px;height:36px;border-radius:6px;
+  background:var(--ink-black);border:1px solid var(--ink-gold);
+  display:grid;place-items:center;
+  font-size:14px;font-weight:500;color:var(--ink-gold);cursor:pointer;transition:all var(--transition);
+}
+.user-avatar:hover{border-color:var(--accent-light)}
+.user-dropdown-menu{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--silk-white);border:1px solid var(--border);
+  border-radius:6px;box-shadow:0 4px 16px rgba(28,28,28,0.12);
+  min-width:160px;opacity:0;visibility:hidden;
+  transform:translateY(-8px);transition:all 0.2s ease;
+  z-index:200;
+}
+.user-dropdown.open .user-dropdown-menu{
+  opacity:1;visibility:visible;transform:translateY(0);
+}
+.dropdown-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;font-size:14px;color:var(--text-primary);
+  cursor:pointer;transition:background var(--transition);
+}
+.dropdown-item:hover{background:rgba(184,134,11,0.06)}
+.dropdown-item:first-child{border-radius:6px 6px 0 0}
+.dropdown-item:last-child{border-radius:0 0 6px 6px}
+.dropdown-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dropdown-item.danger{color:var(--error)}
+.dropdown-item.danger:hover{background:rgba(176,48,48,0.06)}
+.dropdown-divider{height:1px;background:var(--border);margin:4px 0}
+
+/* Confirm modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;visibility:hidden;transition:all 0.2s ease;
+}
+.modal-overlay.show{opacity:1;visibility:visible}
+.modal-box{
+  background:var(--silk-white);border-radius:8px;
+  padding:24px;max-width:360px;width:90%;
+  transform:scale(0.95);transition:transform 0.2s ease;
+}
+.modal-overlay.show .modal-box{transform:scale(1)}
+.modal-title{font-size:1rem;font-weight:500;color:var(--ink-black);margin-bottom:12px}
+.modal-text{font-size:0.9rem;color:var(--text-secondary);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:12px;justify-content:flex-end}
+.modal-btn{
+  padding:8px 20px;border-radius:6px;font-size:14px;
+  cursor:pointer;transition:all var(--transition);
+  font-family:var(--font-mono);
+}
+.modal-btn-cancel{
+  background:var(--silk-white);border:1px solid var(--border);
+  color:var(--text-primary);
+}
+.modal-btn-cancel:hover{background:var(--silk-cream)}
+.modal-btn-confirm{
+  background:var(--error);border:1px solid var(--error);
+  color:#fff;
+}
+.modal-btn-confirm:hover{background:#9b2525}
+
+/* === PAGE CONTENT === */
+.page-content{padding:24px;max-width:1200px}
+.page-header{margin-bottom:24px}
+.page-title{font-size:1.5rem;font-weight:300;color:var(--ink-black);letter-spacing:0.05em;margin-bottom:6px}
+.page-subtitle{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.05em}
+
+/* === STAT CARDS (personal) === */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px}
+.stat-card{
+  background:var(--silk-white);border:1px solid var(--border);
+  border-radius:6px;padding:20px;position:relative;overflow:hidden;transition:all var(--transition);
+}
+.stat-card:hover{border-color:var(--border-gold);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card:nth-child(1)::before{background:var(--ink-gold)}
+.stat-card:nth-child(2)::before{background:var(--success)}
+.stat-card:nth-child(3)::before{background:#3b82f6}
+
+.stat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stat-icon{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.stat-card:nth-child(1) .stat-icon{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.stat-card:nth-child(2) .stat-icon{background:rgba(58,125,68,0.1);color:var(--success)}
+.stat-card:nth-child(3) .stat-icon{background:rgba(59,130,246,0.1);color:#3b82f6}
+.stat-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stat-value{font-size:1.75rem;font-weight:300;color:var(--ink-black);letter-spacing:-0.02em}
+.stat-label{font-size:0.75rem;color:var(--text-secondary);margin-top:4px}
+
+/* === CONTENT GRID === */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* === CARD === */
+.card{background:var(--silk-white);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:0.9rem;font-weight:400;color:var(--ink-black);letter-spacing:0.05em;display:flex;align-items:center;gap:0.5rem}
+.card-title svg{width:14px;height:14px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+.card-link{font-size:0.75rem;color:var(--ink-gold);font-weight:400;cursor:pointer;transition:color var(--transition)}
+.card-link:hover{color:var(--ink-gold-light)}
+.card-body{padding:16px}
+
+/* === REHEARSAL LIST === */
+.r-list{display:flex;flex-direction:column;gap:12px}
+.r-card{display:flex;gap:14px;padding:14px;background:var(--silk-white);border:1px solid var(--border);border-radius:6px;transition:all var(--transition);cursor:pointer}
+.r-card:hover{border-color:var(--ink-gold);box-shadow:0 4px 12px rgba(28,28,28,0.06)}
+.r-date{flex-shrink:0;width:52px;background:var(--ink-black);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0}
+.r-month{font-size:0.5rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-gold)}
+.r-day{font-size:1.5rem;font-weight:300;color:var(--silk-white);line-height:1}
+.r-weekday{font-size:0.5rem;color:rgba(255,255,255,0.35);margin-top:2px}
+.r-info{flex:1;min-width:0}
+.r-tag{display:inline-flex;padding:2px 8px;border-radius:2px;font-size:0.6rem;font-weight:400;margin-bottom:4px}
+.tag-regular{background:rgba(59,130,246,0.1);color:#3b82f6}
+.tag-performance{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.r-title{font-weight:400;font-size:0.85rem;color:var(--text-primary)}
+.r-meta{font-size:0.68rem;color:var(--text-muted);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;font-weight:300}
+.r-meta span{display:flex;align-items:center;gap:4px}
+.r-meta svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* === ATTENDANCE TABLE === */
+.att-table{width:100%;border-collapse:collapse}
+.att-table th{
+  text-align:left;padding:10px 14px;
+  font-size:0.6rem;font-weight:400;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--ink-gold);
+  border-bottom:1px solid var(--border);background:rgba(237,232,220,0.2);
+}
+.att-table td{padding:12px 14px;border-bottom:1px solid rgba(28,28,28,0.05);font-size:0.85rem;vertical-align:middle}
+.att-table tr:last-child td{border-bottom:none}
+.att-table tbody tr{transition:background var(--transition)}
+.att-table tbody tr:hover{background:rgba(184,134,11,0.04)}
+
+.att-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:4px;font-size:0.75rem;font-weight:400}
+.att-status.present{background:rgba(58,125,68,0.08);color:var(--success)}
+.att-status.absent{background:rgba(176,48,48,0.08);color:var(--error)}
+.att-status.leave{background:rgba(192,122,30,0.08);color:var(--warning)}
+.att-status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* === QUICK ACTIONS === */
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.quick-action{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:18px 12px;background:var(--silk-white);border:1px solid var(--border);
+  border-radius:6px;cursor:pointer;transition:all var(--transition);
+  text-align:center;
+}
+.quick-action:hover{border-color:var(--ink-gold);background:rgba(184,134,11,0.03)}
+.quick-action-icon{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.quick-action:nth-child(1) .quick-action-icon{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.quick-action:nth-child(2) .quick-action-icon{background:rgba(59,130,246,0.1);color:#3b82f6}
+.quick-action:nth-child(3) .quick-action-icon{background:rgba(58,125,68,0.1);color:var(--success)}
+.quick-action:nth-child(4) .quick-action-icon{background:rgba(139,92,246,0.1);color:#8b5cf6}
+.quick-action-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.quick-action-label{font-size:0.8rem;font-weight:400;color:var(--text-primary)}
+
+/* === RESPONSIVE === */
+@media(max-width:1200px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .content-grid{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .main-content{margin-left:0 !important}
+  .stats-grid{grid-template-columns:1fr}
+  .search-box{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">♪</div>
+    <span class="logo-text">弦歌合唱团</span>
+  </div>
+
+  <nav class="nav-menu">
+    <a href="#" class="nav-item-first active" id="homeItem">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
+      <span class="nav-text">我的首页</span>
+      <button class="nav-toggle-btn" id="toggleBtn" title="收起/展开侧边栏">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+      <span class="nav-text">排练日程</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+      <span class="nav-text">演出信息</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+      <span class="nav-text">乐谱资料</span>
+    </a>
+
+    <div class="nav-divider"></div>
+
+    <a href="#" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+      <span class="nav-text">我的请假</span>
+    </a>
+  </nav>
+
+  <!-- User card at bottom -->
+  <div class="sidebar-user-bottom">
+    <div class="sidebar-user-avatar">陈</div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name">陈小慧</div>
+      <div class="sidebar-user-voice">女高音 · 2022年入团</div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="breadcrumb">
+        <span>首页</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">我的首页</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="搜索曲目、排练..."/>
+      </div>
+      <div class="header-actions" style="display:flex;gap:8px">
+        <button class="header-btn" title="通知">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-avatar" id="userAvatar" title="陈小慧">陈</div>
+        <div class="user-dropdown-menu">
+          <div class="dropdown-item" id="changePwdBtn">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>修改密码</span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" id="logoutBtn">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>退出登录</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <div class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">陈小慧</h1>
+      <p class="page-subtitle">女高音声部 · 2022年入团 · 本月出席率 95%</p>
+    </div>
+
+    <!-- Personal Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">95%</div>
+        <div class="stat-label">我的出席率</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">4<small style="font-size:0.8rem;font-weight:300;color:var(--text-muted)"> /6</small></div>
+        <div class="stat-label">本月排练出勤</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">2</div>
+        <div class="stat-label">待参加演出</div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+      <!-- Upcoming Rehearsals -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            近期排练
+          </span>
+          <span class="card-link">查看全部 →</span>
+        </div>
+        <div class="card-body">
+          <div class="r-list" id="r-list"></div>
+        </div>
+      </div>
+
+      <!-- My Attendance -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            近期出勤记录
+          </span>
+          <span class="card-link">查看详情 →</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table class="att-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>类型</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="att-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="margin-top:24px">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            快捷操作
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <div class="quick-action">
+              <div class="quick-action-icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <span class="quick-action-label">我要请假</span>
+            </div>
+            <div class="quick-action">
+              <div class="quick-action-icon">
+                <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+              <span class="quick-action-label">查看乐谱</span>
+            </div>
+            <div class="quick-action">
+              <div class="quick-action-icon">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="quick-action-label">排练签到</span>
+            </div>
+            <div class="quick-action">
+              <div class="quick-action-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <span class="quick-action-label">演出预告</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">确认退出</div>
+    <div class="modal-text" id="modalText">确定要退出登录吗？</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="modalCancel">取消</button>
+      <button class="modal-btn modal-btn-confirm" id="modalConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const rehearsals=[
+  {day:18,month:'MAY',weekday:'周一',type:'常规',title:'全团声部合练',time:'19:00–21:00',loc:'艺术楼 A302'},
+  {day:22,month:'MAY',weekday:'周五',type:'分练',title:'女高音专项训练',time:'18:30–20:00',loc:'音乐室 B105'},
+  {day:25,month:'MAY',weekday:'周一',type:'彩排',title:'六月汇演全程彩排',time:'14:00–18:00',loc:'大礼堂主舞台'},
+];
+const tagCls={regular:'tag-regular',performance:'tag-performance'};
+const attRecords=[
+  {date:'5月16日',type:'常规排练',status:'present'},
+  {date:'5月14日',type:'声部分练',status:'present'},
+  {date:'5月11日',type:'常规排练',status:'leave'},
+  {date:'5月9日',type:'常规排练',status:'present'},
+  {date:'5月7日',type:'声部分练',status:'absent'},
+];
+
+/* Render rehearsals */
+document.getElementById('r-list').innerHTML=rehearsals.map(r=>{
+  const tc=r.type==='常规'?'regular':'performance';
+  return '<div class="r-card">'+
+    '<div class="r-date"><div class="r-month">'+r.month+'</div><div class="r-day">'+r.day+'</div><div class="r-weekday">'+r.weekday+'</div></div>'+
+    '<div class="r-info"><div class="r-tag '+tc+'">'+r.type+'</div><div class="r-title">'+r.title+'</div>'+
+    '<div class="r-meta"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'+r.time+'</span>'+
+    '<span><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+r.loc+'</span></div></div></div>';
+}).join('');
+
+/* Render attendance */
+document.getElementById('att-tbody').innerHTML=attRecords.map(r=>{
+  const cls=r.status==='present'?'present':r.status==='absent'?'absent':'leave';
+  const label=r.status==='present'?'已出席':r.status==='absent'?'缺席':'请假';
+  return '<tr><td>'+r.date+'</td><td>'+r.type+'</td><td><span class="att-status '+cls+'">'+label+'</span></td></tr>';
+}).join('');
+
+/* Sidebar toggle */
+const sidebar=document.getElementById('sidebar');
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  sidebar.classList.toggle('collapsed');
+});
+
+/* Nav item click */
+document.querySelectorAll('.nav-item, .nav-item-first').forEach(item=>{
+  item.addEventListener('click',e=>{
+    if(e.target.closest('.nav-toggle-btn')) return;
+    e.preventDefault();
+    document.querySelectorAll('.nav-item, .nav-item-first').forEach(i=>i.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+
+/* User dropdown */
+const userDropdown=document.getElementById('userDropdown');
+const userAvatar=document.getElementById('userAvatar');
+const logoutBtn=document.getElementById('logoutBtn');
+const changePwdBtn=document.getElementById('changePwdBtn');
+const confirmModal=document.getElementById('confirmModal');
+const modalTitle=document.getElementById('modalTitle');
+const modalText=document.getElementById('modalText');
+const modalCancel=document.getElementById('modalCancel');
+const modalConfirm=document.getElementById('modalConfirm');
+
+userAvatar.addEventListener('click',(e)=>{
+  e.stopPropagation();
+  userDropdown.classList.toggle('open');
+});
+
+document.addEventListener('click',()=>{
+  userDropdown.classList.remove('open');
+});
+
+let pendingAction=null;
+
+function showConfirm(title,text,action){
+  modalTitle.textContent=title;
+  modalText.textContent=text;
+  pendingAction=action;
+  confirmModal.classList.add('show');
+}
+
+logoutBtn.addEventListener('click',()=>{
+  userDropdown.classList.remove('open');
+  showConfirm('确认退出','确定要退出登录吗？',()=>{
+    alert('已退出登录');
+    // window.location.href = '/logout';
+  });
+});
+
+changePwdBtn.addEventListener('click',()=>{
+  userDropdown.classList.remove('open');
+  showConfirm('修改密码','确定要修改密码吗？',()=>{
+    alert('打开修改密码页面');
+    // window.location.href = '/change-password';
+  });
+});
+
+modalCancel.addEventListener('click',()=>{
+  confirmModal.classList.remove('show');
+  pendingAction=null;
+});
+
+modalConfirm.addEventListener('click',()=>{
+  confirmModal.classList.remove('show');
+  if(pendingAction) pendingAction();
+  pendingAction=null;
+});
+
+confirmModal.addEventListener('click',(e)=>{
+  if(e.target===confirmModal){
+    confirmModal.classList.remove('show');
+    pendingAction=null;
+  }
+});
+</script>
+</body>
+</html>

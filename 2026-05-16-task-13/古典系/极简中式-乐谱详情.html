@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>乐谱详情 · 弦歌合唱团</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+:root{--ink-black:#1C1C1C;--ink-gold:#B8860B;--ink-gold-light:#D4A84B;--silk-white:#F8F6F0;--silk-cream:#EDE8DC;--border:rgba(28,28,28,0.1);--border-gold:rgba(184,134,11,0.3);--text-primary:#1C1C1C;--text-secondary:#5a5548;--text-muted:#9c9490;--success:#3a7d44;--warning:#c07a1e;--error:#b03030;--font-mono:'Space Grotesk','Noto Sans SC',sans-serif;--transition:200ms ease;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{height:100vh;font-family:var(--font-mono);font-weight:300;background:var(--silk-white);color:var(--text-primary);display:flex;flex-direction:column;overflow:hidden}
+button{cursor:pointer;border:none;background:none;font:inherit;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font:inherit}
+img,video{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--ink-gold);outline-offset:2px}
+a{color:inherit;text-decoration:none}
+*{scrollbar-width:thin;scrollbar-color:var(--ink-gold) transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-thumb{background:var(--ink-gold);border-radius:99px}
+
+/* === TOPBAR (same as other pages) === */
+.topbar{height:64px;background:var(--ink-black);display:flex;align-items:center;padding:0 2rem;gap:1.5rem;flex-shrink:0;border-bottom:1px solid rgba(184,134,11,0.2);position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+.brand-icon{width:40px;height:40px;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:1.2rem;color:var(--ink-gold);position:relative}
+.brand-icon::before,.brand-icon::after{content:'';position:absolute;width:6px;height:6px}
+.brand-icon::before{top:-3px;left:-3px;border-top:1px solid var(--ink-gold);border-left:1px solid var(--ink-gold)}
+.brand-icon::after{bottom:-3px;right:-3px;border-bottom:1px solid var(--ink-gold);border-right:1px solid var(--ink-gold)}
+.brand-text{display:flex;flex-direction:column}
+.brand-name{font-size:0.9rem;font-weight:400;color:var(--ink-gold);letter-spacing:0.15em;text-transform:uppercase}
+.brand-sub{font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase}
+.topnav{display:flex;align-items:center;gap:0.25rem;flex:1}
+.nav-item{padding:0.5rem 1rem;font-size:0.8rem;font-weight:400;color:rgba(255,255,255,0.5);border-radius:4px;transition:all var(--transition);display:flex;align-items:center;gap:0.4rem;letter-spacing:0.05em}
+.nav-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.nav-item:hover{color:#fff}
+.nav-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.1)}
+.topbar-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto}
+.user-dropdown{position:relative}
+.user-avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;color:var(--ink-gold);cursor:pointer;transition:all var(--transition)}
+.user-dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--silk-white);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px rgba(28,28,28,0.12);min-width:160px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:200}
+.user-dropdown.open .user-dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;color:var(--text-primary);cursor:pointer;transition:background var(--transition)}
+.dropdown-item:hover{background:rgba(184,134,11,0.06)}
+.dropdown-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dropdown-item.danger{color:var(--error)}
+.dropdown-divider{height:1px;background:var(--border);margin:4px 0}
+
+/* === PAGE BODY === */
+.page-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.sidebar{width:220px;background:var(--silk-white);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;flex-shrink:0}
+.sidebar-nav{flex:1;padding:1.5rem 0;overflow-y:auto;min-height:0}
+.sidebar-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;color:var(--text-secondary);font-size:0.85rem;transition:all var(--transition);cursor:pointer;border-left:3px solid transparent;font-weight:300}
+.sidebar-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sidebar-item:hover{color:var(--ink-gold);background:rgba(184,134,11,0.03)}
+.sidebar-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.05);border-left-color:var(--ink-gold)}
+.sidebar-user{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:0.75rem;flex-shrink:0;background:var(--silk-white)}
+.sidebar-user-top{display:flex;align-items:center;gap:0.75rem}
+.sidebar-user-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--ink-black);border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;font-weight:400;color:var(--ink-gold)}
+.sidebar-user-info{flex:1;min-width:0}
+.sidebar-user-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-role{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
+
+/* === CONTENT === */
+.content{flex:1;padding:1.5rem 2rem;overflow-y:auto;min-height:0}
+
+/* Breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:1.25rem}
+.breadcrumb a{color:var(--text-secondary);transition:color var(--transition)}
+.breadcrumb a:hover{color:var(--ink-gold)}
+.breadcrumb .sep{color:var(--border-gold)}
+.breadcrumb .current{color:var(--ink-gold);font-weight:400}
+
+/* Detail Layout */
+.detail-layout{display:grid;grid-template-columns:1fr 380px;gap:1.5rem}
+@media(max-width:1200px){.detail-layout{grid-template-columns:1fr}}
+
+/* === SCORE VIEWER (left column) === */
+.score-viewer{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.score-viewer-header{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid var(--border);background:rgba(237,232,220,0.3)}
+.score-viewer-title{font-size:0.85rem;font-weight:400;color:var(--ink-black);display:flex;align-items:center;gap:0.5rem}
+.score-viewer-title svg{width:14px;height:14px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+.score-viewer-actions{display:flex;gap:0.5rem}
+.score-page{height:70vh;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.score-page-placeholder{text-align:center;color:var(--text-muted)}
+.score-page-placeholder svg{width:64px;height:64px;stroke:var(--border-gold);fill:none;stroke-width:1;margin-bottom:1rem}
+.score-page-placeholder p{font-size:0.85rem;margin-top:0.5rem}
+.score-page-placeholder .hint{font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem}
+.score-page-nav{display:flex;align-items:center;justify-content:center;gap:1rem;padding:0.5rem;background:var(--silk-white);border-top:1px solid var(--border)}
+.score-page-nav button{background:none;border:1px solid var(--border);border-radius:3px;padding:0.3rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;transition:all var(--transition)}
+.score-page-nav button:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+.score-page-nav .page-info{font-size:0.75rem;color:var(--text-muted)}
+
+/* === RIGHT PANEL === */
+.detail-panel{display:flex;flex-direction:column;gap:1rem}
+
+/* Info Card */
+.info-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.info-card-header{padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;font-weight:400;color:var(--ink-black);display:flex;align-items:center;gap:0.5rem;background:rgba(237,232,220,0.2)}
+.info-card-header svg{width:14px;height:14px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+.info-card-body{padding:1rem}
+
+/* Meta grid */
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1rem}
+.meta-item{display:flex;flex-direction:column;gap:0.15rem}
+.meta-label{font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}
+.meta-value{font-size:0.8rem;color:var(--text-primary);font-weight:400}
+
+/* Tag row */
+.tag-row{display:flex;gap:0.375rem;flex-wrap:wrap;margin-top:0.5rem}
+.detail-tag{display:inline-flex;padding:0.15rem 0.5rem;border-radius:2px;font-size:0.65rem;font-weight:400}
+.tag-cat{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.tag-style{background:rgba(58,125,68,0.1);color:var(--success)}
+.tag-coll{background:rgba(59,130,246,0.1);color:#3b82f6}
+
+/* Download button */
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 1.125rem;border-radius:4px;font-size:0.8rem;font-weight:400;transition:all var(--transition);cursor:pointer;border:1px solid transparent;letter-spacing:0.03em}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-gold{background:var(--ink-gold);color:#fff;box-shadow:0 4px 12px rgba(184,134,11,0.25)}
+.btn-gold:hover{background:var(--ink-gold-light)}
+.btn-outline{border-color:var(--border);color:var(--text-secondary);background:var(--silk-white)}
+.btn-outline:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+.btn-block{width:100%;justify-content:center;margin-top:0.75rem}
+
+/* Audio List */
+.audio-list{display:flex;flex-direction:column;gap:0.5rem}
+.audio-item{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;transition:all var(--transition)}
+.audio-item:hover{border-color:var(--ink-gold)}
+.audio-icon{width:32px;height:32px;border-radius:4px;background:rgba(184,134,11,0.08);display:grid;place-items:center;flex-shrink:0}
+.audio-icon svg{width:16px;height:16px;stroke:var(--ink-gold);fill:none;stroke-width:1.75}
+.audio-info{flex:1;min-width:0}
+.audio-name{font-size:0.8rem;font-weight:400;color:var(--text-primary)}
+.audio-dur{font-size:0.65rem;color:var(--text-muted)}
+.audio-play-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);display:grid;place-items:center;cursor:pointer;transition:all var(--transition);background:var(--silk-white);flex-shrink:0}
+.audio-play-btn:hover{background:var(--ink-gold);border-color:var(--ink-gold)}
+.audio-play-btn:hover svg{stroke:#fff}
+.audio-play-btn svg{width:12px;height:12px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+.audio-dl-btn{font-size:0.65rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:2px;color:var(--text-secondary);cursor:pointer;transition:all var(--transition);background:var(--silk-white);flex-shrink:0}
+.audio-dl-btn:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+
+/* Demo Audio Player */
+.demo-player{background:var(--silk-cream);border:1px solid var(--border);border-radius:4px;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem}
+.demo-play-btn{width:36px;height:36px;border-radius:50%;background:var(--ink-gold);border:none;display:grid;place-items:center;cursor:pointer;transition:all var(--transition);flex-shrink:0}
+.demo-play-btn:hover{background:var(--ink-gold-light)}
+.demo-play-btn svg{width:16px;height:16px;fill:#fff;stroke:none}
+.demo-track-info{flex:1;min-width:0}
+.demo-track-name{font-size:0.8rem;font-weight:400;color:var(--text-primary)}
+.demo-track-sub{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
+.demo-progress{flex:1;height:3px;background:rgba(28,28,28,0.1);border-radius:99px;position:relative;cursor:pointer}
+.demo-progress-bar{height:100%;width:35%;background:var(--ink-gold);border-radius:99px;transition:width 0.1s}
+.demo-time{font-size:0.65rem;color:var(--text-muted);flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* Video */
+.video-embed{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border:1px solid var(--border);border-radius:4px;background:#000}
+.video-embed .placeholder{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-muted)}
+.video-embed .placeholder svg{width:48px;height:48px;stroke:var(--border-gold);fill:none;stroke-width:1}
+.video-embed .placeholder p{position:absolute;bottom:1rem;font-size:0.7rem;color:var(--text-muted)}
+
+/* Intro (rich text) */
+.intro-text{font-size:0.82rem;line-height:1.9;color:var(--text-secondary)}
+.intro-text p{margin-bottom:0.75rem}
+.intro-text img{max-width:100%;border-radius:4px;border:1px solid var(--border);margin:0.5rem 0}
+.intro-text strong{color:var(--text-primary);font-weight:400}
+.intro-text em{color:var(--ink-gold);font-style:normal;font-size:0.75rem}
+
+/* Score intro section (below viewer) */
+.score-intro-section{padding:1.25rem 1rem;border-top:1px solid var(--border)}
+.score-intro-title{display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;font-weight:400;color:var(--ink-black);margin-bottom:0.875rem}
+.score-intro-title svg{width:14px;height:14px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+
+/* Related */
+.related-list{display:flex;flex-direction:column;gap:0.5rem}
+.related-item{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all var(--transition)}
+.related-item:hover{border-color:var(--ink-gold);background:rgba(184,134,11,0.03)}
+.related-thumb{width:40px;height:40px;border-radius:3px;background:rgba(237,232,220,0.5);display:grid;place-items:center;flex-shrink:0}
+.related-thumb svg{width:18px;height:18px;stroke:var(--ink-gold);fill:none;stroke-width:1.5}
+.related-info{flex:1;min-width:0}
+.related-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.related-meta{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">♪</div>
+    <div class="brand-text">
+      <span class="brand-name">极简中式</span>
+      <span class="brand-sub">Choir Management</span>
+    </div>
+  </div>
+  <nav class="topnav">
+    <a class="nav-item" href="极简中式-桌面端.html"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>首页</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-avatar">刘</div>
+      <div class="user-dropdown-menu">
+        <div class="dropdown-item"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>修改密码</span></div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>退出登录</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-body">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <a class="sidebar-item" href="极简中式-桌面端.html">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        我的首页
+      </a>
+      <a class="sidebar-item" href="极简中式-排练计划.html">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        排练计划
+      </a>
+      <a class="sidebar-item" href="极简中式-献唱计划.html">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        献唱计划
+      </a>
+      <a class="sidebar-item" href="极简中式-作业提交.html">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        作业提交
+      </a>
+      <a class="sidebar-item" href="极简中式-成员管理.html">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        成员管理
+      </a>
+      <a class="sidebar-item" href="极简中式-系统管理.html">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3 14.1V9a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 12 9.35c.63 0 1.22-.3 1.57-.8.35-.5.43-1.12.24-1.68A1.65 1.65 0 0 0 13.9 6V3a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 21 6.9V9a2 2 0 0 1-4 0v-.09c0-.63-.3-1.22-.8-1.57-.5-.35-1.12-.43-1.68-.24z"/></svg>
+        系统管理
+      </a>
+      <a class="sidebar-item active" href="极简中式-资料管理.html">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        资料管理
+      </a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-top">
+        <div class="sidebar-user-avatar">刘</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">刘管理员</div>
+          <div class="sidebar-user-role">系统管理员</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <a href="极简中式-资料管理.html">资料管理</a>
+      <span class="sep">/</span>
+      <span class="current" id="bcName">《春江花月夜》四声部总谱</span>
+    </div>
+
+    <!-- Detail Layout -->
+    <div class="detail-layout">
+      <!-- LEFT: Score Viewer -->
+      <div class="score-viewer">
+        <div class="score-viewer-header">
+          <span class="score-viewer-title">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span id="viewerTitle">《春江花月夜》四声部总谱.pdf</span>
+          </span>
+          <div class="score-viewer-actions">
+            <button class="btn btn-gold" onclick="alert('下载总谱PDF')">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载乐谱
+            </button>
+          </div>
+        </div>
+        <div class="score-page" id="scorePage">
+          <div class="score-page-placeholder">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            <p>乐谱预览</p>
+            <p class="hint">《春江花月夜》四声部合唱总谱 · 第 <span id="pageNum">1</span> 页</p>
+            <!-- Simulated score lines -->
+            <div style="margin-top:1.5rem;width:80%;max-width:400px;text-align:left;">
+              <div style="font-size:0.7rem;color:var(--ink-gold);margin-bottom:0.5rem;font-weight:400;">♪ 春江花月夜 — 混声四部合唱</div>
+              <div id="scoreLines" style="display:flex;flex-direction:column;gap:6px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="score-page-nav">
+          <button onclick="changePage(-1)">← 上一页</button>
+          <span class="page-info">第 <span id="curPage">1</span> / <span id="totalPages">4</span> 页</span>
+          <button onclick="changePage(1)">下一页 →</button>
+        </div>
+        <!-- 乐谱介绍正文（移至乐谱展示下方） -->
+        <div class="score-intro-section">
+          <div class="score-intro-title">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            乐谱介绍
+          </div>
+          <div class="intro-text" id="introText"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Detail Panel -->
+      <div class="detail-panel">
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            基本信息
+          </div>
+          <div class="info-card-body">
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span class="meta-label">分类</span>
+                <span class="meta-value" id="diCategory">古诗词</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">风格</span>
+                <span class="meta-value" id="diStyle">柔美抒情</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">合集</span>
+                <span class="meta-value" id="diCollection">春之季</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">调性</span>
+                <span class="meta-value" id="diKey">D 大调</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">上传人</span>
+                <span class="meta-value" id="diUploader">刘管理员</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">上传时间</span>
+                <span class="meta-value" id="diDate">2026-05-10</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">文件大小</span>
+                <span class="meta-value" id="diSize">2.4 MB</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">页数</span>
+                <span class="meta-value" id="diPages">4 页</span>
+              </div>
+            </div>
+            <div class="tag-row" id="diTags"></div>
+            <button class="btn btn-gold btn-block" onclick="alert('下载总谱PDF')">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载总谱（PDF）
+            </button>
+          </div>
+        </div>
+
+        <!-- 分声部音频 -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            分声部音频
+          </div>
+          <div class="info-card-body">
+            <div class="audio-list" id="partAudioList"></div>
+          </div>
+        </div>
+
+        <!-- 演示音频 -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            演示音频（合唱版）
+          </div>
+          <div class="info-card-body">
+            <div class="demo-player">
+              <button class="demo-play-btn" id="demoPlayBtn" onclick="toggleDemoPlay()">
+                <svg viewBox="0 0 24 24" id="demoPlayIcon"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              </button>
+              <div class="demo-track-info">
+                <div class="demo-track-name" id="demoTrackName">《春江花月夜》混声四部完整版</div>
+                <div class="demo-track-sub">指挥：陈老师 · 钢琴伴奏：王老师</div>
+              </div>
+              <div class="demo-progress" onclick="seekDemo(event)">
+                <div class="demo-progress-bar" id="demoProgressBar"></div>
+              </div>
+              <span class="demo-time" id="demoTime">1:23 / 4:02</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关联视频 -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            关联视频
+          </div>
+          <div class="info-card-body">
+            <div class="video-embed" onclick="alert('打开视频播放器')">
+              <div class="placeholder">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <p>点击播放演示视频</p>
+              </div>
+            </div>
+            <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem" id="videoDesc">《春江花月夜》排练实录 · 市文化中心合唱厅</p>
+          </div>
+        </div>
+
+        <!-- 相关乐谱 -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            相关乐谱
+          </div>
+          <div class="info-card-body">
+            <div class="related-list" id="relatedList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============ DATA ============
+const scores = {
+  1: {
+    id:1, name:'《春江花月夜》四声部总谱', sub:'五·四编排版',
+    category:'古诗词', style:'柔美抒情', collection:'春之季',
+    key:'D 大调', uploader:'刘管理员', date:'2026-05-10', size:'2.4 MB', pages:4,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'chunjiang_sop.pdf', dur:'3:58', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'chunjiang_alt.pdf', dur:'3:58', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'chunjiang_ten.pdf', dur:'3:58', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'chunjiang_bas.pdf', dur:'3:58', playUrl:'#'},
+    ],
+    demoTrack:'《春江花月夜》混声四部完整版', demoArtists:'指挥：陈老师 · 钢琴伴奏：王老师', demoDur:'4:02',
+    videoDesc:'《春江花月夜》排练实录 · 市文化中心合唱厅',
+    intro:'<p><strong>作品简介</strong></p><p>《春江花月夜》改编自唐代诗人张若虚同名诗作，为中国古典诗词合唱的代表作品之一。本版本为混声四部合唱编配，由著名指挥家、作曲家陈老师于2025年编创完成。</p><p style="margin-top:0.75rem"><strong>曲目特点</strong></p><p>全曲共分三个段落：<em>第一段「江畔何人初见月」</em>以女声二部为主，营造月夜静谧氛围；<em>第二段「江月年年望相似」</em>加入男声，声部交替呼应；<em>第三段「不知江月待何人」</em>四部齐唱，气势恢宏，为本曲高潮。</p><p style="margin-top:0.75rem"><strong>排练要点</strong></p><p>注意各声部进入的呼吸统一，第二段男声部需注意音色控制，避免压喉。钢琴伴奏部分有大量琶音织体，建议先分声部练习再合排。</p>',
+    related:[2,8,15]
+  },
+  2: {
+    id:2, name:'《渔舟唱晚》四声部版本', sub:'改编版含分谱',
+    category:'古诗词', style:'轻快活泼', collection:'春之季',
+    key:'G 大调', uploader:'刘管理员', date:'2026-05-08', size:'3.1 MB', pages:5,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'yuzhou_sop.pdf', dur:'3:12', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'yuzhou_alt.pdf', dur:'3:12', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'yuzhou_ten.pdf', dur:'3:12', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'yuzhou_bas.pdf', dur:'3:12', playUrl:'#'},
+    ],
+    demoTrack:'《渔舟唱晚》合唱版', demoArtists:'指挥：刘老师 · 钢琴伴奏：李老师', demoDur:'3:12',
+    videoDesc:'《渔舟唱晚》演出录像 · 端午音乐会',
+    intro:'<p><strong>作品简介</strong></p><p>《渔舟唱晚》取材自古曲，描写夕阳西下、渔舟归航的江南水乡画卷。本合唱版本保留原曲的轻盈灵动，加入现代教育合唱和声语汇。</p><p style="margin-top:0.75rem"><strong>排练要点</strong></p><p>全曲速度较快，注意咬字清晰。「唱晚」二字需做渐强处理，各声部模仿渔舟摇橹的节奏型，排练时需重点练习。</p>',
+    related:[1,14,8]
+  },
+  5: {
+    id:5, name:'《黄河大合唱》钢琴伴奏谱', sub:'混声四部版',
+    category:'现代合唱', style:'气势恢宏', collection:'年终汇演',
+    key:'C 小调', uploader:'刘管理员', date:'2026-04-15', size:'5.8 MB', pages:8,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'huanghe_sop.pdf', dur:'5:30', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'huanghe_alt.pdf', dur:'5:30', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'huanghe_ten.pdf', dur:'5:30', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'huanghe_bas.pdf', dur:'5:30', playUrl:'#'},
+      {part:'钢琴伴奏',         file:'huanghe_pno.pdf', dur:'5:30', playUrl:'#'},
+    ],
+    demoTrack:'《黄河大合唱》混声四部完整版', demoArtists:'指挥：陈老师 · 钢琴伴奏：王老师', demoDur:'5:30',
+    videoDesc:'《黄河大合唱》年终汇演实况 · 市文化中心主厅',
+    intro:'<p><strong>作品简介</strong></p><p>《黄河大合唱》是冼星海代表作，本版本为混声四部合唱改编版，保留了原曲的磅礴气势与民族精神。</p><p style="margin-top:0.75rem"><strong>排练要点</strong></p><p>本曲音域宽广，男低音需注意低音区的共鸣感。第三段「保卫黄河」为进行曲速度，各声部节奏需高度统一，建议在排练时加入打击乐配合。</p>',
+    related:[13,16,1]
+  },
+  8: {
+    id:8, name:'《枫桥夜泊》古诗词合唱版', sub:'含音频示范',
+    category:'古诗词', style:'柔美抒情', collection:'中秋晚会',
+    key:'E 大调', uploader:'刘管理员', date:'2026-03-20', size:'1.9 MB', pages:3,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'fengqiao_sop.pdf', dur:'4:05', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'fengqiao_alt.pdf', dur:'4:05', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'fengqiao_ten.pdf', dur:'4:05', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'fengqiao_bas.pdf', dur:'4:05', playUrl:'#'},
+    ],
+    demoTrack:'《枫桥夜泊》合唱版', demoArtists:'指挥：陈老师', demoDur:'4:05',
+    videoDesc:'《枫桥夜泊》中秋晚会演出录像',
+    intro:'<p><strong>作品简介</strong></p><p>《枫桥夜泊》以张继诗作为文本，由当代作曲家编创为古诗词合唱作品。全曲以空灵的和声语言描绘秋夜寒山寺的意境。</p>',
+    related:[1,2,15]
+  },
+  13: {
+    id:13, name:'《Ave Maria》四声部版', sub:'Schubert 改编',
+    category:'外国作品', style:'庄严神圣', collection:'年终汇演',
+    key:'B♭ 大调', uploader:'刘管理员', date:'2026-05-15', size:'2.1 MB', pages:3,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'ave_sop.pdf', dur:'4:20', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'ave_alt.pdf', dur:'4:20', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'ave_ten.pdf', dur:'4:20', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'ave_bas.pdf', dur:'4:20', playUrl:'#'},
+    ],
+    demoTrack:'Ave Maria (Schubert) 合唱版', demoArtists:'指挥：外籍客座指挥 Marco', demoDur:'4:20',
+    videoDesc:'《Ave Maria》年终汇演录像',
+    intro:'<p><strong>作品简介</strong></p><p>Ave Maria (Schubert) 是西方合唱保留曲目，本版本为混声四部无伴奏合唱编配，重点训练合唱团的音准与和声融合能力。</p>',
+    related:[16,5,14]
+  },
+  14: {
+    id:14, name:'《茉莉花》民谣合唱编配', sub:'江苏民歌改编',
+    category:'民谣改编', style:'轻快活泼', collection:'端午特辑',
+    key:'F 大调', uploader:'刘管理员', date:'2026-05-16', size:'1.7 MB', pages:2,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'moli_sop.pdf', dur:'2:45', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'moli_alt.pdf', dur:'2:45', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'moli_ten.pdf', dur:'2:45', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'moli_bas.pdf', dur:'2:45', playUrl:'#'},
+    ],
+    demoTrack:'《茉莉花》民谣合唱版', demoArtists:'指挥：刘老师', demoDur:'2:45',
+    videoDesc:'《茉莉花》端午特辑录演',
+    intro:'<p><strong>作品简介</strong></p><p>《茉莉花》江苏民歌合唱编配版，保留民谣原有的清新风格，加入二声部对位，适合作为演出开场曲目。</p>',
+    related:[2,8,15]
+  },
+  15: {
+    id:15, name:'《阳关三叠》合唱版', sub:'古诗词·王维',
+    category:'古诗词', style:'柔美抒情', collection:'中秋晚会',
+    key:'D 大调', uploader:'刘管理员', date:'2026-05-16', size:'2.0 MB', pages:3,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'yangguan_sop.pdf', dur:'3:40', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'yangguan_alt.pdf', dur:'3:40', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'yangguan_ten.pdf', dur:'3:40', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'yangguan_bas.pdf', dur:'3:40', playUrl:'#'},
+    ],
+    demoTrack:'《阳关三叠》合唱版', demoArtists:'指挥：陈老师 · 古琴伴奏', demoDur:'3:40',
+    videoDesc:'《阳关三叠》中秋雅集录像',
+    intro:'<p><strong>作品简介</strong></p><p>《阳关三叠》以王维《送元二使安西》为词，是中国古典诗词音乐的经典之作。本合唱版融入古琴音色，意境深远。</p>',
+    related:[1,8,2]
+  },
+  16: {
+    id:16, name:'《哈利路亚》合唱曲', sub:'亨德尔·弥赛亚选段',
+    category:'宗教合唱', style:'庄严神圣', collection:'年终汇演',
+    key:'D 大调', uploader:'刘管理员', date:'2026-05-15', size:'3.4 MB', pages:5,
+    partAudio:[
+      {part:'女高音 (Soprano)', file:'hallelujah_sop.pdf', dur:'4:50', playUrl:'#'},
+      {part:'女低音 (Alto)',    file:'hallelujah_alt.pdf', dur:'4:50', playUrl:'#'},
+      {part:'男高音 (Tenor)',   file:'hallelujah_ten.pdf', dur:'4:50', playUrl:'#'},
+      {part:'男低音 (Bass)',    file:'hallelujah_bas.pdf', dur:'4:50', playUrl:'#'},
+    ],
+    demoTrack:'Hallelujah Chorus (Handel)', demoArtists:'指挥：外籍客座指挥 Marco · 管弦乐伴奏', demoDur:'4:50',
+    videoDesc:'《哈利路亚》年终汇演录像 · 全场起立致敬',
+    intro:'<p><strong>作品简介</strong></p><p>《哈利路亚》出自亨德尔清唱剧《弥赛亚》，是西方合唱文献中最著名的合唱曲目之一。本版为混声四部与管弦乐伴奏版。</p><p style="margin-top:0.75rem"><strong>排练要点</strong></p><p>速度标记为 ♩=108，注意附点节奏的准确性。「Hallelujah」一词的咬字需统一，建议做英文发音专项练习。</p>',
+    related:[13,5,1]
+  },
+};
+
+// ============ INIT ============
+function getScoreId() {
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id'));
+  return scores[id] ? id : 1;
+}
+
+let currentScoreId = getScoreId();
+let currentPage = 1;
+let demoPlaying = false;
+let demoProgress = 35;
+
+function $(id){ return document.getElementById(id); }
+
+function loadScore(id) {
+  const s = scores[id];
+  if (!s) return;
+  currentScoreId = id;
+  currentPage = 1;
+
+  // Breadcrumb & title
+  document.title = s.name + ' · 弦歌合唱团';
+  $('bcName').textContent = s.name;
+  $('viewerTitle').textContent = s.name + '.pdf';
+
+  // Pages
+  $('totalPages').textContent = s.pages;
+  $('diPages').textContent = s.pages + ' 页';
+  updateScorePage();
+
+  // Meta
+  $('diCategory').textContent   = s.category;
+  $('diStyle').textContent      = s.style;
+  $('diCollection').textContent = s.collection;
+  $('diKey').textContent        = s.key;
+  $('diUploader').textContent   = s.uploader;
+  $('diDate').textContent       = s.date;
+  $('diSize').textContent       = s.size;
+
+  // Tags
+  $('diTags').innerHTML =
+    '<span class="detail-tag tag-cat">' + s.category + '</span>' +
+    '<span class="detail-tag tag-style">' + s.style + '</span>' +
+    '<span class="detail-tag tag-coll">' + s.collection + '</span>';
+
+  // Part audio list
+  $('partAudioList').innerHTML = s.partAudio.map((p,i) =>
+    '<div class="audio-item">' +
+      '<div class="audio-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>' +
+      '<div class="audio-info">' +
+        '<div class="audio-name">' + p.part + '</div>' +
+        '<div class="audio-dur">' + p.dur + '</div>' +
+      '</div>' +
+      '<button class="audio-play-btn" title="播放' + p.part + '" onclick="alert(\'播放: ' + s.name + ' · ' + p.part + '\')">' +
+        '<svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>' +
+      '</button>' +
+      '<button class="audio-dl-btn" title="下载' + p.part + '分谱" onclick="alert(\'下载: ' + p.file + '\')">下载分谱</button>' +
+    '</div>'
+  ).join('');
+
+  // Demo player
+  $('demoTrackName').textContent = s.demoTrack;
+  $('demoTrackSub').textContent  = s.demoArtists;
+  $('demoTime').textContent      = '0:00 / ' + s.demoDur;
+  demoPlaying = false;
+  demoProgress = 0;
+  $('demoProgressBar').style.width = '0%';
+  $('demoPlayIcon').innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
+
+  // Video
+  $('videoDesc').textContent = s.videoDesc;
+
+  // Intro
+  $('introText').innerHTML = s.intro;
+
+  // Related
+  const relatedData = {
+    1: {name:'《春江花月夜》四声部总谱', sub:'五·四编排版'},
+    2: {name:'《渔舟唱晚》四声部版本', sub:'改编版含分谱'},
+    5: {name:'《黄河大合唱》钢琴伴奏谱', sub:'混声四部版'},
+    8: {name:'《枫桥夜泊》古诗词合唱版', sub:'含音频示范'},
+    13:{name:'《Ave Maria》四声部版', sub:'Schubert 改编'},
+    14:{name:'《茉莉花》民谣合唱编配', sub:'江苏民歌改编'},
+    15:{name:'《阳关三叠》合唱版', sub:'古诗词·王维'},
+    16:{name:'《哈利路亚》合唱曲', sub:'亨德尔·弥赛亚选段'},
+  };
+  $('relatedList').innerHTML = s.related.map(rid => {
+    const r = relatedData[rid];
+    return '<div class="related-item" onclick="loadScore(' + rid + ')">' +
+      '<div class="related-thumb"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>' +
+      '<div class="related-info">' +
+        '<div class="related-name">' + r.name + '</div>' +
+        '<div class="related-meta">' + r.sub + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// Score page simulation (decorative staff lines)
+function updateScorePage() {
+  $('curPage').textContent = currentPage;
+  $('pageNum').textContent  = currentPage;
+  // Draw simulated staff lines
+  const lines = [];
+  for (let r=0; r<6; r++) {
+    lines.push('<div style="height:18px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 2rem;">' +
+      (r===2 ? '<span style="font-size:0.6rem;color:var(--ink-gold);font-style:italic;margin-right:1rem;">♪ 第' + currentPage + '页</span>' : '') +
+      '<span style="flex:1;height:1px;background:var(--border);"></span>' +
+    '</div>');
+  }
+  $('scoreLines').innerHTML = lines.join('');
+}
+
+function changePage(dir) {
+  const s = scores[currentScoreId];
+  const np = currentPage + dir;
+  if (np < 1 || np > s.pages) return;
+  currentPage = np;
+  updateScorePage();
+}
+
+// Demo player toggle
+function toggleDemoPlay() {
+  demoPlaying = !demoPlaying;
+  if (demoPlaying) {
+    $('demoPlayIcon').innerHTML = '<rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/>';
+    demoProgress = 35;
+  } else {
+    $('demoPlayIcon').innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
+  }
+  $('demoProgressBar').style.width = demoProgress + '%';
+}
+
+function seekDemo(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  demoProgress = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+  $('demoProgressBar').style.width = demoProgress + '%';
+}
+
+// User dropdown
+const userDropdown = $('userDropdown');
+userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
+  e.stopPropagation();
+  userDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => userDropdown.classList.remove('open'));
+
+// INIT
+loadScore(getScoreId());
+</script>
+</body>
+</html>

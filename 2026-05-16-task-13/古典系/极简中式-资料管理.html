@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>资料管理 · 弦歌合唱团</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+:root{--ink-black:#1C1C1C;--ink-gold:#B8860B;--ink-gold-light:#D4A84B;--silk-white:#F8F6F0;--silk-cream:#EDE8DC;--border:rgba(28,28,28,0.1);--border-gold:rgba(184,134,11,0.3);--text-primary:#1C1C1C;--text-secondary:#5a5548;--text-muted:#9c9490;--success:#3a7d44;--warning:#c07a1e;--error:#b03030;--font-mono:'Space Grotesk','Noto Sans SC',sans-serif;--transition:200ms ease;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{height:100vh;font-family:var(--font-mono);font-weight:300;background:var(--silk-white);color:var(--text-primary);display:flex;flex-direction:column;overflow:hidden}
+button{cursor:pointer;border:none;background:none;font:inherit;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--ink-gold);outline-offset:2px}
+a{color:inherit;text-decoration:none}
+*{scrollbar-width:thin;scrollbar-color:var(--ink-gold) transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-thumb{background:var(--ink-gold);border-radius:99px}
+
+.topbar{height:64px;background:var(--ink-black);display:flex;align-items:center;padding:0 2rem;gap:1.5rem;flex-shrink:0;border-bottom:1px solid rgba(184,134,11,0.2);position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+.brand-icon{width:40px;height:40px;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:1.2rem;color:var(--ink-gold);position:relative}
+.brand-icon::before,.brand-icon::after{content:'';position:absolute;width:6px;height:6px}
+.brand-icon::before{top:-3px;left:-3px;border-top:1px solid var(--ink-gold);border-left:1px solid var(--ink-gold);}
+.brand-icon::after{bottom:-3px;right:-3px;border-bottom:1px solid var(--ink-gold);border-right:1px solid var(--ink-gold);}
+.brand-text{display:flex;flex-direction:column}
+.brand-name{font-size:0.9rem;font-weight:400;color:var(--ink-gold);letter-spacing:0.15em;text-transform:uppercase}
+.brand-sub{font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase}
+.topnav{display:flex;align-items:center;gap:0.25rem;flex:1}
+.nav-item{padding:0.5rem 1rem;font-size:0.8rem;font-weight:400;color:rgba(255,255,255,0.5);border-radius:4px;transition:all var(--transition);display:flex;align-items:center;gap:0.4rem;letter-spacing:0.05em}
+.nav-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.nav-item:hover{color:#fff}
+.nav-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.1)}
+.topbar-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto}
+.user-dropdown{position:relative}
+.user-avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;color:var(--ink-gold);cursor:pointer;transition:all var(--transition)}
+.user-avatar:hover{border-color:var(--ink-gold-light)}
+.user-dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--silk-white);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px rgba(28,28,28,0.12);min-width:160px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.2s ease;z-index:200}
+.user-dropdown.open .user-dropdown-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;color:var(--text-primary);cursor:pointer;transition:background var(--transition)}
+.dropdown-item:hover{background:rgba(184,134,11,0.06)}
+.dropdown-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dropdown-item.danger{color:var(--error)}
+.dropdown-divider{height:1px;background:var(--border);margin:4px 0}
+
+.page-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.sidebar{width:220px;background:var(--silk-white);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;flex-shrink:0}
+.sidebar-nav{flex:1;padding:1.5rem 0;overflow-y:auto;min-height:0}
+.sidebar-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;color:var(--text-secondary);font-size:0.85rem;transition:all var(--transition);cursor:pointer;border-left:3px solid transparent;font-weight:300}
+.sidebar-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sidebar-item:hover{color:var(--ink-gold);background:rgba(184,134,11,0.03)}
+.sidebar-item.active{color:var(--ink-gold);background:rgba(184,134,11,0.05);border-left-color:var(--ink-gold)}
+.sidebar-user{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:0.75rem;flex-shrink:0;background:var(--silk-white)}
+.sidebar-user-top{display:flex;align-items:center;gap:0.75rem}
+.sidebar-user-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--ink-black);border:1px solid var(--ink-gold);display:grid;place-items:center;font-size:0.85rem;font-weight:400;color:var(--ink-gold)}
+.sidebar-user-info{flex:1;min-width:0}
+.sidebar-user-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-role{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
+
+.content{flex:1;padding:2rem;overflow-y:auto;min-height:0}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;gap:1rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.page-title-group{display:flex;flex-direction:column;gap:0.25rem}
+.page-title{font-size:1.5rem;font-weight:300;color:var(--ink-black);letter-spacing:0.05em}
+.page-subtitle{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.05em}
+.page-actions{display:flex;gap:0.75rem;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 1.125rem;border-radius:4px;font-size:0.8rem;font-weight:400;transition:all var(--transition);cursor:pointer;border:1px solid transparent;letter-spacing:0.03em}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--ink-black);color:var(--silk-white);border-color:var(--ink-black)}
+.btn-primary:hover{background:#333}
+.btn-gold{background:var(--ink-gold);color:#fff;box-shadow:0 4px 12px rgba(184,134,11,0.25)}
+.btn-gold:hover{background:var(--ink-gold-light)}
+.btn-outline{border-color:var(--border);color:var(--text-secondary);background:var(--silk-white)}
+.btn-outline:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.tab{padding:0.75rem 1.5rem;font-size:0.85rem;color:var(--text-muted);cursor:pointer;transition:all var(--transition);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text-primary)}
+.tab.active{color:var(--ink-gold);border-bottom-color:var(--ink-gold)}
+
+/* === SUB FILTERS (乐谱子筛选) === */
+.sub-filters{display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.25rem;padding:0.75rem 1rem;background:rgba(237,232,220,0.3);border:1px solid var(--border);border-radius:4px}
+.filter-group{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.filter-label{font-size:0.7rem;font-weight:400;color:var(--ink-gold);letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;min-width:36px}
+.filter-options{display:flex;gap:0.375rem;flex-wrap:wrap}
+.filter-opt{font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:2px;cursor:pointer;color:var(--text-secondary);border:1px solid transparent;transition:all var(--transition);white-space:nowrap}
+.filter-opt:hover{color:var(--ink-gold);border-color:rgba(184,134,11,0.3)}
+.filter-opt.active{color:var(--ink-gold);background:rgba(184,134,11,0.08);border-color:var(--ink-gold)}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-box{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;padding:1rem;text-align:center;transition:all var(--transition)}
+.stat-box:hover{border-color:var(--ink-gold)}
+.stat-value{font-size:1.5rem;font-weight:400;color:var(--ink-black);margin-bottom:0.25rem}
+.stat-label{font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}
+
+.search-bar{display:flex;gap:0.75rem;margin-bottom:1.5rem}
+.search-input{flex:1;padding:0.625rem 1rem;border:1px solid var(--border);border-radius:4px;font-size:0.85rem;color:var(--text-primary);background:var(--silk-white);transition:border-color var(--transition)}
+.search-input:focus{border-color:var(--ink-gold);outline:none}
+.search-input::placeholder{color:var(--text-muted)}
+
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+.doc-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:all var(--transition);cursor:pointer}
+.doc-card:hover{box-shadow:0 4px 16px rgba(28,28,28,0.08);border-color:var(--ink-gold);transform:translateY(-2px)}
+.doc-thumb{height:120px;display:flex;align-items:center;justify-content:center;background:rgba(237,232,220,0.4);border-bottom:1px solid var(--border)}
+.doc-thumb svg{width:40px;height:40px;stroke:var(--ink-gold);fill:none;stroke-width:1.5}
+.doc-thumb.pdf svg{stroke:#b03030}
+.doc-thumb.doc svg{stroke:#3b82f6}
+.doc-thumb.music svg{stroke:#8b5cf6}
+.doc-thumb.img svg{stroke:#059669}
+.doc-body{padding:0.875rem}
+.doc-name{font-size:0.85rem;font-weight:400;color:var(--text-primary);margin-bottom:0.375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:0.7rem;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem}
+.doc-tag{display:inline-flex;padding:0.1rem 0.375rem;border-radius:2px;font-size:0.6rem;font-weight:400}
+.tag-pdf{background:rgba(176,48,48,0.1);color:#b03030}
+.tag-doc{background:rgba(59,130,246,0.1);color:#3b82f6}
+.tag-ppt{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.tag-pdf2{background:rgba(139,92,246,0.1);color:#8b5cf6}
+.tag-img{background:rgba(58,125,68,0.1);color:#3a7d44}
+
+.doc-table{width:100%;border-collapse:collapse}
+.doc-table th{text-align:left;font-size:0.6rem;font-weight:400;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-gold);padding:0.625rem 1rem;border-bottom:1px solid var(--border);white-space:nowrap;background:rgba(237,232,220,0.3)}
+.doc-table td{padding:0.875rem 1rem;border-bottom:1px solid rgba(28,28,28,0.06);font-size:0.85rem;vertical-align:middle;font-weight:300}
+.doc-table tr:last-child td{border-bottom:none}
+.doc-table tbody tr{transition:background var(--transition)}
+.doc-table tbody tr:hover{background:rgba(184,134,11,0.04)}
+.doc-name-cell{display:flex;align-items:center;gap:0.75rem}
+.doc-name-text{font-weight:400;color:var(--text-primary)}
+.doc-name-sub{font-size:0.7rem;color:var(--text-muted);margin-top:0.1rem}
+.doc-icon{width:32px;height:32px;border-radius:4px;display:grid;place-items:center;flex-shrink:0}
+.doc-icon svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75}
+.doc-icon-pdf{background:rgba(176,48,48,0.1);color:#b03030}
+.doc-icon-doc{background:rgba(59,130,246,0.1);color:#3b82f6}
+.doc-icon-ppt{background:rgba(184,134,11,0.1);color:var(--ink-gold)}
+.doc-icon-pdf2{background:rgba(139,92,246,0.1);color:#8b5cf6}
+.doc-icon-music{background:rgba(139,92,246,0.1);color:#8b5cf6}
+.doc-action-btn{padding:0.375rem 0.75rem;font-size:0.7rem;border:1px solid var(--border);border-radius:3px;background:var(--silk-white);color:var(--text-secondary);cursor:pointer;transition:all var(--transition)}
+.doc-action-btn:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+.doc-action-btn.danger:hover{border-color:var(--error);color:var(--error)}
+
+/* === PART BUTTONS (分部伴奏) === */
+.part-btn{font-size:0.6rem;padding:0.15rem 0.4rem;border:1px solid var(--border-gold);border-radius:2px;background:rgba(184,134,11,0.06);color:var(--ink-gold);cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.part-btn:hover{background:var(--ink-gold);color:#fff}
+
+.card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:1.5rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:rgba(237,232,220,0.2)}
+.card-title{font-size:0.85rem;font-weight:400;color:var(--ink-black);display:flex;align-items:center;gap:0.5rem}
+.card-title svg{width:14px;height:14px;stroke:var(--ink-gold);fill:none;stroke-width:2}
+.card-body{padding:1.25rem}
+
+@media(max-width:1200px){.sidebar{display:none}.page-body{flex-direction:column}.stats-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.doc-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">♪</div>
+    <div class="brand-text">
+      <span class="brand-name">极简中式</span>
+      <span class="brand-sub">Choir Management</span>
+    </div>
+  </div>
+  <nav class="topnav">
+    <a class="nav-item" href="极简中式-桌面端.html"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>首页</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-avatar">刘</div>
+      <div class="user-dropdown-menu">
+        <div class="dropdown-item"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>修改密码</span></div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>退出登录</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-body">
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <a class="sidebar-item" href="极简中式-桌面端.html">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        我的首页
+      </a>
+      <a class="sidebar-item" href="极简中式-排练计划.html">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        排练计划
+      </a>
+      <a class="sidebar-item" href="极简中式-献唱计划.html">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        献唱计划
+      </a>
+      <a class="sidebar-item" href="极简中式-作业提交.html">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        作业提交
+      </a>
+      <a class="sidebar-item" href="极简中式-成员管理.html">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        成员管理
+      </a>
+      <a class="sidebar-item" href="极简中式-系统管理.html">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3 14.1V9a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 12 9.35c.63 0 1.22-.3 1.57-.8.35-.5.43-1.12.24-1.68A1.65 1.65 0 0 0 13.9 6V3a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 21 6.9V9a2 2 0 0 1-4 0v-.09c0-.63-.3-1.22-.8-1.57-.5-.35-1.12-.43-1.68-.24z"/></svg>
+        系统管理
+      </a>
+      <a class="sidebar-item active" href="极简中式-资料管理.html">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        资料管理
+      </a>
+      <a class="sidebar-item" href="极简中式-录音管理.html">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        录音管理
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-top">
+        <div class="sidebar-user-avatar">刘</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">刘管理员</div>
+          <div class="sidebar-user-role">系统管理员</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">资料管理</h1>
+        <p class="page-subtitle">合唱团文档、乐谱、演出资料集中管理</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-gold" id="uploadBtn">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          上传资料
+        </button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-value" id="statTotal">16</div>
+        <div class="stat-label">资料总数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statScore">8</div>
+        <div class="stat-label">乐谱文件</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statPerf">3</div>
+        <div class="stat-label">演出资料</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statRule">4</div>
+        <div class="stat-label">规章制度</div>
+      </div>
+    </div>
+
+    <div class="tabs" id="docTabs">
+      <div class="tab active" data-tab="all">全部资料</div>
+      <div class="tab" data-tab="score">乐谱</div>
+      <div class="tab" data-tab="perf">演出资料</div>
+      <div class="tab" data-tab="rehearsal">排练资料</div>
+      <div class="tab" data-tab="rule">规章制度</div>
+    </div>
+
+    <!-- 乐谱子筛选栏，仅乐谱tab可见 -->
+    <div class="sub-filters" id="scoreFilters" style="display:none;">
+      <div class="filter-group">
+        <span class="filter-label">分类</span>
+        <div class="filter-options" id="filterCategory">
+          <span class="filter-opt active" data-val="all">全部分类</span>
+          <span class="filter-opt" data-val="古诗词">古诗词</span>
+          <span class="filter-opt" data-val="现代合唱">现代合唱</span>
+          <span class="filter-opt" data-val="外国作品">外国作品</span>
+          <span class="filter-opt" data-val="民谣改编">民谣改编</span>
+          <span class="filter-opt" data-val="宗教合唱">宗教合唱</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">合集</span>
+        <div class="filter-options" id="filterCollection">
+          <span class="filter-opt active" data-val="all">全部合集</span>
+          <span class="filter-opt" data-val="春之季">春之季</span>
+          <span class="filter-opt" data-val="端午特辑">端午特辑</span>
+          <span class="filter-opt" data-val="中秋晚会">中秋晚会</span>
+          <span class="filter-opt" data-val="年终汇演">年终汇演</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">风格</span>
+        <div class="filter-options" id="filterStyle">
+          <span class="filter-opt active" data-val="all">全部风格</span>
+          <span class="filter-opt" data-val="气势恢宏">气势恢宏</span>
+          <span class="filter-opt" data-val="柔美抒情">柔美抒情</span>
+          <span class="filter-opt" data-val="轻快活泼">轻快活泼</span>
+          <span class="filter-opt" data-val="庄严神圣">庄严神圣</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索资料名称、合集、风格、分类..."/>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          资料列表
+        </span>
+        <span style="font-size:0.75rem;color:var(--text-muted)" id="docCount">共 12 条</span>
+      </div>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>资料名称</th>
+            <th>分类</th>
+            <th>上传人</th>
+            <th>上传时间</th>
+            <th>大小</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="docTableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+// 演出资料在线播放弹窗
+function openVideoModal(url, name) {
+  const modal = document.getElementById('videoModal');
+  document.getElementById('videoModalTitle').textContent = name;
+  const embedUrl = url.includes('youtu.be/') 
+    ? 'https://www.youtube.com/embed/' + url.split('youtu.be/')[1].split('?')[0] + '?autoplay=1'
+    : url;
+  document.getElementById('videoModalIframe').src = embedUrl;
+  modal.style.display = 'flex';
+}
+function closeVideoModal() {
+  const modal = document.getElementById('videoModal');
+  document.getElementById('videoModalIframe').src = '';
+  modal.style.display = 'none';
+}
+
+// 乐谱字段说明：
+//   category: 分类（古诗词/现代合唱/外国作品/民谣改编/宗教合唱）
+//   style:    风格（气势恢宏/柔美抒情/轻快活泼/庄严神圣）
+//   collection: 合集（春之季/端午特辑/中秋晚会/年终汇演）
+//   partTracks: 分部伴奏 [推拿][1]（数组，每项含 part+url）
+//   videoUrl:  关联视频地址（模拟）
+const docs = [
+  {id:1,  name:'《春江花月夜》四声部总谱', sub:'五·四编排版', type:'score', category:'古诗词', style:'柔美抒情', collection:'春之季', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo1', ext:'pdf', uploader:'刘管理员', date:'2026-05-10', size:'2.4 MB'},
+  {id:2,  name:'《渔舟唱晚》四声部版本', sub:'改编版含分谱', type:'score', category:'古诗词', style:'轻快活泼', collection:'春之季', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo2', ext:'pdf', uploader:'刘管理员', date:'2026-05-08', size:'3.1 MB'},
+  {id:3,  name:'六月汇演舞台平面图', sub:'市文化中心B区', type:'perf', category:'', style:'', collection:'', partTracks:[], videoUrl:'https://youtu.be/perf3', ext:'pdf', uploader:'刘管理员', date:'2026-05-06', size:'1.2 MB'},
+  {id:4,  name:'合唱团章程（2026修订版）', sub:'全体团员适用', type:'rule', category:'', style:'', collection:'', partTracks:[], videoUrl:'', ext:'doc', uploader:'张财务', date:'2026-04-20', size:'456 KB'},
+  {id:5,  name:'《黄河大合唱》钢琴伴奏谱', sub:'混声四部版', type:'score', category:'现代合唱', style:'气势恢宏', collection:'年终汇演', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'},{part:'钢琴伴奏',url:'#'}], videoUrl:'https://youtu.be/demo5', ext:'pdf', uploader:'刘管理员', date:'2026-04-15', size:'5.8 MB'},
+  {id:6,  name:'六月汇演服装配饰清单', sub:'含尺码统计', type:'perf', category:'', style:'', collection:'', partTracks:[], videoUrl:'https://youtu.be/perf6', ext:'xlsx', uploader:'王技术', date:'2026-05-02', size:'89 KB'},
+  {id:7,  name:'排练考勤管理办法', sub:'2026年5月起执行', type:'rule', category:'', style:'', collection:'', partTracks:[], videoUrl:'', ext:'doc', uploader:'陈客服', date:'2026-04-28', size:'234 KB'},
+  {id:8,  name:'《枫桥夜泊》古诗词合唱版', sub:'含音频示范', type:'score', category:'古诗词', style:'柔美抒情', collection:'中秋晚会', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo8', ext:'pdf', uploader:'刘管理员', date:'2026-03-20', size:'1.9 MB'},
+  {id:9,  name:'演出接送车辆安排表', sub:'五月排练接送', type:'rehearsal', category:'', style:'', collection:'', partTracks:[], videoUrl:'', ext:'xlsx', uploader:'李运营', date:'2026-05-12', size:'67 KB'},
+  {id:10, name:'录音棚使用规范', sub:'含预约流程', type:'rule', category:'', style:'', collection:'', partTracks:[], videoUrl:'', ext:'pdf', uploader:'王技术', date:'2026-03-10', size:'312 KB'},
+  {id:11, name:'五月声部分练曲目单', sub:'各声部排练计划', type:'rehearsal', category:'', style:'', collection:'', partTracks:[], videoUrl:'', ext:'pdf', uploader:'刘管理员', date:'2026-05-01', size:'890 KB'},
+  {id:12, name:'演出人员分工表', sub:'六月汇演细化方案', type:'perf', category:'', style:'', collection:'', partTracks:[], videoUrl:'https://youtu.be/perf12', ext:'xlsx', uploader:'刘管理员', date:'2026-05-14', size:'104 KB'},
+  // 新增乐谱数据（扩充至可演示分类/合集/风格筛选）
+  {id:13, name:'《Ave Maria》四声部版', sub:'Schubert 改编', type:'score', category:'外国作品', style:'庄严神圣', collection:'年终汇演', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo13', ext:'pdf', uploader:'刘管理员', date:'2026-05-15', size:'2.1 MB'},
+  {id:14, name:'《茉莉花》民谣合唱编配', sub:'江苏民歌改编', type:'score', category:'民谣改编', style:'轻快活泼', collection:'端午特辑', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo14', ext:'pdf', uploader:'刘管理员', date:'2026-05-16', size:'1.7 MB'},
+  {id:15, name:'《阳关三叠》合唱版', sub:'古诗词·王维', type:'score', category:'古诗词', style:'柔美抒情', collection:'中秋晚会', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo15', ext:'pdf', uploader:'刘管理员', date:'2026-05-16', size:'2.0 MB'},
+  {id:16, name:'《哈利路亚》合唱曲', sub:'亨德尔·弥赛亚选段', type:'score', category:'宗教合唱', style:'庄严神圣', collection:'年终汇演', partTracks:[{part:'女高',url:'#'},{part:'女低',url:'#'},{part:'男高',url:'#'},{part:'男低',url:'#'}], videoUrl:'https://youtu.be/demo16', ext:'pdf', uploader:'刘管理员', date:'2026-05-15', size:'3.4 MB'},
+];
+
+const extIcon = {
+  pdf:  {cls:'doc-icon-pdf',  svg:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'},
+  doc:  {cls:'doc-icon-doc',  svg:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'},
+  xlsx: {cls:'doc-icon-pdf2', svg:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>'},
+};
+
+const tagCls = {
+  score:{cls:'tag-pdf',  label:'乐谱'},
+  perf: {cls:'tag-ppt',  label:'演出资料'},
+  rule: {cls:'tag-doc',  label:'规章制度'},
+  rehearsal:{cls:'tag-img', label:'排练资料'},
+};
+
+let currentTab = 'all';
+let searchKeyword = '';
+let filterCategory = 'all';
+let filterCollection = 'all';
+let filterStyle = 'all';
+
+function renderDocs() {
+  let list = docs;
+  // Tab 主分类筛选
+  if (currentTab !== 'all') {
+    list = list.filter(d => d.type === currentTab);
+  }
+  // 乐谱子筛选（仅在乐谱tab生效）
+  if (currentTab === 'score') {
+    if (filterCategory !== 'all') list = list.filter(d => d.category === filterCategory);
+    if (filterCollection !== 'all') list = list.filter(d => d.collection === filterCollection);
+    if (filterStyle !== 'all') list = list.filter(d => d.style === filterStyle);
+  }
+  // 搜索：名称、合集、风格、分类
+  if (searchKeyword) {
+    const kw = searchKeyword.toLowerCase();
+    list = list.filter(d =>
+      d.name.toLowerCase().includes(kw)
+      || (d.sub && d.sub.toLowerCase().includes(kw))
+      || (d.category && d.category.toLowerCase().includes(kw))
+      || (d.collection && d.collection.toLowerCase().includes(kw))
+      || (d.style && d.style.toLowerCase().includes(kw))
+    );
+  }
+  document.getElementById('docCount').textContent = '共 ' + list.length + ' 条';
+  document.getElementById('docTableBody').innerHTML = list.map(d => {
+    const ei = extIcon[d.ext] || extIcon.doc;
+    const tc = tagCls[d.type] || tagCls.rule;
+    // 分部伴奏按钮组
+    let partsHtml = '';
+    if (d.partTracks && d.partTracks.length > 0) {
+      partsHtml = '<div style="display:flex;flex-wrap:wrap;gap:3px;">' + d.partTracks.map(p =>
+        '<button class="part-btn" title="下载'+p.part+'伴奏" onclick="event.stopPropagation();alert(\'下载'+d.name+'·'+p.part+'伴奏\')">'+p.part+'</button>'
+      ).join('') + '</div>';
+    }
+    // 关联视频按钮
+    let videoHtml = '';
+    if (d.videoUrl) {
+      videoHtml = '<button class="doc-action-btn" style="margin-left:4px;" onclick="event.stopPropagation();openVideoModal(\''+d.videoUrl+'\', \''+d.name+'\')">🎬 播放</button>';
+    }
+    // 演出资料：在线播放，不显示下载
+    let actionHtml = '';
+    if (d.type === 'perf' && d.videoUrl) {
+      actionHtml = '<button class="doc-action-btn" style="background:var(--ink-gold);color:#fff;border-color:var(--ink-gold);" onclick="event.stopPropagation();openVideoModal(\''+d.videoUrl+'\', \''+d.name+'\')">▶ 在线播放</button>';
+    } else if (d.type !== 'perf') {
+      actionHtml = '<button class="doc-action-btn" onclick="event.stopPropagation();alert(\'下载: '+d.name+'\')">下载</button>';
+    }
+    return '<tr ' + (d.type==='score' ? 'style="cursor:pointer" onclick="window.location.href=\'极简中式-乐谱详情.html?id='+d.id+'\'"' : '') + '>'
+      +'<td><div class="doc-name-cell">'
+        +'<div class="doc-icon '+ei.cls+'">'+ei.svg+'</div>'
+        +'<div><div class="doc-name-text">'+d.name+'</div><div class="doc-name-sub">'+d.sub+'</div></div>'
+      +'</div></td>'
+      +'<td><span class="doc-tag '+tc.cls+'">'+tc.label+'</span>'
+      + (d.category ? '<br><span style="font-size:0.6rem;color:var(--text-muted)">'+d.category+'</span>' : '')
+      +'</td>'
+      +'<td>'+d.uploader+'<br><span style="font-size:0.6rem;color:var(--text-muted)">'+(d.collection||'')+'</span></td>'
+      +'<td>'+d.date+'<br><span style="font-size:0.6rem;color:var(--text-muted)">'+(d.style||'')+'</span></td>'
+      +'<td>'+d.size+'</td>'
+      +'<td>'
+        +actionHtml
+        +partsHtml
+        +videoHtml
+        +'<button class="doc-action-btn danger" style="margin-left:4px;" onclick="event.stopPropagation();alert(\'删除: '+d.name+'\')">删除</button>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    // 显示/隐藏乐谱子筛选栏
+    document.getElementById('scoreFilters').style.display = currentTab === 'score' ? 'flex' : 'none';
+    renderDocs();
+  });
+});
+
+// 子筛选点击
+function initFilter(groupId, setVar) {
+  document.querySelectorAll('#'+groupId+' .filter-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('#'+groupId+' .filter-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      if (setVar === 'category') filterCategory = opt.dataset.val;
+      if (setVar === 'collection') filterCollection = opt.dataset.val;
+      if (setVar === 'style') filterStyle = opt.dataset.val;
+      renderDocs();
+    });
+  });
+}
+initFilter('filterCategory', 'category');
+initFilter('filterCollection', 'collection');
+initFilter('filterStyle', 'style');
+
+// Search
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchKeyword = e.target.value;
+  renderDocs();
+});
+
+// Upload
+document.getElementById('uploadBtn').addEventListener('click', () => {
+  alert('打开资料上传页面');
+});
+
+// User dropdown
+const userDropdown = document.getElementById('userDropdown');
+userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
+  e.stopPropagation();
+  userDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => userDropdown.classList.remove('open'));
+
+renderDocs();
+</script>
+
+<!-- 视频播放弹窗 -->
+<div id="videoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:1rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:800px;padding:0 1rem;">
+    <span style="color:#fff;font-size:0.9rem;" id="videoModalTitle">视频播放</span>
+    <button onclick="closeVideoModal()" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:0.5rem;">&times;</button>
+  </div>
+  <iframe id="videoModalIframe" width="800" height="450" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="max-width:100%;"></iframe>
+</div>
+</body>
+</html>
