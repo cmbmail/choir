@@ -22,6 +22,50 @@
       .replace(/"/g, "&quot;");
   }
 
+  function formatBytes(n) {
+    const v = Number(n) || 0;
+    if (v < 1024) return v + " B";
+    if (v < 1024 * 1024) return (v / 1024).toFixed(1) + " KB";
+    if (v < 1024 * 1024 * 1024) return (v / (1024 * 1024)).toFixed(1) + " MB";
+    return (v / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+  }
+
+  async function loadStorage() {
+    const usedEl = document.getElementById("stat-storage-used");
+    const pctEl = document.getElementById("stat-storage-pct");
+    const bar = document.getElementById("storage-bar");
+    const detail = document.getElementById("storage-detail");
+    const mode = document.getElementById("storage-mode");
+    if (!usedEl && !detail) return;
+    try {
+      const data = await ChoirAPI.get("/system/storage");
+      const used = data.used_bytes || 0;
+      const quota = data.quota_bytes || 0;
+      const pct = Math.min(100, data.usage_percent || 0);
+      if (usedEl) usedEl.textContent = formatBytes(used);
+      if (pctEl) pctEl.textContent = pct.toFixed(1) + "%";
+      if (bar) bar.style.width = pct + "%";
+      if (mode) {
+        mode.textContent =
+          data.cde_mode === "mock" ? "本地 mock 存储" : "阿里云 CDE";
+      }
+      if (detail) {
+        detail.textContent =
+          "已用 " +
+          formatBytes(used) +
+          " / 配额 " +
+          formatBytes(quota) +
+          "（" +
+          pct.toFixed(1) +
+          "%）";
+      }
+    } catch (e) {
+      if (detail) detail.textContent = "无法加载存储信息：" + (e.message || "");
+      if (usedEl) usedEl.textContent = "—";
+      if (pctEl) pctEl.textContent = "—";
+    }
+  }
+
   async function loadChoirs() {
     const data = await ChoirAPI.get("/choirs");
     const choirs = data.choirs || [];
@@ -101,6 +145,11 @@
     "role.create": "创建角色",
     "role.update": "更新角色权限",
     "role.delete": "删除角色",
+    "documents.upload": "上传资料",
+    "documents.delete": "删除资料",
+    "works.create": "创建作品",
+    "recordings.upload": "上传录音",
+    "recordings.delete": "删除录音",
   };
 
   async function loadLogs() {
@@ -164,9 +213,10 @@
 
   function setupPage() {
     document.getElementById("btn-add-choir")?.addEventListener("click", openModal);
-    document.getElementById("btn-refresh-choirs")?.addEventListener("click", () =>
-      loadChoirs().catch((e) => toast(e.message, true))
-    );
+    document.getElementById("btn-refresh-choirs")?.addEventListener("click", () => {
+      loadChoirs().catch((e) => toast(e.message, true));
+      loadStorage().catch((e) => toast(e.message, true));
+    });
     document.getElementById("form-create-choir")?.addEventListener("submit", createChoir);
     document.querySelectorAll("[data-close-create]").forEach((el) => {
       el.addEventListener("click", closeModal);
@@ -175,6 +225,7 @@
     if (logsCard) logsCard.hidden = false;
     loadChoirs().catch((e) => toast(e.message, true));
     loadLogs().catch((e) => toast(e.message, true));
+    loadStorage().catch((e) => toast(e.message, true));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

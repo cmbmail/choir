@@ -219,6 +219,27 @@ a{color:inherit;text-decoration:none}
         <div class="stat-value" id="stat-active">—</div>
         <div class="stat-label">运营中</div>
       </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-storage-used">—</div>
+        <div class="stat-label">云盘已用</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-storage-pct">—</div>
+        <div class="stat-label">使用率</div>
+      </div>
+    </div>
+
+    <div class="card" id="storage-card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">云盘存储（CDE）</span>
+        <span style="font-size:0.7rem;color:var(--text-muted)" id="storage-mode">—</span>
+      </div>
+      <div class="card-body" style="padding:0 1.25rem 1.25rem">
+        <div style="height:8px;background:rgba(28,28,28,0.06);border-radius:4px;overflow:hidden">
+          <div id="storage-bar" style="height:100%;width:0;background:var(--ink-gold);transition:width 0.3s ease"></div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem" id="storage-detail">加载中…</p>
+      </div>
     </div>
 
     <div class="card">
