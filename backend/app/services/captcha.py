@@ -82,7 +82,7 @@ def create_captcha() -> tuple[str, str]:
 
 
 def verify_captcha(captcha_id: str, code: str) -> bool:
-    row = CaptchaChallenge.query.get(captcha_id)
+    row = db.session.get(CaptchaChallenge, captcha_id)
     if not row or row.is_expired():
         return False
     ok = secrets.compare_digest(row.answer_hash, _hash_answer(code))

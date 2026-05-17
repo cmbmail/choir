@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>弦歌合唱团 · 登录</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   CSS Variables — 极简中式设计体系
+   ============================================================ */
+:root {
+  --ink-black: #1C1C1C;
+  --ink-gold: #B8860B;
+  --ink-gold-light: #D4A84B;
+  --ink-gold-dim: rgba(184,134,11,0.15);
+  --silk-white: #F8F6F0;
+  --silk-cream: #EDE8DC;
+  --border: rgba(28,28,28,0.1);
+  --border-gold: rgba(184,134,11,0.3);
+  --text-primary: #1C1C1C;
+  --text-secondary: #5a5548;
+  --text-muted: #9c9490;
+  --success: #3a7d44;
+  --warning: #c07a1e;
+  --error: #b03030;
+  --font-main: 'Space Grotesk','Noto Sans SC',sans-serif;
+  --font-serif: 'Noto Serif SC',serif;
+  --transition: 200ms ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-main);
+  font-weight: 300;
+  background: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+button { cursor: pointer; border: none; background: none; font: inherit; -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink-gold); outline-offset: 2px; }
+
+/* ============================================================
+   Phone Frame — iPhone 16 Pro
+   ============================================================ */
+.phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.phone-label {
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.phone-frame {
+  width: 393px;
+  height: 852px;
+  background: var(--silk-white);
+  border-radius: 52px;
+  box-shadow:
+    0 0 0 2px #333,
+    0 0 0 10px #1a1a1a,
+    0 0 0 12px #2a2a2a,
+    0 40px 100px rgba(0,0,0,0.7);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dynamic Island */
+.dynamic-island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 17px;
+  z-index: 999;
+}
+
+/* On real mobile: fill the frame */
+@media (max-width: 460px) {
+  body { background: var(--silk-white); padding: 0; }
+  .phone-frame {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .dynamic-island { display: none; }
+  .phone-wrap { padding: 0; gap: 0; }
+  .phone-label { display: none; }
+}
+
+/* ============================================================
+   Status Bar
+   ============================================================ */
+.status-bar {
+  height: 44px;
+  background: var(--ink-black);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  flex-shrink: 0;
+  color: #fff;
+  position: relative;
+  z-index: 100;
+}
+.status-time {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-icons svg { width: 14px; height: 14px; fill: rgba(255,255,255,0.9); }
+.battery-icon { display: flex; align-items: center; gap: 2px; }
+.battery-body {
+  width: 22px;
+  height: 11px;
+  border: 1.5px solid rgba(255,255,255,0.8);
+  border-radius: 2.5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 1.5px;
+}
+.battery-body::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 5px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 0 1px 1px 0;
+}
+.battery-fill {
+  width: 70%;
+  height: 100%;
+  background: #fff;
+  border-radius: 1px;
+}
+
+/* ============================================================
+   Login Content
+   ============================================================ */
+.login-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--silk-white);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative background pattern */
+.login-content::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 280px;
+  height: 280px;
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  opacity: 0.4;
+}
+.login-content::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 200px;
+  height: 200px;
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  opacity: 0.25;
+}
+
+/* Brand Section */
+.login-brand {
+  padding: 3rem 1.75rem 2rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.brand-emblem {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  border: 1px solid var(--ink-gold);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.brand-emblem::before,
+.brand-emblem::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+}
+.brand-emblem::before {
+  top: -3px;
+  left: -3px;
+  border-top: 1px solid var(--ink-gold);
+  border-left: 1px solid var(--ink-gold);
+}
+.brand-emblem::after {
+  bottom: -3px;
+  right: -3px;
+  border-bottom: 1px solid var(--ink-gold);
+  border-right: 1px solid var(--ink-gold);
+}
+.brand-emblem svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--ink-gold);
+  fill: none;
+  stroke-width: 1.25;
+}
+.login-title {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.375rem;
+}
+.login-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Form Section */
+.login-form {
+  padding: 0 1.75rem;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.input-group {
+  margin-bottom: 1rem;
+  position: relative;
+}
+.input-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.input-field {
+  width: 100%;
+  height: 48px;
+  padding: 0 1rem;
+  background: rgba(28,28,28,0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: all var(--transition);
+}
+.input-field:focus {
+  background: #fff;
+  border-color: var(--ink-gold);
+  box-shadow: 0 0 0 3px var(--ink-gold-dim);
+}
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.input-row .input-group {
+  flex: 1;
+}
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+  transition: stroke var(--transition);
+  pointer-events: none;
+}
+.input-field:focus ~ .input-icon,
+.input-group:focus-within .input-icon {
+  stroke: var(--ink-gold);
+}
+.input-wrapper {
+  position: relative;
+}
+.input-wrapper .input-field {
+  padding-left: 2.75rem;
+}
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition: background var(--transition);
+}
+.toggle-password:hover {
+  background: rgba(28,28,28,0.05);
+}
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+/* Remember & Forgot */
+.login-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.remember-me input[type="checkbox"] {
+  display: none;
+}
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  transition: all var(--transition);
+}
+.checkbox-custom svg {
+  width: 12px;
+  height: 12px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.remember-me input:checked + .checkbox-custom {
+  background: var(--ink-gold);
+  border-color: var(--ink-gold);
+}
+.remember-me input:checked + .checkbox-custom svg {
+  opacity: 1;
+}
+.remember-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.forgot-link {
+  font-size: 0.75rem;
+  color: var(--ink-gold);
+  transition: opacity var(--transition);
+}
+.forgot-link:hover {
+  opacity: 0.7;
+}
+
+/* Login Button */
+.login-btn {
+  width: 100%;
+  height: 50px;
+  background: var(--ink-black);
+  color: var(--ink-gold);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+.login-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--ink-gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms ease;
+}
+.login-btn:hover::before {
+  transform: scaleX(1);
+}
+.login-btn:hover {
+  background: #2a2a2a;
+}
+.login-btn:active {
+  transform: scale(0.98);
+}
+
+/* Divider */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.login-divider span {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* WeChat Login */
+.wechat-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: all var(--transition);
+}
+.wechat-login:hover {
+  background: rgba(3,192,74,0.05);
+  border-color: rgba(3,192,74,0.3);
+}
+.wechat-login svg {
+  width: 22px;
+  height: 22px;
+}
+.wechat-login span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Footer */
+.login-footer {
+  padding: 1.5rem 1.75rem 2rem;
+  text-align: center;
+}
+.login-footer p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.login-footer a {
+  color: var(--ink-gold);
+}
+.register-link {
+  display: inline;
+  color: var(--ink-gold);
+  margin-left: 0.25rem;
+}
+
+/* Loading state */
+.login-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.login-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: var(--ink-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  left: 50%;
+  top: 50%;
+  margin: -9px 0 0 -9px;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.input-group.has-error .input-field {
+  border-color: var(--error);
+}
+.input-group.has-error .input-field:focus {
+  box-shadow: 0 0 0 3px rgba(176,48,48,0.1);
+}
+.error-msg {
+  font-size: 0.65rem;
+  color: var(--error);
+  margin-top: 0.375rem;
+  display: none;
+}
+.input-group.has-error .error-msg {
+  display: block;
+}
+
+/* Toast notification */
+.toast {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: var(--ink-black);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  z-index: 1000;
+  transition: transform 300ms ease;
+  border-left: 2px solid var(--ink-gold);
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<div class="phone-wrap">
+  <span class="phone-label">iPhone 16 Pro · 393 × 852</span>
+
+  <div class="phone-frame">
+    <!-- Dynamic Island -->
+    <div class="dynamic-island"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time" id="statusTime">19:01</span>
+      <div class="status-icons">
+        <!-- Signal -->
+        <svg viewBox="0 0 18 14"><rect x="0" y="8" width="3" height="6" rx="0.5"/><rect x="5" y="5" width="3" height="9" rx="0.5"/><rect x="10" y="2" width="3" height="12" rx="0.5"/><rect x="15" y="0" width="3" height="14" rx="0.5" opacity="0.3"/></svg>
+        <!-- WiFi -->
+        <svg viewBox="0 0 24 18"><path d="M12 18L12 18C12 18 4 11 4 7.5C4 5.5 5.5 4 7.5 4C8.5 4 9.5 4.5 10.2 5.2L12 7L12 7" stroke="none" fill="currentColor"/><circle cx="12" cy="16" r="2" fill="currentColor"/></svg>
+        <!-- Battery -->
+        <div class="battery-icon">
+          <div class="battery-body"><div class="battery-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Content -->
+    <div class="login-content">
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+      <!-- Brand -->
+      <div class="login-brand">
+        <div class="brand-emblem">
+          <!-- Music note icon -->
+          <svg viewBox="0 0 24 24">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+        </div>
+        <h1 class="login-title">弦歌合唱团</h1>
+        <p class="login-subtitle">Xian Ge Choir</p>
+      </div>
+
+      <!-- Form -->
+      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+
+        <!-- Account -->
+        <div class="input-group" id="accountGroup">
+          <span class="input-label">账号</span>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              class="input-field"
+              id="account"
+              placeholder="请输入手机号或邮箱"
+              autocomplete="username"
+              maxlength="30"
+            />
+            <svg class="input-icon" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <p class="error-msg">请输入正确的账号</p>
+        </div>
+
+        <!-- Password -->
+        <div class="input-group" id="passwordGroup">
+          <span class="input-label">密码</span>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              class="input-field"
+              id="password"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              maxlength="20"
+            />
+            <svg class="input-icon" viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <button type="button" class="toggle-password" onclick="togglePassword()">
+              <svg id="eyeIcon" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <p class="error-msg">密码不能为空</p>
+        </div>
+
+        <!-- Options -->
+        <div class="login-options">
+          <label class="remember-me">
+            <input type="checkbox" id="rememberMe"/>
+            <span class="checkbox-custom">
+              <svg viewBox="0 0 12 12"><polyline points="1 6 4 9 11 2"/></svg>
+            </span>
+            <span class="remember-label">记住我</span>
+          </label>
+          <a href="#" class="forgot-link">忘记密码？</a>
+        </div>
+
+        <!-- Login Button -->
+        <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+
+        <!-- Divider -->
+        <div class="login-divider"><span>或</span></div>
+
+        <!-- WeChat -->
+        <button type="button" class="wechat-login" onclick="showToast('微信登录功能开发中')">
+          <svg viewBox="0 0 24 24" fill="#07C160">
+            <path d="M8.5 11.5c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9zm5.5 0c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 4.9L1.5 21l4.4-1.6c1.3.8 2.8 1.3 4.4 1.6l-.1-1.6 1.2-.3 1.6-.4c.6.2 1.2.3 1.9.3.6 0 1.1-.1 1.6-.3l1.6.4 1.2.3-.1 1.6c1.5-.2 2.9-.7 4.2-1.5L22.5 21l-1.8-4.1c.8-1.3 1.3-2.9 1.3-4.6 0-5.5-4.5-10-10-10zm-5.5 3c.5 0 .9-.4.9-.9s-.4-.9-.9-.9-.9.4-.9.9.4.9.9.9zm-4 0c.5 0 .9-.4.9-.9s-.4-.9-.9-.9-.9.4-.9.9.4.9.9.9zm10 0c.5 0 .9-.4.9-.9s-.4-.9-.9-.9-.9.4-.9.9.4.9.9.9zm-4 4c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/>
+          </svg>
+          <span>微信登录</span>
+        </button>
+
+      </form>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        <p>登录即表示同意<a href="#">用户协议</a>和<a href="#">隐私政策</a><br/><span class="register-link">还没有账号？立即注册</span></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 更新时间
+function updateTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const el = document.getElementById('statusTime');
+  if (el) el.textContent = `${h}:${m}`;
+}
+updateTime();
+setInterval(updateTime, 30000);
+
+// 切换密码可见性
+function togglePassword() {
+  const input = document.getElementById('password');
+  const icon = document.getElementById('eyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = '<path d="M17.9 17.4c-.4-.3-.9-.5-1.4-.6-.6-.2-1.2-.2-1.8-.2C12 16.5 9.4 14.3 8 12c1.4-2.3 4-4.5 7.2-4.5.5 0 1 .1 1.5.2.5.1 1 .3 1.4.6M1 12s4 8 11 8c1.5 0 2.9-.3 4.2-.9M1 12s4-8 11-8c1.5 0 2.9.3 4.2.9"/><line x1="3" y1="3" x2="21" y2="21"/>';
+  } else {
+    input.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+// 显示提示
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// 清除错误状态
+function clearError(groupId) {
+  document.getElementById(groupId).classList.remove('has-error');
+}
+
+// 登录处理
+function handleLogin(e) {
+  e.preventDefault();
+  const account = document.getElementById('account').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+
+  // 清除之前的错误
+  document.getElementById('accountGroup').classList.remove('has-error');
+  document.getElementById('passwordGroup').classList.remove('has-error');
+
+  // 简单验证
+  let hasError = false;
+  if (!account) {
+    document.getElementById('accountGroup').classList.add('has-error');
+    hasError = true;
+  }
+  if (!password) {
+    document.getElementById('passwordGroup').classList.add('has-error');
+    hasError = true;
+  }
+  if (hasError) return;
+
+  // 显示加载
+  btn.classList.add('loading');
+  btn.textContent = '';
+
+  // 模拟登录请求
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.textContent = '登 录';
+    // 演示：任意输入都登录成功
+    showToast('登录成功，正在跳转…');
+    // 实际项目：此处调用 API 并根据结果跳转
+    console.log('登录信息:', { account, password, remember: document.getElementById('rememberMe').checked });
+  }, 1500);
+}
+
+// 实时清除错误
+document.getElementById('account').addEventListener('input', () => clearError('accountGroup'));
+document.getElementById('password').addEventListener('input', () => clearError('passwordGroup'));
+</script>
+
+</body>
+</html>

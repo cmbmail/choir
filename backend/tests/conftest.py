@@ -1,7 +1,15 @@
 import os
 import sys
+import warnings
 
 import pytest
+
+try:
+    from sqlalchemy.exc import LegacyAPIWarning
+
+    warnings.filterwarnings("ignore", category=LegacyAPIWarning)
+except ImportError:
+    pass
 from sqlalchemy.pool import StaticPool
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

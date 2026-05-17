@@ -103,7 +103,7 @@ def test_unlock_member(client, choir_admin_headers, app):
     assert res.status_code == 200
 
     with app.app_context():
-        u = User.query.get(uid)
+        u = db.session.get(User, uid)
         assert u.failed_login_count == 0
         assert u.locked_until is None
 

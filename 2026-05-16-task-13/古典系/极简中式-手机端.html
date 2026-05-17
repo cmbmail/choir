@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>弦歌合唱团 · 手机端</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   CSS Variables — 与桌面端完全一致的极简中式设计体系
+   ============================================================ */
+:root {
+  --ink-black: #1C1C1C;
+  --ink-gold: #B8860B;
+  --ink-gold-light: #D4A84B;
+  --ink-gold-dim: rgba(184,134,11,0.15);
+  --silk-white: #F8F6F0;
+  --silk-cream: #EDE8DC;
+  --border: rgba(28,28,28,0.1);
+  --border-gold: rgba(184,134,11,0.3);
+  --text-primary: #1C1C1C;
+  --text-secondary: #5a5548;
+  --text-muted: #9c9490;
+  --success: #3a7d44;
+  --warning: #c07a1e;
+  --error: #b03030;
+  --font-main: 'Space Grotesk','Noto Sans SC',sans-serif;
+  --font-serif: 'Noto Serif SC',serif;
+  --transition: 200ms ease;
+  /* Mobile layout */
+  --status-h: 44px;
+  --header-h: 56px;
+  --tabbar-h: 68px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-main);
+  font-weight: 300;
+  background: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+button { cursor: pointer; border: none; background: none; font: inherit; -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink-gold); outline-offset: 2px; }
+
+/* ============================================================
+   Phone Frame — 还原iPhone 16 Pro 外观
+   ============================================================ */
+.phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.phone-label {
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.phone-frame {
+  width: 393px;
+  height: 852px;
+  background: var(--silk-white);
+  border-radius: 52px;
+  box-shadow:
+    0 0 0 2px #333,
+    0 0 0 10px #1a1a1a,
+    0 0 0 12px #2a2a2a,
+    0 40px 100px rgba(0,0,0,0.7);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Notch island */
+.dynamic-island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 17px;
+  z-index: 999;
+}
+
+/* On real mobile: fill the frame */
+@media (max-width: 460px) {
+  body { background: var(--silk-white); padding: 0; }
+  .phone-frame {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .dynamic-island { display: none; }
+  .phone-wrap { padding: 0; gap: 0; }
+  .phone-label { display: none; }
+}
+
+/* ============================================================
+   Status Bar
+   ============================================================ */
+.status-bar {
+  height: var(--status-h);
+  background: var(--ink-black);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  flex-shrink: 0;
+  color: #fff;
+  position: relative;
+  z-index: 100;
+}
+.status-time {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-icons svg { width: 14px; height: 14px; fill: rgba(255,255,255,0.9); }
+.battery-icon { display: flex; align-items: center; gap: 2px; }
+.battery-body {
+  width: 22px;
+  height: 11px;
+  border: 1.5px solid rgba(255,255,255,0.8);
+  border-radius: 2.5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 1.5px;
+}
+.battery-body::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 5px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 0 1px 1px 0;
+}
+.battery-fill {
+  width: 70%;
+  height: 100%;
+  background: #fff;
+  border-radius: 1px;
+}
+
+/* ============================================================
+   App Header
+   ============================================================ */
+.app-header {
+  height: var(--header-h);
+  background: var(--ink-black);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(184,134,11,0.2);
+}
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex: 1;
+}
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ink-gold);
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  color: var(--ink-gold);
+  position: relative;
+  flex-shrink: 0;
+}
+.brand-mark::before, .brand-mark::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+}
+.brand-mark::before { top: -2px; left: -2px; border-top: 1px solid var(--ink-gold); border-left: 1px solid var(--ink-gold); }
+.brand-mark::after { bottom: -2px; right: -2px; border-bottom: 1px solid var(--ink-gold); border-right: 1px solid var(--ink-gold); }
+.brand-texts { display: flex; flex-direction: column; }
+.brand-name-m {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ink-gold);
+  letter-spacing: 0.12em;
+}
+.brand-sub-m {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.icon-btn-m {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.6);
+  transition: all var(--transition);
+  position: relative;
+}
+.icon-btn-m svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-btn-m:active { background: rgba(255,255,255,0.1); color: #fff; }
+.icon-btn-m.has-dot::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--ink-gold);
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-black);
+}
+.avatar-m {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink-black);
+  border: 1px solid var(--ink-gold);
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  color: var(--ink-gold);
+  cursor: pointer;
+}
+
+/* ============================================================
+   Scroll Container
+   ============================================================ */
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  min-height: 0;
+  background: var(--silk-white);
+}
+.app-scroll::-webkit-scrollbar { display: none; }
+
+/* ============================================================
+   Page Sections (SPA tabs)
+   ============================================================ */
+.page { display: none; }
+.page.active { display: block; }
+.page-pad { padding: 1.25rem 1.25rem calc(var(--tabbar-h) + 1rem); }
+
+/* ============================================================
+   Tab Bar (Bottom Navigation)
+   ============================================================ */
+.tab-bar {
+  height: var(--tabbar-h);
+  background: var(--ink-black);
+  border-top: 1px solid rgba(184,134,11,0.2);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  padding-bottom: var(--safe-b);
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0.5rem 0.25rem;
+  color: rgba(255,255,255,0.4);
+  transition: all var(--transition);
+  cursor: pointer;
+  position: relative;
+}
+.tab-item svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all var(--transition);
+}
+.tab-item span {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  transition: all var(--transition);
+}
+.tab-item.active {
+  color: var(--ink-gold);
+}
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 2px;
+  background: var(--ink-gold);
+  border-radius: 0 0 2px 2px;
+}
+.tab-item:active { opacity: 0.7; }
+.tab-badge {
+  position: absolute;
+  top: 5px;
+  right: calc(50% - 18px);
+  width: 16px;
+  height: 16px;
+  background: var(--ink-gold);
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink-black);
+}
+
+/* ============================================================
+   ===  PAGE 1: 首页 (HOME)  ===
+   ============================================================ */
+
+/* Hero banner */
+.hero-banner {
+  background: var(--ink-black);
+  padding: 1.5rem 1.25rem 2.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(184,134,11,0.06);
+}
+.hero-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  width: 100px;
+  height: 100px;
+  border: 1px solid rgba(184,134,11,0.1);
+  border-radius: 50%;
+}
+.hero-greeting { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-bottom: 0.25rem; letter-spacing: 0.05em; }
+.hero-name {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+}
+.hero-name em { color: var(--ink-gold); font-style: normal; }
+.hero-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(184,134,11,0.15);
+  border: 1px solid rgba(184,134,11,0.3);
+  border-radius: 99px;
+  font-size: 0.7rem;
+  color: var(--ink-gold);
+}
+.hero-role svg { width: 10px; height: 10px; stroke: var(--ink-gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hero-date {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.25rem;
+  text-align: right;
+}
+.hero-date-day { font-size: 2.5rem; font-weight: 300; color: rgba(255,255,255,0.12); line-height: 1; }
+.hero-date-text { font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 0.05em; margin-top: 0.1rem; }
+
+/* Quick stats (pulled up over hero) */
+.quick-stats {
+  margin: -1.25rem 1.25rem 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  position: relative;
+  z-index: 10;
+}
+.qs-card {
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 16px rgba(28,28,28,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.qs-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--ink-gold);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+  transform-origin: left;
+}
+.qs-card:active::before { transform: scaleX(1); }
+.qs-label { font-size: 0.6rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+.qs-value { font-size: 1.75rem; font-weight: 300; color: var(--ink-black); line-height: 1; letter-spacing: -0.02em; }
+.qs-sub { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.3rem; }
+.qs-icon {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  opacity: 0.07;
+}
+.qs-icon svg { width: 28px; height: 28px; stroke: var(--ink-black); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Section header */
+.sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.875rem;
+}
+.sec-title {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-black);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sec-title::before {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--ink-gold);
+}
+.sec-more { font-size: 0.7rem; color: var(--ink-gold); display: flex; align-items: center; gap: 0.2rem; }
+.sec-more svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Next rehearsal card */
+.next-rehearsal {
+  background: var(--ink-black);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.nr-top {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.nr-date-block {
+  flex-shrink: 0;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(184,134,11,0.15);
+  border: 1px solid rgba(184,134,11,0.25);
+  border-radius: 6px;
+  padding: 0.5rem 0.25rem;
+}
+.nr-month { font-size: 0.5rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-gold); }
+.nr-day { font-size: 1.75rem; font-weight: 300; color: #fff; line-height: 1; }
+.nr-weekday { font-size: 0.5rem; color: rgba(255,255,255,0.3); margin-top: 0.1rem; }
+.nr-info { flex: 1; min-width: 0; }
+.nr-tag {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  font-size: 0.6rem;
+  font-weight: 400;
+  margin-bottom: 0.4rem;
+  background: rgba(59,130,246,0.15);
+  color: #60a5fa;
+}
+.nr-title { font-size: 0.95rem; font-weight: 400; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-meta { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.nr-meta-row { display: flex; align-items: center; gap: 0.4rem; }
+.nr-meta-row svg { width: 11px; height: 11px; stroke: rgba(255,255,255,0.3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nr-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid rgba(184,134,11,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nr-att-label { font-size: 0.65rem; color: rgba(255,255,255,0.35); }
+.nr-att-count { font-size: 0.8rem; color: var(--ink-gold); }
+.nr-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--ink-gold);
+  color: #fff;
+  font-weight: 400;
+}
+.nr-btn:active { opacity: 0.85; }
+
+/* Activity feed */
+.activity-feed { display: flex; flex-direction: column; gap: 0; }
+.af-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid rgba(28,28,28,0.06);
+  position: relative;
+}
+.af-item:last-child { border-bottom: none; }
+.af-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-gold);
+  color: var(--ink-gold);
+  background: var(--silk-cream);
+}
+.af-body { flex: 1; min-width: 0; }
+.af-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+.af-text strong { color: var(--text-primary); font-weight: 400; }
+.af-time { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem; }
+.af-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+}
+
+/* Quick menu grid */
+.quick-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.qm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 0.5rem;
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.qm-item:active { background: var(--silk-cream); border-color: var(--ink-gold); }
+.qm-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+.qm-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.qm-label { font-size: 0.65rem; color: var(--text-secondary); text-align: center; white-space: nowrap; }
+.qm-gold { background: rgba(184,134,11,0.1); color: var(--ink-gold); }
+.qm-blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.qm-green { background: rgba(58,125,68,0.1); color: #3a7d44; }
+.qm-purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+.qm-red { background: rgba(176,48,48,0.1); color: #b03030; }
+.qm-teal { background: rgba(20,184,166,0.1); color: #14b8a6; }
+.qm-amber { background: rgba(192,122,30,0.1); color: var(--warning); }
+.qm-slate { background: rgba(100,116,139,0.1); color: #64748b; }
+
+/* ============================================================
+   ===  PAGE 2: 排练计划  ===
+   ============================================================ */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--silk-white);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-pill {
+  flex-shrink: 0;
+  padding: 0.375rem 0.875rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-pill.active { background: var(--ink-black); color: var(--ink-gold); border-color: var(--ink-black); }
+.filter-pill:active { opacity: 0.7; }
+
+.rehearsal-list-m { display: flex; flex-direction: column; gap: 0.75rem; }
+.rl-card {
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.rl-card:active { border-color: var(--ink-gold); }
+.rl-card-inner { display: flex; gap: 0; }
+.rl-date-strip {
+  width: 56px;
+  background: var(--ink-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  flex-shrink: 0;
+}
+.rl-month { font-size: 0.5rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-gold); }
+.rl-day { font-size: 1.5rem; font-weight: 300; color: #fff; line-height: 1.1; }
+.rl-wd { font-size: 0.5rem; color: rgba(255,255,255,0.3); margin-top: 0.1rem; }
+.rl-body {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  min-width: 0;
+}
+.rl-tag { display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 2px; font-size: 0.6rem; margin-bottom: 0.35rem; }
+.tag-blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.tag-gold { background: rgba(184,134,11,0.1); color: var(--ink-gold); }
+.tag-green { background: rgba(58,125,68,0.1); color: #3a7d44; }
+.rl-title { font-size: 0.9rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.rl-meta-row { display: flex; align-items: center; gap: 0.35rem; }
+.rl-meta-row svg { width: 11px; height: 11px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rl-footer {
+  padding: 0.625rem 1rem;
+  border-top: 1px solid rgba(28,28,28,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rl-pieces { font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; }
+.rl-pieces svg { width: 11px; height: 11px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.att-pill {
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+.att-high { background: rgba(58,125,68,0.1); color: #3a7d44; }
+.att-mid { background: rgba(192,122,30,0.1); color: var(--warning); }
+.att-full { background: rgba(184,134,11,0.1); color: var(--ink-gold); }
+
+/* ============================================================
+   ===  PAGE 3: 资料管理  ===
+   ============================================================ */
+.search-bar-m {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--silk-white);
+  border-bottom: 1px solid var(--border);
+}
+.search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--silk-cream);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+}
+.search-input-wrap svg { width: 15px; height: 15px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.search-input-m { flex: 1; border: none; background: none; font-size: 0.85rem; color: var(--text-primary); outline: none; }
+.search-input-m::placeholder { color: var(--text-muted); }
+.filter-btn-m {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.filter-btn-m svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+.doc-type-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--silk-white);
+  overflow-x: auto;
+}
+.doc-type-tabs::-webkit-scrollbar { display: none; }
+.doc-tab {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.doc-tab.active { color: var(--ink-gold); border-bottom-color: var(--ink-gold); }
+
+.doc-list { display: flex; flex-direction: column; gap: 0; }
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(28,28,28,0.06);
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+.doc-item:last-child { border-bottom: none; }
+.doc-item:active { background: rgba(184,134,11,0.04); }
+.doc-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.doc-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.doc-info { flex: 1; min-width: 0; }
+.doc-name { font-size: 0.875rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-meta-row { display: flex; align-items: center; gap: 0.625rem; margin-top: 0.3rem; }
+.doc-size { font-size: 0.65rem; color: var(--text-muted); }
+.doc-vp {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  border: 1px solid var(--border-gold);
+  color: var(--ink-gold);
+}
+.doc-play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-gold);
+  display: grid;
+  place-items: center;
+  color: var(--ink-gold);
+  flex-shrink: 0;
+}
+.doc-play-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.doc-play-btn:active { background: var(--ink-gold-dim); }
+
+/* Mini audio player bar */
+.mini-player {
+  position: sticky;
+  bottom: calc(var(--tabbar-h) + 8px);
+  margin: 0 1.25rem;
+  background: var(--ink-black);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  box-shadow: 0 8px 32px rgba(28,28,28,0.3);
+  z-index: 50;
+  display: none;
+}
+.mini-player.visible { display: flex; }
+.mp-cover {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: rgba(184,134,11,0.2);
+  border: 1px solid rgba(184,134,11,0.3);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.mp-cover svg { width: 14px; height: 14px; stroke: var(--ink-gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mp-info { flex: 1; min-width: 0; }
+.mp-title { font-size: 0.8rem; color: #fff; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-sub { font-size: 0.65rem; color: rgba(255,255,255,0.35); margin-top: 0.1rem; }
+.mp-progress-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.1); border-radius: 0 0 10px 10px; overflow: hidden; }
+.mp-progress { width: 40%; height: 100%; background: var(--ink-gold); }
+.mp-ctrl { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.mp-btn { width: 34px; height: 34px; display: grid; place-items: center; color: rgba(255,255,255,0.7); }
+.mp-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.mp-btn.play-pause { color: var(--ink-gold); }
+.mp-btn:active { opacity: 0.6; }
+
+/* ============================================================
+   ===  PAGE 4: 录音管理  ===
+   ============================================================ */
+.rec-work-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.rw-card {
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.rw-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+}
+.rw-num {
+  width: 40px;
+  height: 40px;
+  background: var(--ink-black);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-gold);
+  flex-shrink: 0;
+}
+.rw-info { flex: 1; min-width: 0; }
+.rw-name { font-size: 0.9rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rw-composer { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; }
+.rw-count-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.rw-count-badge svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.rw-chevron svg { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--transition); }
+.rw-card.expanded .rw-chevron svg { transform: rotate(180deg); }
+
+.rw-tracks { display: none; border-top: 1px solid rgba(28,28,28,0.06); }
+.rw-card.expanded .rw-tracks { display: block; }
+.rw-track {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid rgba(28,28,28,0.04);
+  transition: background var(--transition);
+}
+.rw-track:last-child { border-bottom: none; }
+.rw-track:active { background: rgba(184,134,11,0.04); }
+.rt-part {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-size: 0.6rem;
+  font-weight: 400;
+  border: 1px solid currentColor;
+}
+.rt-s { color: #9d174d; border-color: rgba(157,23,61,0.3); background: rgba(252,231,243,0.3); }
+.rt-a { color: #92400e; border-color: rgba(146,64,14,0.3); background: rgba(254,243,199,0.3); }
+.rt-t { color: #1e40af; border-color: rgba(30,64,175,0.3); background: rgba(219,234,254,0.3); }
+.rt-b { color: #065f46; border-color: rgba(6,95,70,0.3); background: rgba(209,250,229,0.3); }
+.rt-mix { color: var(--ink-gold); border-color: rgba(184,134,11,0.3); background: rgba(184,134,11,0.08); }
+.rt-info { flex: 1; min-width: 0; }
+.rt-name { font-size: 0.82rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-date { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.15rem; }
+.rt-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.rt-play {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink-gold-dim);
+  border: 1px solid var(--border-gold);
+  display: grid;
+  place-items: center;
+  color: var(--ink-gold);
+}
+.rt-play svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rt-play:active { background: rgba(184,134,11,0.25); }
+
+/* Parts legend */
+.parts-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--silk-cream);
+  border-bottom: 1px solid var(--border);
+}
+.pl-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+.pl-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ============================================================
+   ===  PAGE 5: 个人中心  ===
+   ============================================================ */
+.profile-hero {
+  background: var(--ink-black);
+  padding: 2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(184,134,11,0.05);
+}
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--ink-black);
+  border: 2px solid var(--ink-gold);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--ink-gold);
+  position: relative;
+  z-index: 1;
+}
+.profile-name { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; color: #fff; position: relative; z-index: 1; }
+.profile-role-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.875rem;
+  background: rgba(184,134,11,0.15);
+  border: 1px solid rgba(184,134,11,0.3);
+  border-radius: 99px;
+  font-size: 0.7rem;
+  color: var(--ink-gold);
+  position: relative;
+  z-index: 1;
+}
+.profile-role-badge svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.profile-stats {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(184,134,11,0.15);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+.ps-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 0.5rem;
+}
+.ps-item + .ps-item { border-left: 1px solid rgba(184,134,11,0.1); }
+.ps-value { font-size: 1.25rem; font-weight: 300; color: #fff; }
+.ps-label { font-size: 0.6rem; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; text-transform: uppercase; }
+
+.menu-group { margin-bottom: 1.5rem; }
+.mg-title { font-size: 0.65rem; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 0 1.25rem; margin-bottom: 0.625rem; }
+.menu-list {
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid rgba(28,28,28,0.06);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.menu-row:last-child { border-bottom: none; }
+.menu-row:active { background: rgba(184,134,11,0.04); }
+.menu-row-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.menu-row-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.menu-row-label { flex: 1; font-size: 0.875rem; color: var(--text-primary); }
+.menu-row-value { font-size: 0.75rem; color: var(--text-muted); margin-right: 0.375rem; }
+.menu-row-arrow svg { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.menu-row.danger .menu-row-label { color: var(--error); }
+.menu-row.danger .menu-row-icon { background: rgba(176,48,48,0.1); color: var(--error); }
+
+/* Voice part badge on profile */
+.vp-badge {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  border: 1px solid currentColor;
+}
+.vp-soprano { color: #9d174d; border-color: rgba(157,23,61,0.3); background: rgba(252,231,243,0.3); }
+.vp-alto { color: #92400e; border-color: rgba(146,64,14,0.3); background: rgba(254,243,199,0.3); }
+.vp-tenor { color: #1e40af; border-color: rgba(30,64,175,0.3); background: rgba(219,234,254,0.3); }
+.vp-bass { color: #065f46; border-color: rgba(6,95,70,0.3); background: rgba(209,250,229,0.3); }
+
+/* Attendance progress */
+.att-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem;
+  background: var(--silk-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+.atp-header { display: flex; justify-content: space-between; align-items: center; }
+.atp-label { font-size: 0.75rem; color: var(--text-secondary); }
+.atp-value { font-size: 1rem; font-weight: 400; color: var(--ink-gold); }
+.atp-bar { height: 4px; background: var(--silk-cream); border-radius: 2px; overflow: hidden; }
+.atp-fill { height: 100%; background: var(--ink-gold); border-radius: 2px; }
+.atp-sub { font-size: 0.65rem; color: var(--text-muted); }
+
+/* ============================================================
+   Utility / Shared
+   ============================================================ */
+.divider { height: 8px; background: var(--silk-cream); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+.empty-state svg { width: 40px; height: 40px; stroke: var(--text-muted); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.4; }
+.empty-state p { font-size: 0.85rem; color: var(--text-muted); }
+.gold-line {
+  width: 40px;
+  height: 1px;
+  background: var(--ink-gold);
+  opacity: 0.4;
+}
+
+/* Notice banner */
+.notice-banner {
+  margin: 0 1.25rem 1rem;
+  padding: 0.875rem 1rem;
+  background: rgba(184,134,11,0.08);
+  border: 1px solid rgba(184,134,11,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+.notice-banner svg { width: 14px; height: 14px; stroke: var(--ink-gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; margin-top: 1px; }
+.notice-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+.notice-text strong { color: var(--ink-gold); font-weight: 400; }
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: calc(var(--tabbar-h) + 1.5rem);
+  right: 1.25rem;
+  width: 50px;
+  height: 50px;
+  background: var(--ink-gold);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 20px rgba(184,134,11,0.4);
+  z-index: 30;
+  display: none;
+}
+.fab svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fab:active { transform: scale(0.94); }
+.page-with-fab .fab { display: grid; }
+
+/* Page-internal sticky header for sub-pages */
+.sub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--silk-white);
+  border-bottom: 1px solid var(--border);
+}
+.sub-back-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+.sub-back-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sub-title { font-size: 0.95rem; font-weight: 400; color: var(--ink-black); }
+</style>
+</head>
+<body>
+
+<div class="phone-wrap">
+  <span class="phone-label">弦歌合唱团管理系统 · 手机端</span>
+
+  <div class="phone-frame">
+    <!-- Dynamic island notch -->
+    <div class="dynamic-island"></div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">18:42</span>
+      <div class="status-icons">
+        <!-- Signal -->
+        <svg viewBox="0 0 24 24"><rect x="1" y="16" width="3" height="6"/><rect x="6" y="11" width="3" height="11"/><rect x="11" y="6" width="3" height="16"/><rect x="16" y="2" width="3" height="20"/></svg>
+        <!-- Wifi -->
+        <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#fff" stroke="none"/></svg>
+        <!-- Battery -->
+        <div class="battery-icon">
+          <div class="battery-body"><div class="battery-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App header -->
+    <header class="app-header">
+      <div class="app-brand">
+        <div class="brand-mark">♪</div>
+        <div class="brand-texts">
+          <span class="brand-name-m">弦歌合唱团</span>
+          <span class="brand-sub-m">Choir Management</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn-m has-dot" title="通知">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <div class="avatar-m">张</div>
+      </div>
+    </header>
+
+    <!-- ==============================
+         Scrollable content
+         ============================== -->
+    <div class="app-scroll" id="appScroll">
+
+      <!-- ================================================
+           PAGE 1: 首页
+           ================================================ -->
+      <div class="page active" id="page-home">
+
+        <!-- Hero -->
+        <div class="hero-banner">
+          <div class="hero-date">
+            <div class="hero-date-day">17</div>
+            <div class="hero-date-text">五月 · 星期日</div>
+          </div>
+          <p class="hero-greeting">欢迎回来，</p>
+          <h2 class="hero-name">张明 <em>团员</em></h2>
+          <div class="hero-role">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            女高音 · 第一声部
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="quick-stats">
+          <div class="qs-card">
+            <div class="qs-label">本月排练</div>
+            <div class="qs-value">6</div>
+            <div class="qs-sub">✓ 已出席 5 次</div>
+            <div class="qs-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+          </div>
+          <div class="qs-card">
+            <div class="qs-label">待提交作业</div>
+            <div class="qs-value" style="color:var(--ink-gold)">3</div>
+            <div class="qs-sub" style="color:var(--warning)">1 个即将截止</div>
+            <div class="qs-icon">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-pad" style="padding-top:1.5rem;">
+
+          <!-- Quick menu -->
+          <div class="sec-head">
+            <span class="sec-title">快捷功能</span>
+          </div>
+          <div class="quick-menu">
+            <div class="qm-item" onclick="switchTab('rehearsal')">
+              <div class="qm-icon qm-blue">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <span class="qm-label">排练计划</span>
+            </div>
+            <div class="qm-item" onclick="switchTab('docs')">
+              <div class="qm-icon qm-gold">
+                <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              </div>
+              <span class="qm-label">资料管理</span>
+            </div>
+            <div class="qm-item" onclick="switchTab('records')">
+              <div class="qm-icon qm-purple">
+                <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </div>
+              <span class="qm-label">录音管理</span>
+            </div>
+            <div class="qm-item">
+              <div class="qm-icon qm-green" style="position:relative;">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <span style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--error);border-radius:50%;font-size:0.55rem;color:#fff;display:grid;place-items:center;border:1.5px solid var(--silk-white)">3</span>
+              </div>
+              <span class="qm-label">提交作业</span>
+            </div>
+            <div class="qm-item">
+              <div class="qm-icon qm-amber">
+                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <span class="qm-label">献唱计划</span>
+            </div>
+            <div class="qm-item">
+              <div class="qm-icon qm-teal">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <span class="qm-label">成员管理</span>
+            </div>
+            <div class="qm-item">
+              <div class="qm-icon qm-slate">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+              <span class="qm-label">系统管理</span>
+            </div>
+            <div class="qm-item" onclick="switchTab('profile')">
+              <div class="qm-icon qm-red">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <span class="qm-label">个人中心</span>
+            </div>
+          </div>
+
+          <!-- Notice -->
+          <div class="notice-banner">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p class="notice-text"><strong>公告：</strong>本周六（5月19日）下午2点排练，请提前10分钟到达排练室。</p>
+          </div>
+
+          <!-- Next rehearsal -->
+          <div class="sec-head">
+            <span class="sec-title">下次排练</span>
+            <a class="sec-more" onclick="switchTab('rehearsal')">全部 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+          </div>
+          <div class="next-rehearsal">
+            <div class="nr-top">
+              <div class="nr-date-block">
+                <span class="nr-month">MAY</span>
+                <span class="nr-day">19</span>
+                <span class="nr-weekday">SAT</span>
+              </div>
+              <div class="nr-info">
+                <span class="nr-tag">常规排练</span>
+                <div class="nr-title">第十二次排练 · 分声部</div>
+                <div class="nr-meta">
+                  <div class="nr-meta-row">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    14:00 – 17:00
+                  </div>
+                  <div class="nr-meta-row">
+                    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    音乐厅 · 排练室A
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="nr-footer">
+              <div>
+                <div class="nr-att-label">已确认出席</div>
+                <div class="nr-att-count">38 / 48 人</div>
+              </div>
+              <button class="nr-btn">确认出席</button>
+            </div>
+          </div>
+
+          <!-- Activity feed -->
+          <div class="sec-head">
+            <span class="sec-title">近期动态</span>
+          </div>
+          <div class="activity-feed">
+            <div class="af-item">
+              <div class="af-avatar">指</div>
+              <div class="af-body">
+                <p class="af-text"><strong>指挥老师</strong> 发布了新作业《晴天》练习录音</p>
+                <p class="af-time">10分钟前</p>
+              </div>
+              <div class="af-dot" style="background:var(--ink-gold)"></div>
+            </div>
+            <div class="af-item">
+              <div class="af-avatar">班</div>
+              <div class="af-body">
+                <p class="af-text"><strong>班长王芳</strong> 上传了5月排练计划表</p>
+                <p class="af-time">2小时前</p>
+              </div>
+              <div class="af-dot" style="background:#3b82f6"></div>
+            </div>
+            <div class="af-item">
+              <div class="af-avatar" style="font-size:0.65rem">总务</div>
+              <div class="af-body">
+                <p class="af-text"><strong>总务李华</strong> 上传了混声合唱《春晓》完整录音</p>
+                <p class="af-time">昨天 18:30</p>
+              </div>
+              <div class="af-dot" style="background:#8b5cf6"></div>
+            </div>
+            <div class="af-item">
+              <div class="af-avatar">声</div>
+              <div class="af-body">
+                <p class="af-text"><strong>声部长陈雨</strong> 批改了您的作业《茉莉花》</p>
+                <p class="af-time">2天前</p>
+              </div>
+              <div class="af-dot" style="background:var(--success)"></div>
+            </div>
+          </div>
+
+        </div><!-- /page-pad -->
+      </div><!-- /page-home -->
+
+      <!-- ================================================
+           PAGE 2: 排练计划
+           ================================================ -->
+      <div class="page" id="page-rehearsal">
+        <!-- Filter pills -->
+        <div class="filter-bar">
+          <div class="filter-pill active">全部</div>
+          <div class="filter-pill">本月</div>
+          <div class="filter-pill">5月</div>
+          <div class="filter-pill">6月</div>
+          <div class="filter-pill">2026</div>
+        </div>
+
+        <div class="page-pad">
+          <div class="rehearsal-list-m">
+
+            <div class="rl-card">
+              <div class="rl-card-inner">
+                <div class="rl-date-strip">
+                  <span class="rl-month">MAY</span>
+                  <span class="rl-day">19</span>
+                  <span class="rl-wd">SAT</span>
+                </div>
+                <div class="rl-body">
+                  <span class="rl-tag tag-blue">常规排练</span>
+                  <div class="rl-title">第十二次排练 · 分声部合排</div>
+                  <div class="rl-meta">
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      14:00 – 17:00
+                    </div>
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      音乐厅 · 排练室A
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rl-footer">
+                <div class="rl-pieces">
+                  <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  3首曲目
+                </div>
+                <span class="att-pill att-mid">出席 38/48</span>
+              </div>
+            </div>
+
+            <div class="rl-card">
+              <div class="rl-card-inner">
+                <div class="rl-date-strip">
+                  <span class="rl-month">MAY</span>
+                  <span class="rl-day">26</span>
+                  <span class="rl-wd">SAT</span>
+                </div>
+                <div class="rl-body">
+                  <span class="rl-tag tag-gold">汇报演出</span>
+                  <div class="rl-title">春季汇报演出最终排练</div>
+                  <div class="rl-meta">
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      09:00 – 12:00
+                    </div>
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      大礼堂 · 主舞台
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rl-footer">
+                <div class="rl-pieces">
+                  <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  8首曲目
+                </div>
+                <span class="att-pill att-full">待确认</span>
+              </div>
+            </div>
+
+            <div class="rl-card">
+              <div class="rl-card-inner">
+                <div class="rl-date-strip" style="background:#3a7d44">
+                  <span class="rl-month">MAY</span>
+                  <span class="rl-day">12</span>
+                  <span class="rl-wd">SUN</span>
+                </div>
+                <div class="rl-body">
+                  <span class="rl-tag tag-green">声部排练</span>
+                  <div class="rl-title">女声声部专项训练</div>
+                  <div class="rl-meta">
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      15:00 – 17:00
+                    </div>
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      音乐厅 · 排练室B
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rl-footer">
+                <div class="rl-pieces">
+                  <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  2首曲目
+                </div>
+                <span class="att-pill att-high">✓ 已出席 24/24</span>
+              </div>
+            </div>
+
+            <div class="rl-card">
+              <div class="rl-card-inner">
+                <div class="rl-date-strip">
+                  <span class="rl-month">MAY</span>
+                  <span class="rl-day">05</span>
+                  <span class="rl-wd">SUN</span>
+                </div>
+                <div class="rl-body">
+                  <span class="rl-tag tag-blue">常规排练</span>
+                  <div class="rl-title">第十次排练 · 全团合排</div>
+                  <div class="rl-meta">
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      14:00 – 17:30
+                    </div>
+                    <div class="rl-meta-row">
+                      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      音乐厅 · 排练室A
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rl-footer">
+                <div class="rl-pieces">
+                  <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  5首曲目
+                </div>
+                <span class="att-pill att-high">✓ 已出席 42/48</span>
+              </div>
+            </div>
+
+          </div><!-- /rehearsal-list-m -->
+        </div><!-- /page-pad -->
+      </div><!-- /page-rehearsal -->
+
+      <!-- ================================================
+           PAGE 3: 资料管理
+           ================================================ -->
+      <div class="page" id="page-docs">
+        <!-- Search bar -->
+        <div class="search-bar-m">
+          <div class="search-input-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input-m" type="text" placeholder="搜索资料…"/>
+          </div>
+          <button class="filter-btn-m">
+            <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="12" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
+          </button>
+        </div>
+        <!-- Type tabs -->
+        <div class="doc-type-tabs">
+          <div class="doc-tab active">全部</div>
+          <div class="doc-tab">乐谱</div>
+          <div class="doc-tab">音频</div>
+          <div class="doc-tab">视频</div>
+          <div class="doc-tab">课件</div>
+        </div>
+        <!-- Doc list -->
+        <div class="doc-list">
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(184,134,11,0.1);color:var(--ink-gold)">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">《春晓》混声合唱 — 钢琴伴奏谱</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">2.4 MB · PDF</span>
+                <span class="doc-vp">全声部</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="预览">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(139,92,246,0.1);color:#8b5cf6">
+              <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">5月排练指导视频 — 第1节</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">128 MB · MP4</span>
+                <span class="doc-vp">女声部</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="播放">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(59,130,246,0.1);color:#3b82f6">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">《茉莉花》女高音练习音轨</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">8.7 MB · MP3</span>
+                <span class="doc-vp">女高音</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="播放" onclick="showMiniPlayer()">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(184,134,11,0.1);color:var(--ink-gold)">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">《关山月》乐谱 — 各声部分谱</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">5.1 MB · PDF</span>
+                <span class="doc-vp">全声部</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="预览">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(20,184,166,0.1);color:#14b8a6">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">发声练习课件 — 第三讲</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">15.3 MB · PPT</span>
+                <span class="doc-vp">全声部</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="播放">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-icon" style="background:rgba(59,130,246,0.1);color:#3b82f6">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="doc-info">
+              <div class="doc-name">《黄河大合唱》男声部范唱</div>
+              <div class="doc-meta-row">
+                <span class="doc-size">12.4 MB · MP3</span>
+                <span class="doc-vp">男声部</span>
+              </div>
+            </div>
+            <button class="doc-play-btn" title="播放">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+          </div>
+
+        </div><!-- /doc-list -->
+
+        <!-- Mini player (shown when playing) -->
+        <div class="mini-player" id="miniPlayer">
+          <div class="mp-cover">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="mp-info">
+            <div class="mp-title">《茉莉花》女高音练习音轨</div>
+            <div class="mp-sub">女高音 · 2:14 / 4:35</div>
+          </div>
+          <div class="mp-ctrl">
+            <button class="mp-btn play-pause">
+              <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button class="mp-btn" onclick="hideMiniPlayer()">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="mp-progress-wrap"><div class="mp-progress"></div></div>
+        </div>
+
+      </div><!-- /page-docs -->
+
+      <!-- ================================================
+           PAGE 4: 录音管理
+           ================================================ -->
+      <div class="page" id="page-records">
+        <div class="parts-legend">
+          <div class="pl-item"><div class="pl-dot" style="background:#9d174d"></div>女高音(S)</div>
+          <div class="pl-item"><div class="pl-dot" style="background:#92400e"></div>女低音(A)</div>
+          <div class="pl-item"><div class="pl-dot" style="background:#1e40af"></div>男高音(T)</div>
+          <div class="pl-item"><div class="pl-dot" style="background:#065f46"></div>男低音(B)</div>
+          <div class="pl-item"><div class="pl-dot" style="background:var(--ink-gold)"></div>混声</div>
+        </div>
+
+        <div class="page-pad">
+          <div class="rec-work-list">
+
+            <!-- Work 1: 春晓 -->
+            <div class="rw-card expanded" onclick="toggleWork(this)">
+              <div class="rw-header">
+                <div class="rw-num">01</div>
+                <div class="rw-info">
+                  <div class="rw-name">春晓</div>
+                  <div class="rw-composer">编曲 / 李明 · 混声合唱</div>
+                </div>
+                <div class="rw-count-badge">
+                  <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  5 轨
+                </div>
+                <div class="rw-chevron">
+                  <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div class="rw-tracks">
+                <div class="rw-track">
+                  <div class="rt-part rt-mix">混</div>
+                  <div class="rt-info">
+                    <div class="rt-name">完整版 · 2026年春季汇演</div>
+                    <div class="rt-date">2026-04-28</div>
+                  </div>
+                  <div class="rt-actions">
+                    <button class="rt-play">
+                      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-s">S</div>
+                  <div class="rt-info">
+                    <div class="rt-name">女高音声部 · 第三次排练</div>
+                    <div class="rt-date">2026-04-21</div>
+                  </div>
+                  <div class="rt-actions">
+                    <button class="rt-play">
+                      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-a">A</div>
+                  <div class="rt-info">
+                    <div class="rt-name">女低音声部 · 第三次排练</div>
+                    <div class="rt-date">2026-04-21</div>
+                  </div>
+                  <div class="rt-actions">
+                    <button class="rt-play">
+                      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-t">T</div>
+                  <div class="rt-info">
+                    <div class="rt-name">男高音声部 · 第三次排练</div>
+                    <div class="rt-date">2026-04-21</div>
+                  </div>
+                  <div class="rt-actions">
+                    <button class="rt-play">
+                      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-b">B</div>
+                  <div class="rt-info">
+                    <div class="rt-name">男低音声部 · 第三次排练</div>
+                    <div class="rt-date">2026-04-21</div>
+                  </div>
+                  <div class="rt-actions">
+                    <button class="rt-play">
+                      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Work 2: 茉莉花 -->
+            <div class="rw-card" onclick="toggleWork(this)">
+              <div class="rw-header">
+                <div class="rw-num">02</div>
+                <div class="rw-info">
+                  <div class="rw-name">茉莉花</div>
+                  <div class="rw-composer">传统民歌 · 改编合唱版</div>
+                </div>
+                <div class="rw-count-badge">
+                  <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  3 轨
+                </div>
+                <div class="rw-chevron">
+                  <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div class="rw-tracks">
+                <div class="rw-track">
+                  <div class="rt-part rt-mix">混</div>
+                  <div class="rt-info"><div class="rt-name">完整版 · 第五次排练</div><div class="rt-date">2026-05-10</div></div>
+                  <div class="rt-actions"><button class="rt-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></button></div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-s">S</div>
+                  <div class="rt-info"><div class="rt-name">女高音声部 · 最新版</div><div class="rt-date">2026-05-12</div></div>
+                  <div class="rt-actions"><button class="rt-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></button></div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-a">A</div>
+                  <div class="rt-info"><div class="rt-name">女低音声部 · 最新版</div><div class="rt-date">2026-05-12</div></div>
+                  <div class="rt-actions"><button class="rt-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></button></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Work 3: 关山月 -->
+            <div class="rw-card" onclick="toggleWork(this)">
+              <div class="rw-header">
+                <div class="rw-num">03</div>
+                <div class="rw-info">
+                  <div class="rw-name">关山月</div>
+                  <div class="rw-composer">作曲 / 王建 · 男声合唱</div>
+                </div>
+                <div class="rw-count-badge">
+                  <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  2 轨
+                </div>
+                <div class="rw-chevron">
+                  <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div class="rw-tracks">
+                <div class="rw-track">
+                  <div class="rt-part rt-t">T</div>
+                  <div class="rt-info"><div class="rt-name">男高音声部</div><div class="rt-date">2026-05-08</div></div>
+                  <div class="rt-actions"><button class="rt-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></button></div>
+                </div>
+                <div class="rw-track">
+                  <div class="rt-part rt-b">B</div>
+                  <div class="rt-info"><div class="rt-name">男低音声部</div><div class="rt-date">2026-05-08</div></div>
+                  <div class="rt-actions"><button class="rt-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></button></div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /rec-work-list -->
+        </div><!-- /page-pad -->
+      </div><!-- /page-records -->
+
+      <!-- ================================================
+           PAGE 5: 个人中心
+           ================================================ -->
+      <div class="page" id="page-profile">
+        <!-- Profile hero -->
+        <div class="profile-hero">
+          <div class="profile-avatar">张</div>
+          <div class="profile-name">张明</div>
+          <div class="profile-role-badge">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            普通团员 · 女高音（S）
+          </div>
+          <div class="profile-stats">
+            <div class="ps-item">
+              <div class="ps-value">87%</div>
+              <div class="ps-label">出勤率</div>
+            </div>
+            <div class="ps-item">
+              <div class="ps-value">24</div>
+              <div class="ps-label">排练场次</div>
+            </div>
+            <div class="ps-item">
+              <div class="ps-value">2</div>
+              <div class="ps-label">演出场次</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-pad" style="padding-top:1.25rem;">
+          <!-- Attendance progress -->
+          <div class="att-progress">
+            <div class="atp-header">
+              <span class="atp-label">本学期出勤率</span>
+              <span class="atp-value">87%</span>
+            </div>
+            <div class="atp-bar"><div class="atp-fill" style="width:87%"></div></div>
+            <p class="atp-sub">共排练 28 次，出席 24 次，缺席 4 次</p>
+          </div>
+
+          <!-- Settings menu -->
+          <div class="menu-group">
+            <div class="mg-title">账号与安全</div>
+            <div class="menu-list">
+              <div class="menu-row">
+                <div class="menu-row-icon qm-gold"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <span class="menu-row-label">编辑个人资料</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+              <div class="menu-row">
+                <div class="menu-row-icon qm-blue"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                <span class="menu-row-label">修改密码</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+              <div class="menu-row">
+                <div class="menu-row-icon qm-teal"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.36a16 16 0 0 0 6.72 6.72l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                <span class="menu-row-label">绑定手机号</span>
+                <span class="menu-row-value">186****1234</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <div class="mg-title">通知与偏好</div>
+            <div class="menu-list">
+              <div class="menu-row">
+                <div class="menu-row-icon qm-amber"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+                <span class="menu-row-label">消息通知</span>
+                <span class="menu-row-value">已开启</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+              <div class="menu-row">
+                <div class="menu-row-icon qm-slate"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                <span class="menu-row-label">关于系统</span>
+                <span class="menu-row-value">v1.2.0</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <div class="menu-list">
+              <div class="menu-row danger">
+                <div class="menu-row-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+                <span class="menu-row-label">退出登录</span>
+                <div class="menu-row-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /page-pad -->
+      </div><!-- /page-profile -->
+
+    </div><!-- /app-scroll -->
+
+    <!-- ==============================
+         Tab bar (Bottom Nav)
+         ============================== -->
+    <nav class="tab-bar">
+      <div class="tab-item active" id="tab-home" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>首页</span>
+      </div>
+      <div class="tab-item" id="tab-rehearsal" onclick="switchTab('rehearsal')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>排练</span>
+        <div class="tab-badge">2</div>
+      </div>
+      <div class="tab-item" id="tab-docs" onclick="switchTab('docs')">
+        <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <span>资料</span>
+      </div>
+      <div class="tab-item" id="tab-records" onclick="switchTab('records')">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span>录音</span>
+      </div>
+      <div class="tab-item" id="tab-profile" onclick="switchTab('profile')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>我的</span>
+      </div>
+    </nav>
+
+  </div><!-- /phone-frame -->
+</div><!-- /phone-wrap -->
+
+<script>
+// ====================================================
+//  Tab switching
+// ====================================================
+function switchTab(name) {
+  // Deactivate all pages and tabs
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+
+  // Activate target
+  const page = document.getElementById('page-' + name);
+  const tab  = document.getElementById('tab-' + name);
+  if (page) page.classList.add('active');
+  if (tab)  tab.classList.add('active');
+
+  // Scroll to top on tab switch
+  const scroll = document.getElementById('appScroll');
+  if (scroll) scroll.scrollTop = 0;
+}
+
+// ====================================================
+//  Accordion for recording work cards
+// ====================================================
+function toggleWork(card) {
+  // Don't toggle if clicking play button
+  if (event.target.closest('.rt-play')) return;
+  card.classList.toggle('expanded');
+}
+
+// ====================================================
+//  Mini player
+// ====================================================
+function showMiniPlayer() {
+  document.getElementById('miniPlayer').classList.add('visible');
+}
+function hideMiniPlayer() {
+  document.getElementById('miniPlayer').classList.remove('visible');
+}
+
+// ====================================================
+//  Filter pills (rehearsal page)
+// ====================================================
+document.querySelectorAll('.filter-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    pill.closest('.filter-bar').querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+  });
+});
+
+// ====================================================
+//  Doc type tabs
+// ====================================================
+document.querySelectorAll('.doc-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    tab.closest('.doc-type-tabs').querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+// ====================================================
+//  Live clock
+// ====================================================
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.querySelector('.status-time').textContent = h + ':' + m;
+}
+updateClock();
+setInterval(updateClock, 10000);
+</script>
+</body>
+</html>
