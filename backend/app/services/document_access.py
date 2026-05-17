@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from app.models import Document, User
 from app.services.permissions import has_permission, is_section_leader
+from app.services.work_access import work_shared_to_choir
 
 
 def can_read_documents(user: User) -> bool:
@@ -38,15 +39,27 @@ def can_delete_document(user: User, doc: Document) -> bool:
 def document_visible_to_user(user: User, doc: Document) -> bool:
     if user.system_super_admin:
         return True
-    if user.choir_id != doc.choir_id:
-        return False
     if not can_read_documents(user):
+        return False
+    same_choir = user.choir_id == doc.choir_id
+    via_shared_work = bool(
+        doc.work_id and user.choir_id and work_shared_to_choir(doc.work_id, user.choir_id)
+    )
+    if not same_choir and not via_shared_work:
         return False
     if is_section_leader(user) and user.voice_part is not None:
         parts: List[int] = doc.voice_parts or []
         if parts and user.voice_part not in parts:
             return False
     return True
+
+
+def can_edit_document(user: User, doc: Document) -> bool:
+    if user.system_super_admin:
+        return True
+    if not can_write_documents(user):
+        return False
+    return user.choir_id == doc.choir_id
 
 
 def can_read_recordings(user: User) -> bool:

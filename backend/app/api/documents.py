@@ -17,12 +17,14 @@ from app.services.cde_service import (
 )
 from app.services.document_access import (
     can_delete_document,
+    can_edit_document,
     can_read_documents,
     can_write_documents,
     document_visible_to_user,
 )
 from app.services.operation_log import write_operation_log
 from app.services.upload_validation import validate_upload
+from app.services.work_access import can_read_work, can_write_work
 
 
 def _choir_scope(user):
@@ -45,7 +47,15 @@ def documents_list():
     if not choir_id:
         return jsonify({"documents": []})
 
-    q = Document.query.filter_by(choir_id=choir_id)
+    work_id = request.args.get("work_id", type=int)
+    if work_id:
+        work = Work.query.get_or_404(work_id)
+        if not can_read_work(user, work):
+            return jsonify({"error": "无权限"}), 403
+        q = Document.query.filter_by(work_id=work_id)
+    else:
+        q = Document.query.filter_by(choir_id=choir_id)
+
     doc_type = request.args.get("type") or request.args.get("doc_type")
     category = request.args.get("category")
     collection = request.args.get("collection")
@@ -57,9 +67,6 @@ def documents_list():
         q = q.filter_by(category=category)
     if collection and collection != "all":
         q = q.filter_by(collection_name=collection)
-    work_id = request.args.get("work_id", type=int)
-    if work_id:
-        q = q.filter_by(work_id=work_id)
     if search:
         q = q.filter(Document.title.contains(search))
 
@@ -90,12 +97,6 @@ def documents_upload():
     if not can_write_documents(user):
         return jsonify({"error": "无权限", "required": "documents.write"}), 403
 
-    choir_id = user.choir_id
-    if user.system_super_admin:
-        choir_id = request.form.get("choir_id", type=int) or choir_id
-    if not choir_id:
-        return jsonify({"error": "缺少 choir_id"}), 400
-
     f = request.files.get("file")
     if not f:
         return jsonify({"error": "缺少 file"}), 400
@@ -119,18 +120,23 @@ def documents_upload():
         return jsonify({"error": "声部长只能上传本声部资料"}), 403
 
     work_id = request.form.get("work_id", type=int)
-    if doc_type == "score":
-        if not work_id:
-            return jsonify({"error": "上传乐谱须先选择或新建作品"}), 400
-        work = Work.query.filter_by(work_id=work_id, choir_id=choir_id).first()
-        if not work:
-            return jsonify({"error": "作品不存在或不属于本团"}), 400
-    elif work_id:
-        work = Work.query.filter_by(work_id=work_id, choir_id=choir_id).first()
-        if not work:
-            return jsonify({"error": "作品不存在或不属于本团"}), 400
+    if doc_type == "score" and not work_id:
+        return jsonify({"error": "上传乐谱须指定作品"}), 400
+    if work_id:
+        work = Work.query.get(work_id)
+        if not work or not can_write_work(user, work):
+            return jsonify({"error": "作品不存在或无上传权限"}), 400
     else:
-        work_id = None
+        work = None
+        if user.system_super_admin:
+            choir_id = request.form.get("choir_id", type=int)
+        else:
+            choir_id = user.choir_id
+        if not choir_id:
+            return jsonify({"error": "缺少 choir_id"}), 400
+
+    if work:
+        choir_id = work.choir_id
 
     data = f.read()
     size = len(data)
@@ -174,6 +180,53 @@ def documents_upload():
         detail={"title": title, "doc_type": doc_type, "work_id": work_id},
     )
     return jsonify(doc.to_dict(include_stream=True)), 201
+
+
+@api_bp.patch("/documents/<int:document_id>")
+@login_required
+def documents_patch(document_id: int):
+    user = get_current_user()
+    doc = Document.query.get_or_404(document_id)
+    if not can_edit_document(user, doc):
+        return jsonify({"error": "无权限"}), 403
+
+    data = request.get_json(silent=True) or {}
+    if "title" in data:
+        title = (data.get("title") or "").strip()
+        if not title:
+            return jsonify({"error": "标题不能为空"}), 400
+        doc.title = title[:200]
+    if "doc_type" in data:
+        doc.doc_type = (data.get("doc_type") or doc.doc_type).strip()[:32]
+    if "category" in data:
+        doc.category = (data.get("category") or "").strip() or None
+    if "style" in data:
+        doc.style = (data.get("style") or "").strip() or None
+    if "collection_name" in data:
+        doc.collection_name = (data.get("collection") or data.get("collection_name") or "").strip() or None
+    if "work_id" in data:
+        raw = data.get("work_id")
+        if raw is None or raw == "":
+            doc.work_id = None
+        else:
+            try:
+                wid = int(raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "work_id 无效"}), 400
+            work = Work.query.get(wid)
+            if not work or not can_write_work(user, work):
+                return jsonify({"error": "目标作品不存在或无权限"}), 400
+            doc.work_id = wid
+
+    db.session.commit()
+    write_operation_log(
+        "documents.update",
+        user=user,
+        resource_type="document",
+        resource_id=str(document_id),
+        detail={"title": doc.title, "work_id": doc.work_id},
+    )
+    return jsonify(doc.to_dict(include_stream=True))
 
 
 def is_section_leader_upload_restricted(user: User, voice_parts) -> bool:

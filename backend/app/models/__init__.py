@@ -6,6 +6,7 @@ from app.models.log import OperationLog
 from app.models.config import SystemConfig
 from app.models.document import Document
 from app.models.work import Work
+from app.models.work_share import WorkShare
 from app.models.recording import Recording
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "SystemConfig",
     "Document",
     "Work",
+    "WorkShare",
     "Recording",
 ]

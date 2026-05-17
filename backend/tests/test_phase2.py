@@ -95,6 +95,24 @@ def test_works_and_recordings(client, choir_admin_headers, app_phase2):
     assert res.data == audio
 
 
+def test_work_shares(client, choir_admin_headers, app_phase2):
+    res = client.post(
+        "/api/works",
+        json={"name": "共享测试作品", "composer": "测试"},
+        headers=choir_admin_headers,
+    )
+    assert res.status_code == 201
+    work_id = res.get_json()["work_id"]
+
+    res = client.put(
+        f"/api/works/{work_id}/shares",
+        json={"choir_ids": []},
+        headers=choir_admin_headers,
+    )
+    assert res.status_code == 200
+    assert res.get_json()["shared_choir_ids"] == []
+
+
 def test_system_storage(client, choir_admin_headers, app_phase2):
     res = client.get("/api/system/storage", headers=choir_admin_headers)
     assert res.status_code == 200

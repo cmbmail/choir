@@ -7,7 +7,7 @@ from flask import jsonify, request, send_file
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
-from app.models import Document, Recording, Work
+from app.models import Choir, Document, Recording, Work, WorkShare
 from app.services.cde_service import (
     CdeError,
     delete_file,
@@ -23,7 +23,13 @@ from app.services.document_access import (
     can_write_recordings,
 )
 from app.services.operation_log import write_operation_log
-from app.services.permissions import has_permission
+from app.services.work_access import (
+    can_manage_work_shares,
+    can_read_work,
+    can_write_work,
+    shared_choir_ids,
+    works_for_choir_query,
+)
 from app.services.upload_validation import validate_upload
 
 
@@ -31,6 +37,25 @@ def _choir_id(user):
     if user.system_super_admin:
         return request.args.get("choir_id", type=int) or request.form.get("choir_id", type=int)
     return user.choir_id
+
+
+def _work_payload(work: Work, choir_id, include_recordings=False):
+    shares = shared_choir_ids(work.work_id)
+    item = work.to_dict(
+        include_recordings=include_recordings,
+        viewer_choir_id=choir_id,
+        shared_choir_ids=shares,
+    )
+    item["score_count"] = Document.query.filter_by(
+        work_id=work.work_id, doc_type="score"
+    ).count()
+    item["doc_count"] = Document.query.filter_by(work_id=work.work_id).count()
+    shared_names = []
+    if shares:
+        rows = Choir.query.filter(Choir.choir_id.in_(shares)).all()
+        shared_names = [c.name for c in rows]
+    item["shared_choir_names"] = shared_names
+    return item
 
 
 @api_bp.get("/works")
@@ -43,14 +68,8 @@ def works_list():
     if not choir_id:
         return jsonify({"works": []})
     include_recordings = request.args.get("include_recordings", "1") != "0"
-    rows = Work.query.filter_by(choir_id=choir_id).order_by(Work.created_at.desc()).all()
-    works = []
-    for w in rows:
-        item = w.to_dict(include_recordings=include_recordings)
-        item["score_count"] = Document.query.filter_by(
-            work_id=w.work_id, doc_type="score"
-        ).count()
-        works.append(item)
+    rows = works_for_choir_query(choir_id).order_by(Work.created_at.desc()).all()
+    works = [_work_payload(w, choir_id, include_recordings) for w in rows]
     return jsonify({"works": works})
 
 
@@ -59,11 +78,12 @@ def works_list():
 def works_get(work_id: int):
     user = get_current_user()
     work = Work.query.get_or_404(work_id)
-    if not user.system_super_admin and work.choir_id != user.choir_id:
+    if not can_read_work(user, work):
         return jsonify({"error": "无权限"}), 403
     if not can_read_recordings(user) and not can_read_documents(user):
         return jsonify({"error": "无权限"}), 403
-    return jsonify(work.to_dict(include_recordings=True))
+    choir_id = user.choir_id or work.choir_id
+    return jsonify(_work_payload(work, choir_id, include_recordings=True))
 
 
 @api_bp.post("/works")
@@ -74,20 +94,114 @@ def works_create():
         return jsonify({"error": "无权限"}), 403
 
     data = request.get_json(silent=True) or {}
-    choir_id = user.choir_id if not user.system_super_admin else data.get("choir_id") or user.choir_id
+    if user.system_super_admin:
+        choir_id = data.get("choir_id") or request.args.get("choir_id", type=int)
+        if not choir_id:
+            return jsonify({"error": "系统超管创建作品须指定 choir_id"}), 400
+    else:
+        choir_id = user.choir_id
     if not choir_id:
         return jsonify({"error": "缺少 choir_id"}), 400
     name = (data.get("name") or "").strip()
     if not name:
         return jsonify({"error": "缺少作品名称"}), 400
 
-    work = Work(choir_id=choir_id, name=name[:100], composer=(data.get("composer") or "")[:50] or None)
+    work = Work(
+        choir_id=choir_id,
+        name=name[:100],
+        composer=(data.get("composer") or "")[:50] or None,
+    )
     db.session.add(work)
     db.session.commit()
     write_operation_log(
         "works.create", user=user, resource_type="work", resource_id=str(work.work_id)
     )
-    return jsonify(work.to_dict()), 201
+    viewer = user.choir_id or choir_id
+    return jsonify(_work_payload(work, viewer)), 201
+
+
+@api_bp.patch("/works/<int:work_id>")
+@login_required
+def works_patch(work_id: int):
+    user = get_current_user()
+    work = Work.query.get_or_404(work_id)
+    if not can_write_work(user, work):
+        return jsonify({"error": "无权限"}), 403
+
+    data = request.get_json(silent=True) or {}
+    name = data.get("name")
+    if name is not None:
+        name = str(name).strip()
+        if not name:
+            return jsonify({"error": "作品名称不能为空"}), 400
+        work.name = name[:100]
+    if "composer" in data:
+        comp = (data.get("composer") or "").strip()
+        work.composer = comp[:50] or None
+
+    db.session.commit()
+    write_operation_log(
+        "works.update", user=user, resource_type="work", resource_id=str(work_id)
+    )
+    choir_id = user.choir_id or work.choir_id
+    return jsonify(_work_payload(work, choir_id))
+
+
+@api_bp.put("/works/<int:work_id>/shares")
+@login_required
+def works_set_shares(work_id: int):
+    user = get_current_user()
+    work = Work.query.get_or_404(work_id)
+    if not can_manage_work_shares(user, work):
+        return jsonify({"error": "无权限设置共享"}), 403
+
+    data = request.get_json(silent=True) or {}
+    raw_ids = data.get("choir_ids") or []
+    try:
+        target_ids = {int(x) for x in raw_ids if int(x) != work.choir_id}
+    except (TypeError, ValueError):
+        return jsonify({"error": "choir_ids 须为整数数组"}), 400
+
+    if target_ids:
+        valid = {
+            c.choir_id
+            for c in Choir.query.filter(
+                Choir.choir_id.in_(target_ids), Choir.status == "active"
+            ).all()
+        }
+        if valid != target_ids:
+            return jsonify({"error": "存在无效的合唱团 ID"}), 400
+
+    WorkShare.query.filter_by(work_id=work_id).delete()
+    for cid in sorted(target_ids):
+        db.session.add(
+            WorkShare(work_id=work_id, choir_id=cid, shared_by=user.user_id)
+        )
+    db.session.commit()
+    write_operation_log(
+        "works.share",
+        user=user,
+        resource_type="work",
+        resource_id=str(work_id),
+        detail={"choir_ids": sorted(target_ids)},
+    )
+    choir_id = user.choir_id or work.choir_id
+    return jsonify(_work_payload(work, choir_id))
+
+
+@api_bp.get("/choirs/share-targets")
+@login_required
+def choirs_share_targets():
+    user = get_current_user()
+    if not user.system_super_admin and user.role_code not in (
+        "super_admin",
+        "conductor",
+    ):
+        return jsonify({"error": "无权限"}), 403
+    q = Choir.query.filter_by(status="active").order_by(Choir.choir_id)
+    if not user.system_super_admin and user.choir_id:
+        q = q.filter(Choir.choir_id != user.choir_id)
+    return jsonify({"choirs": [c.to_dict() for c in q.all()]})
 
 
 @api_bp.post("/works/<int:work_id>/recordings/upload")
@@ -98,7 +212,7 @@ def recordings_upload(work_id: int):
         return jsonify({"error": "无权限", "required": "recordings.write"}), 403
 
     work = Work.query.get_or_404(work_id)
-    if not user.system_super_admin and work.choir_id != user.choir_id:
+    if not can_write_work(user, work):
         return jsonify({"error": "无权限"}), 403
 
     f = request.files.get("file")
@@ -154,7 +268,8 @@ def recordings_upload(work_id: int):
 def recordings_delete(recording_id: int):
     user = get_current_user()
     rec = Recording.query.get_or_404(recording_id)
-    if not user.system_super_admin and rec.choir_id != user.choir_id:
+    work = Work.query.get(rec.work_id)
+    if not work or not can_write_work(user, work):
         return jsonify({"error": "无权限"}), 403
     if not can_write_recordings(user):
         return jsonify({"error": "无权限"}), 403
@@ -179,12 +294,16 @@ def recordings_delete(recording_id: int):
 def recordings_stream(recording_id: int):
     token = request.args.get("token")
     rec = Recording.query.get_or_404(recording_id)
+    work = Work.query.get(rec.work_id)
 
     if not token:
         user = get_current_user()
-        if not user or (
-            not user.system_super_admin and rec.choir_id != user.choir_id
-        ) or not can_read_recordings(user):
+        if (
+            not user
+            or not work
+            or not can_read_work(user, work)
+            or not can_read_recordings(user)
+        ):
             return jsonify({"error": "未授权"}), 401
     elif not rec.cde_file_id or not verify_stream_token(rec.choir_id, rec.cde_file_id, token):
         return jsonify({"error": "链接无效或已过期"}), 403
@@ -201,7 +320,8 @@ def recordings_stream(recording_id: int):
 def recordings_play_url(recording_id: int):
     user = get_current_user()
     rec = Recording.query.get_or_404(recording_id)
-    if not user.system_super_admin and rec.choir_id != user.choir_id:
+    work = Work.query.get(rec.work_id)
+    if not work or not can_read_work(user, work):
         return jsonify({"error": "无权限"}), 403
     if not can_read_recordings(user):
         return jsonify({"error": "无权限"}), 403
