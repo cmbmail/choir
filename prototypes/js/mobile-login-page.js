@@ -125,8 +125,11 @@
       document.getElementById("loginForm").hidden = false;
       document.getElementById("identity-picker-mobile").hidden = true;
     });
-    document.querySelector(".register-link")?.addEventListener("click", () => {
-      location.href = "/register.html";
+    document.querySelector(".register-link")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const url = window.ChoirAuth?.registerPath?.() || "/register.html";
+      const qs = location.search || "";
+      location.href = url.includes("?") ? url : url + qs;
     });
 
     if (ChoirAuth.getToken()) {

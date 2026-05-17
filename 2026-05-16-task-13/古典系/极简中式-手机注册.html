@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>雅歌 · 注册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink-black: #1C1C1C;
+  --ink-gold: #B8860B;
+  --ink-gold-dim: rgba(184,134,11,0.15);
+  --silk-white: #F8F6F0;
+  --border: rgba(28,28,28,0.1);
+  --border-gold: rgba(184,134,11,0.3);
+  --text-primary: #1C1C1C;
+  --text-secondary: #5a5548;
+  --text-muted: #9c9490;
+  --error: #b03030;
+  --font-main: 'Space Grotesk','Noto Sans SC',sans-serif;
+  --font-serif: 'Noto Serif SC',serif;
+  --transition: 200ms ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-main);
+  font-weight: 300;
+  background: #111111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+button { cursor: pointer; border: none; background: none; font: inherit; -webkit-tap-highlight-color: transparent; }
+input { font: inherit; }
+a { color: inherit; text-decoration: none; }
+.phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.phone-label {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.phone-frame {
+  width: 393px;
+  height: 852px;
+  background: var(--silk-white);
+  border-radius: 52px;
+  box-shadow: 0 0 0 2px #333, 0 0 0 10px #1a1a1a, 0 0 0 12px #2a2a2a, 0 40px 100px rgba(0,0,0,0.7);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.dynamic-island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 17px;
+  z-index: 999;
+}
+@media (max-width: 460px) {
+  body { background: var(--silk-white); padding: 0; }
+  .phone-frame { width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+  .dynamic-island { display: none; }
+  .phone-wrap { padding: 0; gap: 0; }
+  .phone-label { display: none; }
+}
+.status-bar {
+  height: 44px;
+  background: var(--ink-black);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  flex-shrink: 0;
+  color: #fff;
+  z-index: 100;
+}
+.status-time { font-size: 0.9rem; font-weight: 500; color: #fff; }
+.login-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--silk-white);
+  position: relative;
+  overflow-y: auto;
+}
+.login-content::before,
+.login-content::after {
+  content: '';
+  position: absolute;
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.login-content::before { top: -60px; right: -60px; width: 280px; height: 280px; }
+.login-content::after { top: -30px; right: -30px; width: 200px; height: 200px; opacity: 0.2; }
+.login-brand {
+  padding: 2.25rem 1.75rem 1.25rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.brand-emblem {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  border: 1px solid var(--ink-gold);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.brand-emblem svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--ink-gold);
+  fill: none;
+  stroke-width: 1.25;
+}
+.login-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+.login-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 0 0.5rem;
+}
+.login-subtitle.welcome-ready {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.login-form {
+  padding: 0 1.75rem 1rem;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.input-group { margin-bottom: 0.85rem; }
+.input-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+}
+.input-field {
+  width: 100%;
+  height: 48px;
+  padding: 0 1rem;
+  background: rgba(28,28,28,0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: all var(--transition);
+}
+.input-field:focus {
+  background: #fff;
+  border-color: var(--ink-gold);
+  box-shadow: 0 0 0 3px var(--ink-gold-dim);
+}
+.input-field::placeholder { color: var(--text-muted); }
+.input-wrapper { position: relative; }
+.input-wrapper .input-field { padding-left: 2.75rem; }
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+}
+.login-btn {
+  width: 100%;
+  height: 50px;
+  margin-top: 0.5rem;
+  background: var(--ink-black);
+  color: var(--ink-gold);
+  font-size: 0.9rem;
+  letter-spacing: 0.25em;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.login-btn.loading { pointer-events: none; opacity: 0.7; }
+.login-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: var(--ink-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  left: 50%;
+  top: 50%;
+  margin: -9px 0 0 -9px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.login-footer {
+  padding: 1rem 1.75rem 2rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.login-footer p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.login-link { color: var(--ink-gold); }
+.input-group.has-error .input-field { border-color: var(--error); }
+.error-msg {
+  font-size: 0.65rem;
+  color: var(--error);
+  margin-top: 0.35rem;
+  display: none;
+}
+.input-group.has-error .error-msg { display: block; }
+.toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120px);
+  background: var(--ink-black);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  z-index: 2000;
+  transition: transform 300ms ease;
+  border-left: 2px solid var(--ink-gold);
+  max-width: 90vw;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+#invite_code { letter-spacing: 0.2em; text-transform: uppercase; }
+</style>
+<script>
+if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+  window.CHOIR_API_BASE = "/api";
+  window.CHOIR_UI_BASE = "/ui/";
+}
+</script>
+</head>
+<body>
+
+<div class="phone-wrap">
+  <span class="phone-label">iPhone 16 Pro · 393 × 852</span>
+  <div class="phone-frame">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="status-time" id="statusTime">19:01</span>
+    </div>
+    <div class="login-content">
+      <div class="toast" id="toast"></div>
+      <div class="login-brand">
+        <div class="brand-emblem">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+        </div>
+        <h1 class="login-title">邀请码注册</h1>
+        <p class="login-subtitle" id="welcome-sub">请输入邀请码，验证后将显示团队名称</p>
+      </div>
+      <form class="login-form" id="registerForm">
+        <div class="input-group" id="inviteGroup">
+          <span class="input-label">邀请码（8 位）</span>
+          <input type="text" class="input-field" id="invite_code" maxlength="8" placeholder="请输入邀请码" autocomplete="off" inputmode="text"/>
+          <p class="error-msg">请输入 8 位邀请码</p>
+        </div>
+        <div class="input-group" id="phoneGroup">
+          <span class="input-label">手机号</span>
+          <div class="input-wrapper">
+            <input type="text" class="input-field" id="phone" inputmode="numeric" placeholder="请输入手机号" autocomplete="tel" maxlength="11"/>
+            <svg class="input-icon" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <p class="error-msg">请输入手机号</p>
+        </div>
+        <div class="input-group" id="nameGroup">
+          <span class="input-label">真实姓名</span>
+          <input type="text" class="input-field" id="name" placeholder="请输入真实姓名" autocomplete="name"/>
+          <p class="error-msg">请输入真实姓名</p>
+        </div>
+        <div class="input-group" id="passwordGroup">
+          <span class="input-label">密码</span>
+          <div class="input-wrapper">
+            <input type="password" class="input-field" id="password" placeholder="请设置登录密码" autocomplete="new-password" maxlength="32"/>
+            <svg class="input-icon" viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <button type="button" class="toggle-password" onclick="togglePassword()">
+              <svg id="eyeIcon" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <p class="error-msg">请设置密码</p>
+        </div>
+        <button type="submit" class="login-btn" id="registerBtn">注 册</button>
+      </form>
+      <div class="login-footer">
+        <p>已有账号？<span class="login-link">立即登录</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/mobile-register-page.js"></script>
+<script>
+function updateTime() {
+  const now = new Date();
+  const el = document.getElementById("statusTime");
+  if (el) el.textContent = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+}
+updateTime();
+setInterval(updateTime, 30000);
+</script>
+</body>
+</html>

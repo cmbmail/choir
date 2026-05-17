@@ -6,10 +6,19 @@
   <title>注册 — 雅歌</title>
   <link rel="stylesheet" href="css/theme.css" />
   <script>
-  if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+  (function () {
+    const isLocal = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+    if (!isLocal) {
       window.CHOIR_API_BASE = "/api";
       window.CHOIR_UI_BASE = "/ui/";
     }
+    const mobileUa = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    const narrow = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+    if (mobileUa.test(navigator.userAgent) || narrow) {
+      const ui = isLocal ? "/2026-05-16-task-13/古典系/" : "/ui/";
+      location.replace(ui + "极简中式-手机注册.html" + location.search);
+    }
+  })();
   </script>
 </head>
 <body>
@@ -106,7 +115,17 @@
         await ChoirAPI.post("/auth/register", body);
         msg.style.color = "#8c8";
         msg.textContent = "注册成功，请登录";
-        setTimeout(() => { location.href = "login.html"; }, 800);
+        setTimeout(() => {
+          const mobileUa = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+          const narrow = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+          const isLocal = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+          const ui = isLocal ? "/2026-05-16-task-13/古典系/" : "/ui/";
+          if (mobileUa.test(navigator.userAgent) || narrow) {
+            location.href = ui + "极简中式-手机登录.html";
+          } else {
+            location.href = "login.html";
+          }
+        }, 800);
       } catch (err) {
         msg.style.color = "";
         msg.textContent = err.message;

@@ -1,9 +1,29 @@
+import hashlib
+import uuid
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from app.models import InvitationCode, User
+from app.models import CaptchaChallenge, ChoirRole, InvitationCode, User
 from app.services.invite_code import generate_plain_code, hash_code
 from app.services.password import hash_password
+
+
+def _captcha_hash(code: str) -> str:
+    return hashlib.sha256(code.lower().encode()).hexdigest()
+
+
+def _seed_captcha(app, code: str = "abcd") -> dict:
+    with app.app_context():
+        captcha_id = str(uuid.uuid4())
+        db.session.add(
+            CaptchaChallenge(
+                captcha_id=captcha_id,
+                answer_hash=_captcha_hash(code),
+                expires_at=datetime.utcnow() + timedelta(minutes=5),
+            )
+        )
+        db.session.commit()
+    return {"captcha_id": captcha_id, "captcha_code": code}
 
 
 def test_login_and_me(client, choir_admin_headers):
@@ -207,6 +227,124 @@ def test_unlock_member(client, choir_admin_headers, app):
         u = db.session.get(User, uid)
         assert u.failed_login_count == 0
         assert u.locked_until is None
+
+
+def test_inactive_user_cannot_login(client, app):
+    with app.app_context():
+        admin = User.query.filter_by(username="13900000001").first()
+        db.session.add(
+            User(
+                choir_id=admin.choir_id,
+                role_id=admin.role_id,
+                username="13800139999",
+                password_hash=hash_password("TestPass1"),
+                name="停用用户",
+                status="inactive",
+            )
+        )
+        db.session.commit()
+
+    res = client.post(
+        "/api/auth/login",
+        json={"username": "13800139999", "password": "TestPass1"},
+    )
+    assert res.status_code == 401
+
+
+def test_login_locks_after_fifth_failure(client, app):
+    with app.app_context():
+        user = User.query.filter_by(username="13900000001").first()
+        user.failed_login_count = 4
+        user.locked_until = None
+        db.session.commit()
+
+    cap = _seed_captcha(app)
+    res = client.post(
+        "/api/auth/login",
+        json={
+            "username": "13900000001",
+            "password": "wrong-password",
+            **cap,
+        },
+    )
+    assert res.status_code == 401
+
+    with app.app_context():
+        user = User.query.filter_by(username="13900000001").first()
+        assert user.failed_login_count >= 5
+        assert user.locked_until is not None
+
+    cap2 = _seed_captcha(app)
+    res2 = client.post(
+        "/api/auth/login",
+        json={
+            "username": "13900000001",
+            "password": "ChoirAdmin1",
+            **cap2,
+        },
+    )
+    assert res2.status_code == 423
+
+
+def test_register_without_invite(client):
+    res = client.post(
+        "/api/auth/register",
+        json={
+            "username": "13800138888",
+            "name": "无码用户",
+            "password": "TestPass1",
+        },
+    )
+    assert res.status_code == 400
+
+
+def test_members_assign_role(client, choir_admin_headers, app):
+    with app.app_context():
+        admin = User.query.filter_by(username="13900000001").first()
+        member_role = ChoirRole.query.filter_by(
+            choir_id=admin.choir_id, role_code="member"
+        ).first()
+        leader_role = ChoirRole.query.filter_by(
+            choir_id=admin.choir_id, role_code="class_leader"
+        ).first()
+        member = User(
+            choir_id=admin.choir_id,
+            role_id=member_role.role_id,
+            username="13800138802",
+            password_hash=hash_password("TestPass1"),
+            name="普通团员",
+            status="active",
+        )
+        db.session.add(member)
+        db.session.commit()
+        member_id = member.user_id
+        leader_role_id = leader_role.role_id
+        member_role_id = member_role.role_id
+
+    res = client.put(
+        f"/api/members/{member_id}",
+        headers=choir_admin_headers,
+        json={"role_id": leader_role_id},
+    )
+    assert res.status_code == 200
+
+    with app.app_context():
+        assert db.session.get(User, member_id).role_id == leader_role_id
+
+    login = client.post(
+        "/api/auth/login",
+        json={"username": "13800138802", "password": "TestPass1"},
+    )
+    assert login.status_code == 200
+    member_headers = {"Authorization": f"Bearer {login.get_json()['access_token']}"}
+
+    res2 = client.put(
+        f"/api/members/{member_id}",
+        headers=member_headers,
+        json={"role_id": member_role_id},
+    )
+    assert res2.status_code == 403
+    assert "members.assign_role" in res2.get_json().get("required", "")
 
 
 def test_invite_create_and_revoke(client, choir_admin_headers):

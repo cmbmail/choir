@@ -29,6 +29,13 @@
     return "login.html";
   }
 
+  function registerPath() {
+    if (isMobileDevice()) {
+      return uiBase() + "极简中式-手机注册.html";
+    }
+    return "/register.html";
+  }
+
   function saveSession(payload) {
     if (payload.access_token) localStorage.setItem(TOKEN_KEY, payload.access_token);
     if (payload.user) localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
@@ -131,5 +138,9 @@
     routeAfterLogin,
     logout,
     apiBase,
+    isMobileDevice,
+    uiBase,
+    loginPath,
+    registerPath,
   };
 })();
