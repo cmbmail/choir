@@ -2,6 +2,7 @@ from functools import wraps
 
 from flask import g, jsonify, request
 
+from app.extensions import db
 from app.models import User
 from app.services.jwt_tokens import decode_token
 from app.services.permissions import has_permission
@@ -15,8 +16,6 @@ def _extract_token():
 
 
 def get_current_user():
-    if hasattr(g, "current_user"):
-        return g.current_user
     token = _extract_token()
     if not token:
         g.current_user = None
@@ -25,8 +24,13 @@ def get_current_user():
     if not payload:
         g.current_user = None
         return None
-    user = User.query.get(payload.get("sub"))
-    if not user or user.token_version != payload.get("tv", 0):
+    try:
+        uid = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        g.current_user = None
+        return None
+    user = db.session.get(User, uid)
+    if not user or int(user.token_version) != int(payload.get("tv", -1)):
         g.current_user = None
         return None
     g.current_user = user

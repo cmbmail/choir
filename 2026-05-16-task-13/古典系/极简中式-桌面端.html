@@ -375,6 +375,12 @@ a{color:inherit;text-decoration:none}
   .page-actions{justify-content:flex-end}
 }
 </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -685,19 +691,7 @@ function showConfirm(title,text,action){
   confirmModal.classList.add('show');
 }
 
-logoutBtn.addEventListener('click',()=>{
-  userDropdown.classList.remove('open');
-  showConfirm('确认退出','确定要退出登录吗？',()=>{
-    alert('已退出登录');
-  });
-});
-
-changePwdBtn.addEventListener('click',()=>{
-  userDropdown.classList.remove('open');
-  showConfirm('修改密码','确定要修改密码吗？',()=>{
-    alert('打开修改密码页面');
-  });
-});
+/* 退出 / 改密由 ChoirAppShell 处理 */
 
 modalCancel.addEventListener('click',()=>{
   confirmModal.classList.remove('show');
@@ -798,5 +792,10 @@ function renderNotifications() {
 }
 
 </script>
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => ChoirAppShell.init());</script>
 </body>
 </html>

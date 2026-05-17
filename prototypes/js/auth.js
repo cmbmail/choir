@@ -18,11 +18,15 @@
   function saveSession(payload) {
     if (payload.access_token) localStorage.setItem(TOKEN_KEY, payload.access_token);
     if (payload.user) localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
+    if (payload.csrf_token && window.ChoirAPI?.setCsrfToken) {
+      ChoirAPI.setCsrfToken(payload.csrf_token);
+    }
   }
 
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem("csrf_token");
   }
 
   function getToken() {
@@ -42,6 +46,7 @@
     if (!token) return null;
     const res = await fetch(`${apiBase()}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     });
     if (!res.ok) {
       clearSession();
@@ -87,10 +92,15 @@
 
   async function logout() {
     try {
-      await fetch(`${apiBase()}/auth/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      if (window.ChoirAPI) {
+        await ChoirAPI.post("/auth/logout", {});
+      } else {
+        await fetch(`${apiBase()}/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${getToken()}` },
+          credentials: "include",
+        });
+      }
     } catch (_) {}
     clearSession();
     location.href = loginPath();

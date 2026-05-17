@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import current_app, jsonify, request
 
 from app.api import api_bp
+from app.auth.csrf import issue_csrf_token, set_csrf_cookie
 from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
 from app.models import Choir, InvitationCode, User
@@ -24,7 +25,14 @@ def _auth_response(user):
     token = issue_token(user)
     body = {"user": user.to_me_dict(), "access_token": token}
     if current_app.config["AUTH_MODE"] == "production":
-        resp = jsonify({"user": body["user"]})
+        csrf = issue_csrf_token()
+        resp = jsonify(
+            {
+                "user": body["user"],
+                "access_token": token,
+                "csrf_token": csrf,
+            }
+        )
         resp.set_cookie(
             "access_token",
             token,
@@ -33,8 +41,18 @@ def _auth_response(user):
             samesite="Lax",
             max_age=int(current_app.config["JWT_ACCESS_DELTA"].total_seconds()),
         )
+        set_csrf_cookie(resp, csrf)
         return resp
     return jsonify(body)
+
+
+@api_bp.get("/auth/csrf")
+def get_csrf():
+    token = issue_csrf_token()
+    resp = jsonify({"csrf_token": token})
+    if current_app.config["AUTH_MODE"] == "production":
+        set_csrf_cookie(resp, token)
+    return resp
 
 
 def _needs_captcha(user: User | None) -> bool:

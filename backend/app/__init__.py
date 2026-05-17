@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 
+from app.auth.csrf import csrf_protect
 from app.config import Config
 from app.extensions import db, migrate
 
@@ -16,6 +17,10 @@ def create_app(config_class=Config):
     from app.api import api_bp
 
     app.register_blueprint(api_bp, url_prefix="/api")
+
+    @app.before_request
+    def _csrf_guard():
+        return csrf_protect()
 
     @app.get("/health")
     def health():

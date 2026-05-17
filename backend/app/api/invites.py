@@ -10,6 +10,34 @@ from app.services.invite_code import generate_plain_code, hash_code
 from app.services.permissions import has_permission
 
 
+def _invite_status(invite: InvitationCode) -> str:
+    if invite.revoked_at:
+        return "revoked"
+    if invite.use_count >= invite.max_uses:
+        return "exhausted"
+    if invite.expires_at <= datetime.utcnow():
+        return "expired"
+    return "active"
+
+
+def _invite_dict(invite: InvitationCode) -> dict:
+    choir = invite.choir
+    return {
+        "invite_id": invite.invite_id,
+        "choir_id": invite.choir_id,
+        "choir_name": choir.name if choir else None,
+        "choir_slug": choir.slug if choir else None,
+        "voice_part": invite.voice_part,
+        "max_uses": invite.max_uses,
+        "use_count": invite.use_count,
+        "expires_at": invite.expires_at.isoformat(),
+        "revoked_at": invite.revoked_at.isoformat() if invite.revoked_at else None,
+        "created_at": invite.created_at.isoformat() if invite.created_at else None,
+        "status": _invite_status(invite),
+        "can_revoke": _invite_status(invite) == "active",
+    }
+
+
 @api_bp.post("/invites")
 @require_permission("invites.create")
 def invites_create():
@@ -68,22 +96,7 @@ def invites_list():
     else:
         q = q.filter_by(choir_id=user.choir_id)
     rows = q.order_by(InvitationCode.created_at.desc()).limit(100).all()
-    return jsonify(
-        {
-            "invites": [
-                {
-                    "invite_id": i.invite_id,
-                    "choir_id": i.choir_id,
-                    "voice_part": i.voice_part,
-                    "max_uses": i.max_uses,
-                    "use_count": i.use_count,
-                    "expires_at": i.expires_at.isoformat(),
-                    "revoked_at": i.revoked_at.isoformat() if i.revoked_at else None,
-                }
-                for i in rows
-            ]
-        }
-    )
+    return jsonify({"invites": [_invite_dict(i) for i in rows]})
 
 
 @api_bp.delete("/invites/<int:invite_id>")

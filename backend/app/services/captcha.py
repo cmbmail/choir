@@ -29,7 +29,7 @@ def _hash_answer(code: str) -> str:
     return hashlib.sha256(code.lower().encode()).hexdigest()
 
 
-def _load_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+def _load_font():
     for path in _FONT_CANDIDATES:
         try:
             return ImageFont.truetype(path, FONT_SIZE)

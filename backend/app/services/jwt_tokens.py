@@ -10,9 +10,9 @@ def issue_token(user) -> str:
     now = datetime.now(timezone.utc)
     exp = now + current_app.config["JWT_ACCESS_DELTA"]
     payload = {
-        "sub": user.user_id,
-        "iat": now,
-        "exp": exp,
+        "sub": str(user.user_id),
+        "iat": int(now.timestamp()),
+        "exp": int(exp.timestamp()),
         "tv": user.token_version,
         "system_super_admin": user.system_super_admin,
     }

@@ -11,6 +11,12 @@
   };
   const STATUS_LABEL = { active: "正常", leave: "请假", inactive: "停用" };
   const STATUS_DOT = { active: "dot-active", leave: "dot-leave", inactive: "dot-inactive" };
+  const INVITE_STATUS = {
+    active: "有效",
+    revoked: "已作废",
+    expired: "已过期",
+    exhausted: "已用完",
+  };
 
   let currentUser = null;
   let roles = [];
@@ -210,6 +216,68 @@
     }
   }
 
+  function inviteListQuery() {
+    const p = new URLSearchParams();
+    if (currentUser.system_super_admin) {
+      const cid =
+        document.getElementById("invite-choir-id")?.value ||
+        document.getElementById("filter-choir")?.value;
+      if (cid) p.set("choir_id", cid);
+    }
+    return p.toString() ? `?${p}` : "";
+  }
+
+  async function loadInvites() {
+    if (!can("invites.create")) return;
+    const data = await ChoirAPI.get(`/invites${inviteListQuery()}`);
+    renderInviteList(data.invites || []);
+  }
+
+  function renderInviteList(list) {
+    const wrap = document.getElementById("invite-list-wrap");
+    const root = document.getElementById("invite-list");
+    if (!wrap || !root) return;
+    wrap.hidden = false;
+    if (!list.length) {
+      root.innerHTML = '<p class="empty-hint" style="padding:1rem">暂无邀请码</p>';
+      return;
+    }
+    let html =
+      '<table class="invite-table"><thead><tr><th>状态</th><th>使用</th><th>声部</th><th>过期</th><th></th></tr></thead><tbody>';
+    list.forEach((inv) => {
+      const vp = inv.voice_part ? VOICE[inv.voice_part] : "—";
+      const exp = inv.expires_at ? inv.expires_at.slice(0, 10) : "—";
+      const st = INVITE_STATUS[inv.status] || inv.status;
+      const revokeBtn =
+        inv.can_revoke && can("invites.revoke")
+          ? `<button type="button" class="btn btn-outline btn-xs" data-revoke="${inv.invite_id}">作废</button>`
+          : "";
+      html += `<tr>
+        <td class="invite-status-${inv.status}">${st}</td>
+        <td>${inv.use_count}/${inv.max_uses}</td>
+        <td>${vp}</td>
+        <td>${exp}</td>
+        <td>${revokeBtn}</td>
+      </tr>`;
+    });
+    html += "</tbody></table>";
+    root.innerHTML = html;
+    root.querySelectorAll("[data-revoke]").forEach((btn) => {
+      btn.addEventListener("click", () => revokeInvite(+btn.dataset.revoke));
+    });
+  }
+
+  async function revokeInvite(id) {
+    if (!confirm("确定作废该邀请码？")) return;
+    try {
+      await ChoirAPI.del(`/invites/${id}`);
+      toast("已作废");
+      await loadInvites();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
   async function openInviteModal() {
     document.getElementById("invite-result").hidden = true;
     document.getElementById("invite-result").textContent = "";
@@ -229,6 +297,7 @@
       choirRow.hidden = true;
     }
     openModal("modal-invite");
+    await loadInvites();
   }
 
   async function createInvite(e) {
@@ -247,8 +316,11 @@
       const data = await ChoirAPI.post("/invites", body);
       const box = document.getElementById("invite-result");
       box.hidden = false;
-      box.innerHTML = `邀请码：<strong>${data.invite_code}</strong><br>注册链接：<a href="${data.register_url}" target="_blank">${data.register_url}</a>`;
+      const url = esc(data.register_url || "");
+      const code = esc(data.invite_code || "");
+      box.innerHTML = `邀请码：<strong>${code}</strong><br>注册链接：<a href="${url}" target="_blank" rel="noopener">${url}</a>`;
       toast("邀请码已生成");
+      await loadInvites();
     } catch (err) {
       toast(err.message, true);
     }
@@ -311,21 +383,14 @@
     sel.addEventListener("change", () => loadMembers());
   }
 
-  async function init() {
-    if (!ChoirAuth.requireAuth()) return;
-    currentUser = await ChoirAuth.refreshUser();
-    if (!currentUser) {
-      location.href = ChoirAuth.loginPath?.() || "/login.html";
-      return;
-    }
-    if (!ChoirAuth.hasPermission(currentUser, "members.read")) {
-      toast("无成员列表权限", true);
-      return;
-    }
-
+  async function setupPage(user) {
+    currentUser = user;
     fillUserUI();
 
     document.getElementById("btn-add-member")?.addEventListener("click", () =>
+      openInviteModal().catch((e) => toast(e.message, true))
+    );
+    document.getElementById("btn-invites")?.addEventListener("click", () =>
       openInviteModal().catch((e) => toast(e.message, true))
     );
     document.getElementById("btn-refresh")?.addEventListener("click", () => loadMembers().catch((e) => toast(e.message, true)));
@@ -342,19 +407,32 @@
     document.querySelectorAll("[data-close]").forEach((el) => {
       el.addEventListener("click", () => closeModal(el.dataset.close));
     });
-    document.querySelectorAll("[data-logout]").forEach((el) => {
-      el.addEventListener("click", () => ChoirAuth.logout());
-    });
-
     const exportBtn = document.getElementById("btn-export");
     if (exportBtn) exportBtn.hidden = true;
 
     if (!can("invites.create")) {
       document.getElementById("btn-add-member").hidden = true;
+    } else {
+      const btnInv = document.getElementById("btn-invites");
+      if (btnInv) btnInv.hidden = false;
     }
 
     await setupChoirFilter();
+    const inviteChoirSel = document.getElementById("invite-choir-id");
+    if (inviteChoirSel && currentUser.system_super_admin) {
+      inviteChoirSel.addEventListener("change", () =>
+        loadInvites().catch((e) => toast(e.message, true))
+      );
+    }
     await loadMembers();
+  }
+
+  async function init() {
+    const user = await ChoirAppShell.init({
+      requiredPerm: "members.read",
+      onReady: (u) => setupPage(u),
+    });
+    if (!user) return;
   }
 
   document.addEventListener("DOMContentLoaded", init);
