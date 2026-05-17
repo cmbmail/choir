@@ -1,24 +1,73 @@
 (function () {
+  const TOKEN_KEY = "access_token";
+  const USER_KEY = "current_user";
+
+  function apiBase() {
+    if (window.CHOIR_API_BASE) return window.CHOIR_API_BASE;
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      return "/api";
+    }
+    return "http://127.0.0.1:5000/api";
+  }
+
+  function loginPath() {
+    if (location.pathname.includes("/ui/")) return "/login.html";
+    return "login.html";
+  }
+
   function saveSession(payload) {
-    if (payload.access_token) {
-      localStorage.setItem("access_token", payload.access_token);
-    }
-    if (payload.user) {
-      localStorage.setItem("current_user", JSON.stringify(payload.user));
-    }
+    if (payload.access_token) localStorage.setItem(TOKEN_KEY, payload.access_token);
+    if (payload.user) localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
   }
 
   function clearSession() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("current_user");
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
   }
 
   function getUser() {
     try {
-      return JSON.parse(localStorage.getItem("current_user") || "null");
+      return JSON.parse(localStorage.getItem(USER_KEY) || "null");
     } catch {
       return null;
     }
+  }
+
+  async function refreshUser() {
+    const token = getToken();
+    if (!token) return null;
+    const res = await fetch(`${apiBase()}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      clearSession();
+      return null;
+    }
+    const user = await res.json();
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    return user;
+  }
+
+  function requireAuth() {
+    if (!getToken()) {
+      location.href = loginPath();
+      return false;
+    }
+    return true;
+  }
+
+  function hasPermission(user, key) {
+    if (!user) return false;
+    if (user.system_super_admin) return true;
+    const perms = user.permissions || [];
+    if (perms.includes("*")) return true;
+    if (perms.includes(key)) return true;
+    const prefix = key.split(".")[0] + ".*";
+    return perms.includes(prefix);
   }
 
   function routeAfterLogin(user) {
@@ -36,5 +85,27 @@
     }
   }
 
-  window.ChoirAuth = { saveSession, clearSession, getUser, routeAfterLogin };
+  async function logout() {
+    try {
+      await fetch(`${apiBase()}/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+    } catch (_) {}
+    clearSession();
+    location.href = loginPath();
+  }
+
+  window.ChoirAuth = {
+    saveSession,
+    clearSession,
+    getToken,
+    getUser,
+    refreshUser,
+    requireAuth,
+    hasPermission,
+    routeAfterLogin,
+    logout,
+    apiBase,
+  };
 })();

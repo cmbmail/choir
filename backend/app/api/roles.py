@@ -16,8 +16,10 @@ def roles_list():
         if not choir_id:
             return jsonify({"error": "请指定 choir_id"}), 400
     else:
-        if not has_permission(user, "roles.manage"):
-            return jsonify({"error": "无权限", "required": "roles.manage"}), 403
+        if not has_permission(user, "roles.manage") and not has_permission(
+            user, "members.assign_role"
+        ):
+            return jsonify({"error": "无权限"}), 403
         choir_id = user.choir_id
 
     rows = ChoirRole.query.filter_by(choir_id=choir_id).order_by(ChoirRole.role_id).all()

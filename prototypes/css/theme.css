@@ -92,3 +92,43 @@ button:disabled {
 .links a {
   color: var(--gold);
 }
+
+.captcha-block {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  border-radius: var(--radius);
+  background: #262626;
+}
+
+.captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.captcha-img {
+  display: block;
+  width: 200px;
+  height: 72px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  image-rendering: pixelated;
+}
+
+.btn-captcha-refresh {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-captcha-refresh:hover {
+  background: rgba(184, 134, 11, 0.15);
+}

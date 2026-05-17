@@ -29,10 +29,13 @@
       <input id="username" type="text" inputmode="numeric" autocomplete="username" required />
       <label for="password">密码</label>
       <input id="password" type="password" autocomplete="current-password" required />
-      <div id="captcha-block" hidden>
+      <div id="captcha-block" class="captcha-block" hidden>
         <label for="captcha_code">验证码</label>
-        <img id="captcha_img" alt="验证码" style="display:block;margin:0.5rem 0;max-width:100%" />
-        <input id="captcha_code" type="text" maxlength="4" />
+        <div class="captcha-row">
+          <img id="captcha_img" class="captcha-img" alt="验证码" title="点击刷新" />
+          <button type="button" id="btn-captcha-refresh" class="btn-captcha-refresh">换一张</button>
+        </div>
+        <input id="captcha_code" type="text" maxlength="4" placeholder="请输入图中字符" autocomplete="off" />
       </div>
       <button type="submit" id="submit-btn">登录</button>
       <p class="msg" id="msg"></p>
@@ -46,6 +49,25 @@
     const modeEl = document.getElementById("login_mode");
     const msgEl = document.getElementById("msg");
     let captchaId = null;
+    const captchaBlock = document.getElementById("captcha-block");
+    const captchaImg = document.getElementById("captcha_img");
+    const captchaCode = document.getElementById("captcha_code");
+
+    async function loadCaptcha() {
+      const cap = await ChoirAPI.get("/auth/captcha");
+      captchaId = cap.captcha_id;
+      captchaImg.src = cap.image_base64;
+      captchaCode.value = "";
+      captchaBlock.hidden = false;
+      captchaBlock.style.display = "block";
+    }
+
+    document.getElementById("btn-captcha-refresh").addEventListener("click", () => {
+      loadCaptcha().catch((e) => { msgEl.textContent = e.message; });
+    });
+    captchaImg.addEventListener("click", () => {
+      loadCaptcha().catch((e) => { msgEl.textContent = e.message; });
+    });
 
     function syncChoirSelect() {
       const isSystem = modeEl.value === "system";
@@ -96,12 +118,7 @@
         msgEl.textContent = err.message;
         if (err.status === 400 || err.status === 401) {
           try {
-            const cap = await ChoirAPI.get("/auth/captcha");
-            captchaId = cap.captcha_id;
-            document.getElementById("captcha_img").src = cap.image_base64;
-            const block = document.getElementById("captcha-block");
-            block.hidden = false;
-            block.style.display = "block";
+            await loadCaptcha();
           } catch (_) {}
         }
       }

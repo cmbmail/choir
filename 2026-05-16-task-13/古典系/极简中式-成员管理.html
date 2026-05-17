@@ -115,8 +115,26 @@ a{color:inherit;text-decoration:none}
 .footer-text{font-size:0.7rem;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase}
 
 @media(max-width:1200px){.sidebar{display:none}.page-body{flex-direction:column}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:500;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;padding:1.5rem;width:min(440px,100%);max-height:90vh;overflow-y:auto}
+.modal-box h2{font-size:1.1rem;font-weight:400;margin-bottom:1rem}
+.modal-box label{display:block;font-size:0.8rem;margin:0.5rem 0 0.25rem;color:var(--text-secondary)}
+.modal-box input,.modal-box select{width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;margin-bottom:0.5rem}
+.modal-actions{display:flex;gap:0.5rem;margin-top:1rem;justify-content:flex-end}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--ink-black);color:var(--silk-white);padding:0.75rem 1.25rem;border-radius:4px;z-index:600;font-size:0.85rem}
+.toast-err{background:var(--error)}
+.empty-hint{text-align:center;color:var(--text-muted);padding:3rem}
+.tag-lock{color:var(--error);font-size:0.7rem;margin-left:0.5rem}
+#invite-result{margin-top:0.75rem;padding:0.75rem;background:var(--silk-cream);font-size:0.8rem;word-break:break-all}
 @media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.filter-bar{flex-direction:column;align-items:stretch}.search-input{width:100%}.member-grid{grid-template-columns:1fr}}
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -138,7 +156,7 @@ a{color:inherit;text-decoration:none}
       <div class="user-dropdown-menu">
         <div class="dropdown-item"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>修改密码</span></div>
         <div class="dropdown-divider"></div>
-        <div class="dropdown-item danger"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>退出登录</span></div>
+        <div class="dropdown-item danger" data-logout><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>退出登录</span></div>
       </div>
     </div>
   </div>
@@ -171,14 +189,12 @@ a{color:inherit;text-decoration:none}
     <div class="page-header">
       <div class="page-title-group">
         <h1 class="page-title">成员管理</h1>
-        <p class="page-subtitle">合唱团成员信息管理 · 共42人</p>
+        <p class="page-subtitle" id="page-subtitle">合唱团成员信息管理</p>
       </div>
       <div class="page-actions">
-        <button class="btn btn-outline">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          导出名单
-        </button>
-        <button class="btn btn-gold">
+        <button type="button" class="btn btn-outline" id="btn-refresh">刷新</button>
+        <button type="button" class="btn btn-outline" id="btn-export" hidden>导出名单</button>
+        <button type="button" class="btn btn-gold" id="btn-add-member">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           添加成员
         </button>
@@ -186,264 +202,111 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div class="filter-bar">
+      <div class="filter-group" id="filter-choir-row" hidden>
+        <span class="filter-label">合唱团</span>
+        <select class="filter-select" id="filter-choir"></select>
+      </div>
       <div class="filter-group">
         <span class="filter-label">声部</span>
-        <select class="filter-select">
+        <select class="filter-select" id="filter-voice">
           <option value="">全部声部</option>
-          <option value="soprano">女高音</option>
-          <option value="alto">女低音</option>
-          <option value="tenor">男高音</option>
-          <option value="bass">男低音</option>
+          <option value="1">S1 女高音</option>
+          <option value="2">S2 女高音</option>
+          <option value="3">A1 女低音</option>
+          <option value="4">A2 女低音</option>
+          <option value="5">T1 男高音</option>
+          <option value="6">T2 男高音</option>
+          <option value="7">B1 男低音</option>
+          <option value="8">B2 男低音</option>
         </select>
       </div>
       <div class="filter-group">
         <span class="filter-label">状态</span>
-        <select class="filter-select">
+        <select class="filter-select" id="filter-status">
           <option value="">全部状态</option>
           <option value="active">正常</option>
           <option value="leave">请假</option>
           <option value="inactive">停用</option>
         </select>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">年份</span>
-        <select class="filter-select">
-          <option value="">全部年份</option>
-          <option value="2024">2024年入团</option>
-          <option value="2023">2023年入团</option>
-          <option value="2022">2022年入团</option>
-          <option value="older">更早</option>
-        </select>
-      </div>
-      <input type="text" class="search-input" placeholder="搜索姓名、学号...">
+      <input type="text" class="search-input" id="filter-q" placeholder="搜索姓名、手机号…">
+      <button type="button" class="btn btn-outline" id="btn-search">搜索</button>
     </div>
 
-    <!-- 女高音 -->
-    <div class="voice-section">
-      <div class="section-header">
-        <div class="section-title">
-          <h3>女高音 Soprano</h3>
-          <span class="section-count">12人</span>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-outline btn-xs">查看全部</button>
-        </div>
-      </div>
-      <div class="member-grid">
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#fef3c7;color:#d97706">陈</div>
-            <div class="member-info">
-              <div class="member-name">陈小慧</div>
-              <div class="member-id">CH001</div>
-              <span class="member-voice vb-soprano">女高音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2022年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 95%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#dbeafe;color:#1d4ed8">刘</div>
-            <div class="member-info">
-              <div class="member-name">刘音乐</div>
-              <div class="member-id">CH002</div>
-              <span class="member-voice vb-soprano">女高音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2020年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 92%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#e0f2fe;color:#0369a1">吴</div>
-            <div class="member-info">
-              <div class="member-name">吴明月</div>
-              <div class="member-id">CH010</div>
-              <span class="member-voice vb-soprano">女高音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2024年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 98%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 女低音 -->
-    <div class="voice-section">
-      <div class="section-header">
-        <div class="section-title">
-          <h3>女低音 Alto</h3>
-          <span class="section-count">10人</span>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-outline btn-xs">查看全部</button>
-        </div>
-      </div>
-      <div class="member-grid">
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#fef3c7;color:#92400e">张</div>
-            <div class="member-info">
-              <div class="member-name">张丽雯</div>
-              <div class="member-id">CH004</div>
-              <span class="member-voice vb-alto">女低音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2019年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 76%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#d1fae5;color:#065f46">林</div>
-            <div class="member-info">
-              <div class="member-name">林晓燕</div>
-              <div class="member-id">CH005</div>
-              <span class="member-voice vb-alto">女低音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2023年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 91%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 男高音 -->
-    <div class="voice-section">
-      <div class="section-header">
-        <div class="section-title">
-          <h3>男高音 Tenor</h3>
-          <span class="section-count">10人</span>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-outline btn-xs">查看全部</button>
-        </div>
-      </div>
-      <div class="member-grid">
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#dbeafe;color:#1e40af">李</div>
-            <div class="member-info">
-              <div class="member-name">李大明</div>
-              <div class="member-id">CH006</div>
-              <span class="member-voice vb-tenor">男高音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2021年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 70%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-leave"></span>请假中</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#ede9fe;color:#5b21b6">赵</div>
-            <div class="member-info">
-              <div class="member-name">赵强强</div>
-              <div class="member-id">CH007</div>
-              <span class="member-voice vb-tenor">男高音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2020年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 85%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-active"></span>正常</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 男低音 -->
-    <div class="voice-section">
-      <div class="section-header">
-        <div class="section-title">
-          <h3>男低音 Bass</h3>
-          <span class="section-count">10人</span>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-outline btn-xs">查看全部</button>
-        </div>
-      </div>
-      <div class="member-grid">
-        <div class="member-card">
-          <div class="member-top">
-            <div class="member-avatar" style="background:#d1fae5;color:#065f46">周</div>
-            <div class="member-info">
-              <div class="member-name">周建国</div>
-              <div class="member-id">CH009</div>
-              <span class="member-voice vb-bass">男低音</span>
-            </div>
-          </div>
-          <div class="member-meta">
-            <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>2018年入团</span>
-            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>出席率 60%</span>
-          </div>
-          <div class="member-footer">
-            <div class="member-status"><span class="status-dot dot-inactive"></span>已停用</div>
-            <div class="member-actions">
-              <button class="btn btn-outline btn-xs">编辑</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="members-root"></div>
   </main>
 </div>
+
+<div id="modal-edit" class="modal-overlay">
+  <div class="modal-box">
+    <h2>编辑成员</h2>
+    <form id="form-edit">
+      <input type="hidden" id="edit-user-id" />
+      <label for="edit-name">姓名</label>
+      <input id="edit-name" required />
+      <label for="edit-voice">声部</label>
+      <select id="edit-voice">
+        <option value="">未分配</option>
+        <option value="1">S1</option><option value="2">S2</option>
+        <option value="3">A1</option><option value="4">A2</option>
+        <option value="5">T1</option><option value="6">T2</option>
+        <option value="7">B1</option><option value="8">B2</option>
+      </select>
+      <label for="edit-status">状态</label>
+      <select id="edit-status">
+        <option value="active">正常</option>
+        <option value="leave">请假</option>
+        <option value="inactive">停用</option>
+      </select>
+      <label for="edit-role">角色</label>
+      <select id="edit-role"></select>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close="modal-edit">取消</button>
+        <button type="submit" class="btn btn-gold">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-invite" class="modal-overlay">
+  <div class="modal-box">
+    <h2>生成邀请码</h2>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem">注册后默认为团员，管理角色由超管分配</p>
+    <form id="form-invite">
+      <div id="invite-choir-row" hidden>
+        <label for="invite-choir-id">合唱团</label>
+        <select id="invite-choir-id"></select>
+      </div>
+      <label for="invite-voice">预设声部（可选）</label>
+      <select id="invite-voice">
+        <option value="">不预设</option>
+        <option value="1">S1</option><option value="2">S2</option>
+        <option value="3">A1</option><option value="4">A2</option>
+        <option value="5">T1</option><option value="6">T2</option>
+        <option value="7">B1</option><option value="8">B2</option>
+      </select>
+      <label for="invite-days">有效天数</label>
+      <input id="invite-days" type="number" min="1" max="30" value="7" />
+      <label for="invite-max">可用次数</label>
+      <input id="invite-max" type="number" min="1" max="5" value="1" />
+      <div id="invite-result" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close="modal-invite">关闭</button>
+        <button type="submit" class="btn btn-gold">生成</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
 
 <footer class="footer">
   <p class="footer-text">极简中式 · 弦歌合唱团管理系统 © 2026</p>
 </footer>
 
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/members-page.js"></script>
 <script>
 const userDropdown = document.getElementById('userDropdown');
 userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
