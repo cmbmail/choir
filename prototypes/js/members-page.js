@@ -35,6 +35,14 @@
     return window.ChoirAuth.hasPermission(currentUser, p);
   }
 
+  function canManageRoles() {
+    return (
+      currentUser?.system_super_admin ||
+      currentUser?.role_code === "super_admin" ||
+      can("roles.manage")
+    );
+  }
+
   function canViewFullPhone() {
     return (
       currentUser?.system_super_admin || currentUser?.role_code === "super_admin"
@@ -414,7 +422,7 @@
       if (btnInv) btnInv.hidden = false;
     }
     const btnRoles = document.getElementById("btn-roles");
-    if (btnRoles) btnRoles.hidden = !can("roles.manage");
+    if (btnRoles) btnRoles.hidden = !canManageRoles();
 
     await setupChoirFilter();
     const inviteChoirSel = document.getElementById("invite-choir-id");

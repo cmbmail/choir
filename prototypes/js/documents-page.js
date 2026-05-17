@@ -218,6 +218,7 @@
 
   async function init() {
     currentUser = await ChoirAuth.requireLogin();
+    if (!currentUser) return;
     window.ChoirPermissions.applyNavPermissions(currentUser);
     if (canWrite()) {
       const up = document.getElementById("uploadBtn");

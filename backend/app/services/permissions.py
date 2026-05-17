@@ -29,7 +29,16 @@ ALL_PHASE1_PERMISSIONS = [
     "invites.revoke",
     "roles.manage",
     "system.monitor",
+    "documents.read",
+    "documents.write",
+    "documents.*",
+    "recordings.read",
+    "recordings.write",
+    "recordings.*",
 ]
+
+# 兼容旧引用
+ALL_PERMISSIONS = ALL_PHASE1_PERMISSIONS
 
 BUILTIN_ROLE_TEMPLATES = [
     ("super_admin", "团内超管", FULL_ADMIN),
@@ -69,6 +78,29 @@ def has_permission(user, key: str) -> bool:
         return True
     prefix = key.split(".")[0] + ".*"
     return prefix in perms
+
+
+def can_manage_roles(user, choir_id=None) -> bool:
+    """团内超管 / 持 roles.manage 者可管理指定合唱团的角色权限。"""
+    if not user:
+        return False
+    if user.system_super_admin:
+        return True
+    if choir_id is not None and user.choir_id != choir_id:
+        return False
+    if user.role_code == "super_admin":
+        return True
+    return has_permission(user, "roles.manage")
+
+
+def can_assign_role(actor, target) -> bool:
+    if actor.system_super_admin:
+        return True
+    if actor.choir_id != target.choir_id:
+        return False
+    if actor.role_code == "super_admin":
+        return True
+    return has_permission(actor, "members.assign_role")
 
 
 def is_section_leader(user) -> bool:

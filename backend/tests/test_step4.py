@@ -72,3 +72,20 @@ def test_roles_permissions_catalog(client, choir_admin_headers):
     perms = res.get_json()["permissions"]
     assert "choir.suspend" in perms
     assert "roles.manage" in perms
+    assert "documents.*" in perms
+
+
+def test_super_admin_can_update_all_builtin_roles(client, choir_admin_headers, app):
+    with app.app_context():
+        choir = Choir.query.filter_by(slug="choir_test").first()
+        conductor = choir.roles.filter_by(role_code="conductor").first()
+        role_id = conductor.role_id
+
+    res = client.put(
+        f"/api/choir/roles/{role_id}",
+        headers=choir_admin_headers,
+        json={"permissions": conductor.permissions + ["documents.read"]},
+    )
+    assert res.status_code == 200, res.get_json()
+    body = res.get_json()
+    assert "documents.read" in body["permissions"]

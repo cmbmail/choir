@@ -12,6 +12,12 @@
     "invites.revoke": "作废邀请码",
     "roles.manage": "管理角色权限",
     "system.monitor": "查看操作日志",
+    "documents.read": "查看资料",
+    "documents.write": "上传/编辑资料",
+    "documents.*": "资料管理（全部）",
+    "recordings.read": "查看录音",
+    "recordings.write": "上传/管理录音",
+    "recordings.*": "录音管理（全部）",
   };
 
   let catalog = [];

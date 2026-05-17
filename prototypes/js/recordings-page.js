@@ -259,6 +259,7 @@
 
   async function init() {
     currentUser = await ChoirAuth.requireLogin();
+    if (!currentUser) return;
     window.ChoirPermissions.applyNavPermissions(currentUser);
 
     const btn = document.getElementById("btnNewWork");

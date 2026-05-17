@@ -86,6 +86,18 @@
     return true;
   }
 
+  /** Redirect to login if needed; refresh and return current user. */
+  async function requireLogin() {
+    if (!requireAuth()) return null;
+    const user = await refreshUser();
+    if (!user) {
+      clearSession();
+      location.href = loginPath();
+      return null;
+    }
+    return user;
+  }
+
   function hasPermission(user, key) {
     if (!user) return false;
     if (user.system_super_admin) return true;
@@ -134,6 +146,7 @@
     getUser,
     refreshUser,
     requireAuth,
+    requireLogin,
     hasPermission,
     routeAfterLogin,
     logout,

@@ -158,7 +158,8 @@
   }
 
   async function init() {
-    await ChoirAuth.requireLogin();
+    const user = await ChoirAuth.requireLogin();
+    if (!user) return;
     const id = getDocId();
     if (!id) {
       alert("缺少资料 ID");

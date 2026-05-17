@@ -8,6 +8,7 @@ from app.models import ChoirRole, User
 from app.services.operation_log import write_operation_log
 from app.services.permissions import (
     can_access_member,
+    can_assign_role,
     can_write_member,
     has_permission,
 )
@@ -80,9 +81,7 @@ def members_update(user_id: int):
 
     if "role_id" in data and data["role_id"] != target.role_id:
         new_role_id = data["role_id"]
-        if actor.system_super_admin or (
-            has_permission(actor, "members.assign_role") and actor.choir_id == target.choir_id
-        ):
+        if can_assign_role(actor, target):
             role = ChoirRole.query.filter_by(role_id=new_role_id, choir_id=target.choir_id).first()
             if not role:
                 return jsonify({"error": "无效角色"}), 400
