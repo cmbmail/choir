@@ -15,11 +15,15 @@
 <body>
   <div class="auth-card">
     <h1>弦歌合唱团</h1>
-    <p class="sub">登录（选团队 · 手机号）</p>
+    <p class="sub">登录（手机号）</p>
     <form id="login-form">
+      <label for="login_mode">登录身份</label>
+      <select id="login_mode">
+        <option value="choir">团内成员 / 团内超管</option>
+        <option value="system">系统超管（不选团）</option>
+      </select>
       <label for="choir_slug">合唱团</label>
       <select id="choir_slug" required>
-        <option value="">系统超管（不选团）</option>
       </select>
       <label for="username">手机号</label>
       <input id="username" type="text" inputmode="numeric" autocomplete="username" required />
@@ -39,17 +43,30 @@
   <script src="js/auth.js"></script>
   <script>
     const slugEl = document.getElementById("choir_slug");
+    const modeEl = document.getElementById("login_mode");
     const msgEl = document.getElementById("msg");
     let captchaId = null;
 
+    function syncChoirSelect() {
+      const isSystem = modeEl.value === "system";
+      slugEl.disabled = isSystem;
+      slugEl.required = !isSystem;
+      slugEl.closest("label")?.previousElementSibling;
+      document.querySelector('label[for="choir_slug"]').style.opacity = isSystem ? "0.5" : "1";
+    }
+
+    modeEl.addEventListener("change", syncChoirSelect);
+
     async function loadChoirs() {
       const data = await ChoirAPI.get("/choirs/public");
+      slugEl.innerHTML = "";
       for (const c of data.choirs || []) {
         const opt = document.createElement("option");
         opt.value = c.slug;
         opt.textContent = `${c.name} (${c.slug})`;
         slugEl.appendChild(opt);
       }
+      syncChoirSelect();
     }
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
@@ -59,8 +76,14 @@
         username: document.getElementById("username").value.trim(),
         password: document.getElementById("password").value,
       };
-      const slug = slugEl.value;
-      if (slug) body.choir_slug = slug;
+      if (modeEl.value === "choir") {
+        const slug = slugEl.value;
+        if (!slug) {
+          msgEl.textContent = "请选择合唱团";
+          return;
+        }
+        body.choir_slug = slug;
+      }
       if (captchaId) {
         body.captcha_id = captchaId;
         body.captcha_code = document.getElementById("captcha_code").value.trim();
