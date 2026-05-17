@@ -339,3 +339,4 @@ certbot --nginx -d your.domain.com
 | 403 静态页 | SELinux `restorecon`（见第五节） |
 | PyMySQL 报错 | `DATABASE_URL`、MySQL 是否监听 `127.0.0.1` |
 | 无 python3.11 | `dnf module list python3` 或启用 EPOL 源 |
+| 控制台 `Unexpected token '<'` 加载 js | Nginx `root` 为 `prototypes` 时应用 `/js/api.js` 而非 `/prototypes/js/`；`git pull` 后 `cp deploy/nginx-choir-ip.conf /etc/nginx/conf.d/choir.conf && nginx -t && systemctl reload nginx` |

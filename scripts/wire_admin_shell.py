@@ -14,11 +14,11 @@ API_HEAD = """  <script>
 """
 
 SHELL_SCRIPTS = """
-<script src="/prototypes/js/api.js"></script>
-<script src="/prototypes/js/auth.js"></script>
-<script src="/prototypes/js/permissions.js"></script>
-<script src="/prototypes/js/ui-common.js"></script>
-<script src="/prototypes/js/app-shell.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/permissions.js"></script>
+<script src="/js/ui-common.js"></script>
+<script src="/js/app-shell.js"></script>
 <script>document.addEventListener("DOMContentLoaded", () => {
   ChoirUI.initUserDropdown();
   ChoirAppShell.init();
@@ -157,12 +157,12 @@ def update_system_page(text: str) -> str:
 
     text = re.sub(
         r"<script>\s*// Tab switching[\s\S]*?</script>\s*</body>",
-        """<script src="/prototypes/js/api.js"></script>
-<script src="/prototypes/js/auth.js"></script>
-<script src="/prototypes/js/permissions.js"></script>
-<script src="/prototypes/js/ui-common.js"></script>
-<script src="/prototypes/js/app-shell.js"></script>
-<script src="/prototypes/js/system-admin-page.js"></script>
+        """<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/permissions.js"></script>
+<script src="/js/ui-common.js"></script>
+<script src="/js/app-shell.js"></script>
+<script src="/js/system-admin-page.js"></script>
 </body>""",
         text,
         count=1,
