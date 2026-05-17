@@ -313,8 +313,13 @@ tail -f /var/log/nginx/error.log
 ```bash
 cd /opt/choir && git pull   # 或重新 scp 覆盖
 source backend/.venv/bin/activate && pip install -r backend/requirements.txt
+# 阶段二（已有库升级时执行一次）
+mysql -u choir -p choir_db < scripts/migrate_phase2.sql
+mkdir -p /opt/choir/storage && chown choir:choir /opt/choir/storage
 systemctl restart choir-api
 ```
+
+阶段二环境变量（`.env`）：`CDE_MODE=mock`、`CDE_STORAGE_ROOT=/opt/choir/storage`（未配置阿里云 CDE 时使用本地 mock 存储）。
 
 ---
 

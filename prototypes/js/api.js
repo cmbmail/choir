@@ -61,10 +61,31 @@
     return data;
   }
 
+  async function postForm(path, formData) {
+    const headers = {};
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || res.statusText);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
   window.ChoirAPI = {
     base: API_BASE,
     get: (p) => api(p),
     post: (p, body) => api(p, { method: "POST", body: JSON.stringify(body) }),
+    postForm: (p, formData) => postForm(p, formData),
     put: (p, body) => api(p, { method: "PUT", body: JSON.stringify(body) }),
     patch: (p, body) => api(p, { method: "PATCH", body: JSON.stringify(body) }),
     del: (p) => api(p, { method: "DELETE" }),

@@ -10,9 +10,14 @@ FULL_ADMIN = [
     "invites.revoke",
     "roles.manage",
     "system.monitor",
+    "documents.*",
+    "recordings.*",
 ]
 
-CONDUCTOR_DEFAULT = [p for p in FULL_ADMIN if p != "choir.suspend"]
+CONDUCTOR_DEFAULT = [p for p in FULL_ADMIN if p != "choir.suspend"] + [
+    "documents.read",
+    "recordings.read",
+]
 
 ALL_PHASE1_PERMISSIONS = [
     "choir.rename",
@@ -29,10 +34,26 @@ ALL_PHASE1_PERMISSIONS = [
 BUILTIN_ROLE_TEMPLATES = [
     ("super_admin", "团内超管", FULL_ADMIN),
     ("conductor", "指挥", CONDUCTOR_DEFAULT),
-    ("class_leader", "班长", ["members.read", "members.write", "invites.create", "invites.revoke"]),
-    ("section_leader", "声部长", ["members.read", "members.write"]),
+    (
+        "class_leader",
+        "班长",
+        [
+            "members.read",
+            "members.write",
+            "invites.create",
+            "invites.revoke",
+            "documents.read",
+            "documents.write",
+            "recordings.read",
+        ],
+    ),
+    (
+        "section_leader",
+        "声部长",
+        ["members.read", "members.write", "documents.read", "documents.write"],
+    ),
     ("general_affairs", "总务", ["members.read", "documents.*", "recordings.*"]),
-    ("member", "团员", []),
+    ("member", "团员", ["documents.read", "recordings.read"]),
 ]
 
 

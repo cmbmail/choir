@@ -28,3 +28,12 @@ class Config:
     SYSTEM_SUPER_ADMIN_PASSWORD = os.getenv("SYSTEM_SUPER_ADMIN_PASSWORD", "change-me")
 
     CAPTCHA_EXPIRE_MINUTES = 5
+
+    CDE_MODE = os.getenv("CDE_MODE", "mock")
+    CDE_STORAGE_ROOT = os.getenv(
+        "CDE_STORAGE_ROOT",
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage"),
+    )
+    MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(4 * 1024 * 1024 * 1024)))
+    UPLOAD_BLOCKLIST_EXT = os.getenv("UPLOAD_BLOCKLIST_EXT", "exe,bat,cmd,sh,msi,dmg")
+    CDE_STORAGE_QUOTA_BYTES = int(os.getenv("CDE_STORAGE_QUOTA_BYTES", str(50 * 1024**3)))

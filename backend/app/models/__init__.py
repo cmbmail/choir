@@ -4,6 +4,9 @@ from app.models.invite import InvitationCode
 from app.models.captcha import CaptchaChallenge
 from app.models.log import OperationLog
 from app.models.config import SystemConfig
+from app.models.document import Document
+from app.models.work import Work
+from app.models.recording import Recording
 
 __all__ = [
     "Choir",
@@ -13,4 +16,7 @@ __all__ = [
     "CaptchaChallenge",
     "OperationLog",
     "SystemConfig",
+    "Document",
+    "Work",
+    "Recording",
 ]

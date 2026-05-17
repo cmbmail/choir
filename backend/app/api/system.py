@@ -1,9 +1,34 @@
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.models import OperationLog, User
+from app.services.cde_service import is_mock_mode, storage_usage_bytes
 from app.services.permissions import has_permission
+
+
+@api_bp.get("/system/storage")
+@login_required
+def system_storage():
+    user = get_current_user()
+    if not user.system_super_admin and not has_permission(user, "system.monitor"):
+        return jsonify({"error": "无权限", "required": "system.monitor"}), 403
+
+    choir_id = request.args.get("choir_id", type=int)
+    if not user.system_super_admin:
+        choir_id = user.choir_id
+
+    used = storage_usage_bytes(choir_id)
+    quota = int(current_app.config.get("CDE_STORAGE_QUOTA_BYTES", 50 * 1024**3))
+    return jsonify(
+        {
+            "choir_id": choir_id,
+            "used_bytes": used,
+            "quota_bytes": quota,
+            "cde_mode": "mock" if is_mock_mode() else "cde",
+            "usage_percent": round(used * 100.0 / quota, 2) if quota else 0,
+        }
+    )
 
 
 @api_bp.get("/system/logs")
