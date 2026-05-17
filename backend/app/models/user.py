@@ -47,11 +47,17 @@ class User(db.Model):
             return self.role.role_code
         return None
 
-    def to_member_dict(self, include_security=False):
+    def to_member_dict(self, include_security=False, viewer=None):
+        from app.services.member_privacy import can_view_full_phone, mask_phone
+
+        username = self.username
+        if viewer is not None and not can_view_full_phone(viewer):
+            username = mask_phone(self.username)
+
         data = {
             "user_id": self.user_id,
             "choir_id": self.choir_id,
-            "username": self.username,
+            "username": username,
             "name": self.name,
             "email": self.email,
             "voice_part": self.voice_part,
@@ -59,6 +65,7 @@ class User(db.Model):
             "role_id": self.role_id,
             "role_code": self.role_code,
             "role_name": self.role.name if self.role else None,
+            "choir_name": self.choir.name if self.choir else None,
             "last_login": self.last_login.isoformat() if self.last_login else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

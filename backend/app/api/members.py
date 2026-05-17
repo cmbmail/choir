@@ -53,7 +53,9 @@ def members_list():
         q = q.filter(or_(User.name.contains(search), User.username.contains(search)))
 
     rows = q.order_by(User.user_id).limit(200).all()
-    return jsonify({"members": [u.to_member_dict(include_security=True) for u in rows]})
+    return jsonify(
+        {"members": [u.to_member_dict(include_security=True, viewer=user) for u in rows]}
+    )
 
 
 @api_bp.get("/members/<int:user_id>")
@@ -63,7 +65,7 @@ def members_get(user_id: int):
     target = User.query.get_or_404(user_id)
     if not can_access_member(user, target):
         return jsonify({"error": "无权限"}), 403
-    return jsonify(target.to_member_dict(include_security=True))
+    return jsonify(target.to_member_dict(include_security=True, viewer=user))
 
 
 @api_bp.put("/members/<int:user_id>")
@@ -119,7 +121,7 @@ def members_update(user_id: int):
         detail={"name": target.name, "status": target.status},
     )
     db.session.commit()
-    return jsonify(target.to_member_dict(include_security=True))
+    return jsonify(target.to_member_dict(include_security=True, viewer=actor))
 
 
 @api_bp.post("/members/<int:user_id>/unlock")

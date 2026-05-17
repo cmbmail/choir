@@ -163,3 +163,51 @@ def test_public_choirs_list(client, app):
     res = client.get("/api/choirs/public")
     assert res.status_code == 200
     assert len(res.get_json().get("choirs", [])) >= 1
+
+
+def test_members_phone_masked_for_non_super_admin(client, app):
+    with app.app_context():
+        admin = User.query.filter_by(username="13900000001").first()
+        choir_id = admin.choir_id
+        from app.models import ChoirRole
+
+        leader_role = ChoirRole.query.filter_by(choir_id=choir_id, role_code="class_leader").first()
+        member_role = ChoirRole.query.filter_by(choir_id=choir_id, role_code="member").first()
+        target = User(
+            choir_id=choir_id,
+            role_id=member_role.role_id,
+            username="13800137777",
+            password_hash=hash_password("TestPass1"),
+            name="被查看团员",
+            status="active",
+        )
+        leader = User(
+            choir_id=choir_id,
+            role_id=leader_role.role_id,
+            username="13800136666",
+            password_hash=hash_password("TestPass1"),
+            name="班长",
+            status="active",
+        )
+        db.session.add_all([target, leader])
+        db.session.commit()
+
+    admin_login = client.post(
+        "/api/auth/login",
+        json={"username": "13900000001", "password": "ChoirAdmin1"},
+    )
+    admin_headers = {"Authorization": f"Bearer {admin_login.get_json()['access_token']}"}
+    admin_res = client.get("/api/members", headers=admin_headers)
+    assert admin_res.status_code == 200
+    admin_row = next(m for m in admin_res.get_json()["members"] if m["name"] == "被查看团员")
+    assert admin_row["username"] == "13800137777"
+
+    leader_login = client.post(
+        "/api/auth/login",
+        json={"username": "13800136666", "password": "TestPass1"},
+    )
+    leader_headers = {"Authorization": f"Bearer {leader_login.get_json()['access_token']}"}
+    leader_res = client.get("/api/members", headers=leader_headers)
+    assert leader_res.status_code == 200
+    leader_row = next(m for m in leader_res.get_json()["members"] if m["name"] == "被查看团员")
+    assert leader_row["username"] == "****7777"

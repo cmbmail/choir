@@ -35,6 +35,12 @@
     return window.ChoirAuth.hasPermission(currentUser, p);
   }
 
+  function canViewFullPhone() {
+    return (
+      currentUser?.system_super_admin || currentUser?.role_code === "super_admin"
+    );
+  }
+
   function avatarChar(name) {
     return (name || "?").charAt(0);
   }
@@ -89,33 +95,32 @@
       return;
     }
 
-    const groups = {};
-    members.forEach((m) => {
-      const vp = m.voice_part || 0;
-      if (!groups[vp]) groups[vp] = [];
-      groups[vp].push(m);
+    const sorted = [...members].sort((a, b) => {
+      const vp = (a.voice_part || 0) - (b.voice_part || 0);
+      if (vp !== 0) return vp;
+      return (a.name || "").localeCompare(b.name || "", "zh-CN");
     });
 
-    const order = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    let html = "";
-    order.forEach((vp) => {
-      const list = groups[vp];
-      if (!list?.length) return;
-      const title = vp === 0 ? "未分配声部" : `声部 ${VOICE[vp] || vp}`;
-      html += `<div class="voice-section"><div class="section-header"><div class="section-title"><h3>${title}</h3><span class="section-count">${list.length} 人</span></div></div><div class="member-grid">`;
-      list.forEach((m) => {
-        html += renderCard(m);
-      });
-      html += "</div></div>";
+    const showChoir = currentUser?.system_super_admin;
+    let html =
+      '<div class="members-table-wrap"><table class="members-table"><thead><tr>';
+    if (showChoir) html += "<th>合唱团</th>";
+    html +=
+      '<th>姓名</th><th>手机号</th><th>声部</th><th>角色</th><th>状态</th><th>安全</th><th class="col-actions">操作</th></tr></thead><tbody>';
+    sorted.forEach((m) => {
+      html += renderRow(m, showChoir);
     });
+    html += "</tbody></table></div>";
     root.innerHTML = html;
-    bindCardActions();
+    bindRowActions();
   }
 
-  function renderCard(m) {
-    const locked = m.locked_until ? `<span class="tag-lock">已锁定</span>` : "";
+  function renderRow(m, showChoir) {
+    const locked = m.locked_until ? '<span class="tag-lock">已锁定</span>' : "";
     const vpLabel = m.voice_part ? VOICE[m.voice_part] : "—";
     const vc = VOICE_CLASS[m.voice_part] || "vb-alto";
+    const phone = esc(m.username || "—");
+    const phoneTitle = canViewFullPhone() ? "" : ' title="仅超管可见完整手机号"';
     let actions = "";
     const fullWrite =
       currentUser.system_super_admin ||
@@ -129,31 +134,23 @@
     if (fullWrite && m.user_id !== currentUser.user_id) {
       actions += `<button type="button" class="btn btn-outline btn-xs" data-act="delete" data-id="${m.user_id}">删除</button>`;
     }
-    return `
-      <div class="member-card" data-id="${m.user_id}">
-        <div class="member-top">
-          <div class="member-avatar">${avatarChar(m.name)}</div>
-          <div class="member-info">
-            <div class="member-name">${esc(m.name)}</div>
-            <div class="member-id">${esc(m.username)}</div>
-            <span class="member-voice ${vc}">${esc(vpLabel)}</span>
-          </div>
-        </div>
-        <div class="member-meta">
-          <span>角色 ${esc(m.role_name || "—")}</span>
-          <span>失败 ${m.failed_login_count || 0} 次</span>
-          ${locked}
-        </div>
-        <div class="member-footer">
-          <div class="member-status">
-            <span class="status-dot ${STATUS_DOT[m.status] || ""}"></span>${STATUS_LABEL[m.status] || m.status}
-          </div>
-          <div class="member-actions">${actions}</div>
-        </div>
-      </div>`;
+    let row = "<tr>";
+    if (showChoir) {
+      row += `<td class="col-muted">${esc(m.choir_name || "—")}</td>`;
+    }
+    row += `
+      <td><div class="cell-name"><span class="row-avatar">${avatarChar(m.name)}</span>${esc(m.name)}</div></td>
+      <td class="col-phone"${phoneTitle}>${phone}</td>
+      <td><span class="member-voice ${vc}">${esc(vpLabel)}</span></td>
+      <td>${esc(m.role_name || "—")}</td>
+      <td><span class="status-dot ${STATUS_DOT[m.status] || ""}"></span>${STATUS_LABEL[m.status] || m.status}</td>
+      <td class="col-muted">失败 ${m.failed_login_count || 0} 次 ${locked}</td>
+      <td class="col-actions"><div class="member-actions">${actions}</div></td>
+    </tr>`;
+    return row;
   }
 
-  function bindCardActions() {
+  function bindRowActions() {
     document.querySelectorAll("[data-act]").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
