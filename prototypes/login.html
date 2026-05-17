@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 — 弦歌合唱团</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <script>
+  if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
+</head>
+<body>
+  <div class="auth-card">
+    <h1>弦歌合唱团</h1>
+    <p class="sub">登录（选团队 · 手机号）</p>
+    <form id="login-form">
+      <label for="choir_slug">合唱团</label>
+      <select id="choir_slug" required>
+        <option value="">系统超管（不选团）</option>
+      </select>
+      <label for="username">手机号</label>
+      <input id="username" type="text" inputmode="numeric" autocomplete="username" required />
+      <label for="password">密码</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+      <div id="captcha-block" hidden>
+        <label for="captcha_code">验证码</label>
+        <img id="captcha_img" alt="验证码" style="display:block;margin:0.5rem 0;max-width:100%" />
+        <input id="captcha_code" type="text" maxlength="4" />
+      </div>
+      <button type="submit" id="submit-btn">登录</button>
+      <p class="msg" id="msg"></p>
+    </form>
+    <p class="links"><a href="register.html">邀请码注册</a></p>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const slugEl = document.getElementById("choir_slug");
+    const msgEl = document.getElementById("msg");
+    let captchaId = null;
+
+    async function loadChoirs() {
+      const data = await ChoirAPI.get("/choirs/public");
+      for (const c of data.choirs || []) {
+        const opt = document.createElement("option");
+        opt.value = c.slug;
+        opt.textContent = `${c.name} (${c.slug})`;
+        slugEl.appendChild(opt);
+      }
+    }
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msgEl.textContent = "";
+      const body = {
+        username: document.getElementById("username").value.trim(),
+        password: document.getElementById("password").value,
+      };
+      const slug = slugEl.value;
+      if (slug) body.choir_slug = slug;
+      if (captchaId) {
+        body.captcha_id = captchaId;
+        body.captcha_code = document.getElementById("captcha_code").value.trim();
+      }
+      try {
+        const data = await ChoirAPI.post("/auth/login", body);
+        ChoirAuth.saveSession(data);
+        ChoirAuth.routeAfterLogin(data.user);
+      } catch (err) {
+        msgEl.textContent = err.message;
+        if (err.status === 400 || err.status === 401) {
+          try {
+            const cap = await ChoirAPI.get("/auth/captcha");
+            captchaId = cap.captcha_id;
+            document.getElementById("captcha_img").src = cap.image_base64;
+            const block = document.getElementById("captcha-block");
+            block.hidden = false;
+            block.style.display = "block";
+          } catch (_) {}
+        }
+      }
+    });
+
+    loadChoirs().catch((e) => { msgEl.textContent = e.message; });
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+[Unit]
+Description=Choir Management API (Gunicorn)
+After=network.target mysqld.service
+Wants=mysqld.service
+
+[Service]
+Type=notify
+User=choir
+Group=choir
+WorkingDirectory=/opt/choir/backend
+EnvironmentFile=/opt/choir/.env
+Environment=PYTHONPATH=/opt/choir/backend
+ExecStart=/opt/choir/backend/.venv/bin/gunicorn \
+  --bind 127.0.0.1:5000 \
+  --workers 2 \
+  --threads 2 \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile - \
+  "run:app"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
