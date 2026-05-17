@@ -86,7 +86,7 @@
     if (adminCodes.includes(code)) {
       window.location.href = uiBase + "极简中式-桌面端.html";
     } else {
-      window.location.href = uiBase + "极简中式-团员前台.html";
+      window.location.href = uiBase + "极简中式-手机端.html";
     }
   }
 

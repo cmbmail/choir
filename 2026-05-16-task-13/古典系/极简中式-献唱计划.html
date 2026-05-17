@@ -158,6 +158,12 @@ a{color:inherit;text-decoration:none}
   .search-input{width:100%}
 }
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -607,5 +613,16 @@ document.getElementById('searchPerform').addEventListener('input', filterByYearM
 // 初始化渲染
 renderPerformances(performances);
 </script>
+
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/ui-common.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => {
+  ChoirUI.initUserDropdown();
+  ChoirAppShell.init();
+});</script>
+
 </body>
 </html>

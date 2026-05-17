@@ -178,6 +178,12 @@ a{color:inherit;text-decoration:none}
 .related-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .related-meta{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem}
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -696,5 +702,16 @@ document.addEventListener('click', () => userDropdown.classList.remove('open'));
 // INIT
 loadScore(getScoreId());
 </script>
+
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/ui-common.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => {
+  ChoirUI.initUserDropdown();
+  ChoirAppShell.init();
+});</script>
+
 </body>
 </html>

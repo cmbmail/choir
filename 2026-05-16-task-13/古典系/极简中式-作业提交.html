@@ -111,6 +111,12 @@ a{color:inherit;text-decoration:none}
 @media(max-width:1200px){.assignment-grid{grid-template-columns:1fr}.sidebar{display:none}.page-body{flex-direction:column}}
 @media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.filter-bar{flex-direction:column;align-items:stretch}.search-input{width:100%}}
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -310,5 +316,16 @@ userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
 });
 document.addEventListener('click', () => userDropdown.classList.remove('open'));
 </script>
+
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/ui-common.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => {
+  ChoirUI.initUserDropdown();
+  ChoirAppShell.init();
+});</script>
+
 </body>
 </html>

@@ -561,7 +561,19 @@ a { color: inherit; text-decoration: none; }
 .toast.show {
   transform: translateX(-50%) translateY(0);
 }
+.choir-select-wrap{margin-bottom:1rem}
+.choir-select-wrap .input-label{display:block;font-size:0.72rem;color:rgba(28,28,28,0.55);margin-bottom:0.35rem;letter-spacing:0.04em}
+.choir-select{width:100%;padding:0.75rem 1rem;border:1px solid rgba(28,28,28,0.12);border-radius:12px;font-size:0.9rem;background:#fff;color:var(--ink-black)}
+.captcha-block-m{margin-bottom:0.75rem}
+.captcha-block-m img{width:100%;max-width:200px;border-radius:8px;display:block;margin:0.35rem 0}
+.captcha-block-m input{width:100%;padding:0.65rem 1rem;border:1px solid rgba(28,28,28,0.12);border-radius:12px;font-size:0.9rem}
 </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -608,7 +620,12 @@ a { color: inherit; text-decoration: none; }
       </div>
 
       <!-- Form -->
-      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+      <form class="login-form" id="loginForm">
+
+        <div class="choir-select-wrap">
+          <span class="input-label">合唱团</span>
+          <select class="choir-select" id="choir_slug" required></select>
+        </div>
 
         <!-- Account -->
         <div class="input-group" id="accountGroup">
@@ -656,6 +673,13 @@ a { color: inherit; text-decoration: none; }
           <p class="error-msg">密码不能为空</p>
         </div>
 
+        <div id="captcha-block" class="captcha-block-m" hidden>
+          <span class="input-label">验证码</span>
+          <img id="captcha_img" alt="验证码" />
+          <button type="button" id="btn-captcha-refresh" class="forgot-link" style="display:block;margin:0.25rem 0">换一张</button>
+          <input id="captcha_code" type="text" maxlength="4" placeholder="请输入验证码" autocomplete="off" />
+        </div>
+
         <!-- Options -->
         <div class="login-options">
           <label class="remember-me">
@@ -693,6 +717,9 @@ a { color: inherit; text-decoration: none; }
   </div>
 </div>
 
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/mobile-login-page.js"></script>
 <script>
 // 更新时间
 function updateTime() {
@@ -731,47 +758,6 @@ function clearError(groupId) {
   document.getElementById(groupId).classList.remove('has-error');
 }
 
-// 登录处理
-function handleLogin(e) {
-  e.preventDefault();
-  const account = document.getElementById('account').value.trim();
-  const password = document.getElementById('password').value;
-  const btn = document.getElementById('loginBtn');
-
-  // 清除之前的错误
-  document.getElementById('accountGroup').classList.remove('has-error');
-  document.getElementById('passwordGroup').classList.remove('has-error');
-
-  // 简单验证
-  let hasError = false;
-  if (!account) {
-    document.getElementById('accountGroup').classList.add('has-error');
-    hasError = true;
-  }
-  if (!password) {
-    document.getElementById('passwordGroup').classList.add('has-error');
-    hasError = true;
-  }
-  if (hasError) return;
-
-  // 显示加载
-  btn.classList.add('loading');
-  btn.textContent = '';
-
-  // 模拟登录请求
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    btn.textContent = '登 录';
-    // 演示：任意输入都登录成功
-    showToast('登录成功，正在跳转…');
-    // 实际项目：此处调用 API 并根据结果跳转
-    console.log('登录信息:', { account, password, remember: document.getElementById('rememberMe').checked });
-  }, 1500);
-}
-
-// 实时清除错误
-document.getElementById('account').addEventListener('input', () => clearError('accountGroup'));
-document.getElementById('password').addEventListener('input', () => clearError('passwordGroup'));
 </script>
 
 </body>

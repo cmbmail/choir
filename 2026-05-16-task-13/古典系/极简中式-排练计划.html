@@ -181,6 +181,12 @@ a{color:inherit;text-decoration:none}
   .form-row{grid-template-columns:1fr}
 }
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -453,15 +459,19 @@ document.getElementById('saveRehearsal').addEventListener('click', () => {
   modal.classList.remove('show');
 });
 
-// User dropdown
-const userDropdown = document.getElementById('userDropdown');
-userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
-  e.stopPropagation();
-  userDropdown.classList.toggle('open');
-});
-document.addEventListener('click', () => userDropdown.classList.remove('open'));
 
 renderRehearsals();
 </script>
+
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/ui-common.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => {
+  ChoirUI.initUserDropdown();
+  ChoirAppShell.init();
+});</script>
+
 </body>
 </html>

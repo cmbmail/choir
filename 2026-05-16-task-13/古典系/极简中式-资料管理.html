@@ -151,6 +151,12 @@ a{color:inherit;text-decoration:none}
 @media(max-width:1200px){.sidebar{display:none}.page-body{flex-direction:column}.stats-row{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.doc-grid{grid-template-columns:repeat(2,1fr)}}
   </style>
+  <script>
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      window.CHOIR_API_BASE = "/api";
+      window.CHOIR_UI_BASE = "/ui/";
+    }
+  </script>
 </head>
 <body>
 
@@ -499,13 +505,6 @@ document.getElementById('uploadBtn').addEventListener('click', () => {
   alert('打开资料上传页面');
 });
 
-// User dropdown
-const userDropdown = document.getElementById('userDropdown');
-userDropdown.querySelector('.user-avatar').addEventListener('click', e => {
-  e.stopPropagation();
-  userDropdown.classList.toggle('open');
-});
-document.addEventListener('click', () => userDropdown.classList.remove('open'));
 
 renderDocs();
 </script>
@@ -518,5 +517,16 @@ renderDocs();
   </div>
   <iframe id="videoModalIframe" width="800" height="450" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="max-width:100%;"></iframe>
 </div>
+
+<script src="/prototypes/js/api.js"></script>
+<script src="/prototypes/js/auth.js"></script>
+<script src="/prototypes/js/permissions.js"></script>
+<script src="/prototypes/js/ui-common.js"></script>
+<script src="/prototypes/js/app-shell.js"></script>
+<script>document.addEventListener("DOMContentLoaded", () => {
+  ChoirUI.initUserDropdown();
+  ChoirAppShell.init();
+});</script>
+
 </body>
 </html>

@@ -109,6 +109,11 @@
       location.href = ChoirAuth.loginPath();
       return null;
     }
+    if (opts.systemAdminOnly && !user.system_super_admin) {
+      alert("仅系统超管可访问此页面");
+      location.href = (window.CHOIR_UI_BASE || "/ui/") + "极简中式-桌面端.html";
+      return null;
+    }
     if (opts.requiredPerm && !ChoirAuth.hasPermission(user, opts.requiredPerm)) {
       alert("无权限访问此页面");
       location.href = (window.CHOIR_UI_BASE || "/ui/") + "极简中式-桌面端.html";
