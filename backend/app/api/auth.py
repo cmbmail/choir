@@ -80,48 +80,41 @@ def get_captcha():
     return jsonify({"captcha_id": captcha_id, "image_base64": image_base64})
 
 
-@api_bp.post("/auth/login")
-def login():
-    data = request.get_json(silent=True) or {}
-    choir_slug = data.get("choir_slug")
-    username = (data.get("username") or "").strip()
-    password = data.get("password") or ""
+def _login_candidates(username: str) -> list[User]:
+    rows = User.query.filter_by(username=username, status="active").all()
+    out: list[User] = []
+    for user in rows:
+        if user.system_super_admin:
+            out.append(user)
+        elif user.choir_id and user.choir and user.choir.status == "active":
+            out.append(user)
+    return out
 
-    if not username or not password:
-        return jsonify({"error": "用户名或密码错误"}), 401
 
-    # 系统超管：无 choir_slug
-    if not choir_slug:
-        user = User.query.filter_by(
-            username=username, system_super_admin=True, choir_id=None
-        ).first()
-    else:
-        choir = Choir.query.filter_by(slug=choir_slug, status="active").first()
-        if not choir:
-            return jsonify({"error": "用户名或密码错误"}), 401
-        user = User.query.filter_by(choir_id=choir.choir_id, username=username).first()
+def _identity_dict(user: User) -> dict:
+    if user.system_super_admin:
+        return {
+            "user_id": user.user_id,
+            "kind": "system",
+            "label": "系统管理",
+            "choir_name": None,
+            "choir_slug": None,
+            "role_name": "系统超管",
+        }
+    choir = user.choir
+    role_name = user.role.name if user.role else "成员"
+    choir_name = choir.name if choir else ""
+    return {
+        "user_id": user.user_id,
+        "kind": "choir",
+        "label": f"{choir_name} · {role_name}",
+        "choir_name": choir_name,
+        "choir_slug": choir.slug if choir else None,
+        "role_name": role_name,
+    }
 
-    if _needs_captcha(user):
-        cid = data.get("captcha_id")
-        code = data.get("captcha_code")
-        if not cid or not code or not verify_captcha(cid, code):
-            db.session.commit()
-            return jsonify({"error": "验证码错误或已过期"}), 400
 
-    if not user or user.status != "active":
-        _register_fail(user)
-        db.session.commit()
-        return jsonify({"error": "用户名或密码错误"}), 401
-
-    if user.locked_until and user.locked_until > datetime.utcnow():
-        db.session.commit()
-        return jsonify({"error": "账户已锁定", "locked_until": user.locked_until.isoformat()}), 423
-
-    if not check_password(password, user.password_hash):
-        _register_fail(user)
-        db.session.commit()
-        return jsonify({"error": "用户名或密码错误"}), 401
-
+def _finish_login(user: User):
     user.failed_login_count = 0
     user.locked_until = None
     user.last_login = datetime.utcnow()
@@ -134,6 +127,62 @@ def login():
     )
     db.session.commit()
     return _auth_response(user)
+
+
+@api_bp.post("/auth/login")
+def login():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    user_id = data.get("user_id")
+
+    if not username or not password:
+        return jsonify({"error": "用户名或密码错误"}), 401
+
+    candidates = _login_candidates(username)
+    if not candidates:
+        db.session.commit()
+        return jsonify({"error": "用户名或密码错误"}), 401
+
+    if any(_needs_captcha(u) for u in candidates):
+        cid = data.get("captcha_id")
+        code = data.get("captcha_code")
+        if not cid or not code or not verify_captcha(cid, code):
+            db.session.commit()
+            return jsonify({"error": "验证码错误或已过期"}), 400
+
+    now = datetime.utcnow()
+    unlocked = [
+        u
+        for u in candidates
+        if not (u.locked_until and u.locked_until > now)
+    ]
+    if not unlocked:
+        locked = max(candidates, key=lambda u: u.locked_until or now)
+        db.session.commit()
+        return jsonify(
+            {"error": "账户已锁定", "locked_until": locked.locked_until.isoformat()}
+        ), 423
+
+    matched = [u for u in unlocked if check_password(password, u.password_hash)]
+    if not matched:
+        for u in candidates:
+            _register_fail(u)
+        db.session.commit()
+        return jsonify({"error": "用户名或密码错误"}), 401
+
+    if user_id is not None:
+        matched = [u for u in matched if u.user_id == int(user_id)]
+        if len(matched) != 1:
+            db.session.commit()
+            return jsonify({"error": "无效的身份选择"}), 400
+
+    if len(matched) == 1:
+        return _finish_login(matched[0])
+
+    identities = [_identity_dict(u) for u in matched]
+    db.session.commit()
+    return jsonify({"need_identity_select": True, "identities": identities})
 
 
 @api_bp.post("/auth/register")

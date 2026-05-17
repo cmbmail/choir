@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<title>弦歌合唱团 · 登录</title>
+<title>雅歌 · 登录</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
@@ -567,6 +567,9 @@ a { color: inherit; text-decoration: none; }
 .captcha-block-m{margin-bottom:0.75rem}
 .captcha-block-m img{width:100%;max-width:200px;border-radius:8px;display:block;margin:0.35rem 0}
 .captcha-block-m input{width:100%;padding:0.65rem 1rem;border:1px solid rgba(28,28,28,0.12);border-radius:12px;font-size:0.9rem}
+.identity-picker-mobile{margin-top:0.5rem}
+.identity-card-mobile{width:100%;margin:0.35rem 0;padding:0.75rem 1rem;text-align:left;border:1px solid rgba(184,134,11,0.35);border-radius:12px;background:#fff;color:var(--ink-black);display:flex;flex-direction:column;gap:0.2rem}
+.identity-card-mobile .identity-card-kind{font-size:0.68rem;color:var(--ink-gold);letter-spacing:0.05em}
 </style>
   <script>
     if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
@@ -615,18 +618,12 @@ a { color: inherit; text-decoration: none; }
             <circle cx="18" cy="16" r="3"/>
           </svg>
         </div>
-        <h1 class="login-title">弦歌合唱团</h1>
-        <p class="login-subtitle">Xian Ge Choir</p>
+        <h1 class="login-title">雅歌</h1>
+        <p class="login-subtitle">合唱团管理系统</p>
       </div>
 
       <!-- Form -->
       <form class="login-form" id="loginForm">
-
-        <div class="choir-select-wrap">
-          <span class="input-label">合唱团</span>
-          <select class="choir-select" id="choir_slug" required></select>
-        </div>
-
         <!-- Account -->
         <div class="input-group" id="accountGroup">
           <span class="input-label">账号</span>
@@ -707,6 +704,12 @@ a { color: inherit; text-decoration: none; }
         </button>
 
       </form>
+
+      <div id="identity-picker-mobile" class="identity-picker-mobile" hidden>
+        <p class="input-label" style="margin-bottom:0.5rem">请选择登录身份</p>
+        <div id="identity-list-mobile"></div>
+        <button type="button" class="forgot-link" id="btn-back-login-mobile" style="margin-top:0.75rem">返回修改账号</button>
+      </div>
 
       <!-- Footer -->
       <div class="login-footer">

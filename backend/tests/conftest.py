@@ -71,7 +71,7 @@ def client(app):
 def choir_admin_headers(client):
     res = client.post(
         "/api/auth/login",
-        json={"choir_slug": "choir_test", "username": "13900000001", "password": "ChoirAdmin1"},
+        json={"username": "13900000001", "password": "ChoirAdmin1"},
     )
     assert res.status_code == 200, res.get_json()
     token = res.get_json()["access_token"]

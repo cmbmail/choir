@@ -23,13 +23,67 @@ def test_login_lockout_after_failures(client, app):
 
     res = client.post(
         "/api/auth/login",
-        json={
-            "choir_slug": "choir_test",
-            "username": "13900000001",
-            "password": "ChoirAdmin1",
-        },
+        json={"username": "13900000001", "password": "ChoirAdmin1"},
     )
     assert res.status_code == 423
+
+
+def test_login_identity_select(client, app):
+    with app.app_context():
+        from app.models import Choir
+        from app.services.choir_bootstrap import next_choir_slug, seed_builtin_roles
+
+        slug = next_choir_slug()
+        choir2 = Choir(name="第二团", slug=slug, max_members=100, status="active")
+        db.session.add(choir2)
+        db.session.flush()
+        roles = seed_builtin_roles(choir2)
+        db.session.add(
+            User(
+                choir_id=choir2.choir_id,
+                role_id=roles["member"].role_id,
+                username="13800138888",
+                password_hash=hash_password("SamePass1"),
+                name="双身份团员",
+                status="active",
+            )
+        )
+        from app.models import ChoirRole
+
+        admin = User.query.filter_by(username="13900000001").first()
+        choir1 = admin.choir
+        choir1.name = "第一团"
+        member_role1 = ChoirRole.query.filter_by(
+            choir_id=choir1.choir_id, role_code="member"
+        ).first()
+        db.session.add(
+            User(
+                choir_id=choir1.choir_id,
+                role_id=member_role1.role_id,
+                username="13800138888",
+                password_hash=hash_password("SamePass1"),
+                name="双身份团员",
+                status="active",
+            )
+        )
+        db.session.commit()
+
+    res = client.post(
+        "/api/auth/login",
+        json={"username": "13800138888", "password": "SamePass1"},
+    )
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body.get("need_identity_select") is True
+    assert len(body["identities"]) == 2
+
+    uid = body["identities"][0]["user_id"]
+    res2 = client.post(
+        "/api/auth/login",
+        json={"username": "13800138888", "password": "SamePass1", "user_id": uid},
+    )
+    assert res2.status_code == 200
+    assert res2.get_json().get("access_token")
 
 
 def test_register_with_invite(client, app):

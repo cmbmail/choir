@@ -73,11 +73,7 @@ def test_member_role_cannot_list_members(client, app):
 
     login = client.post(
         "/api/auth/login",
-        json={
-            "choir_slug": "choir_test",
-            "username": "13800139999",
-            "password": "TestPass1",
-        },
+        json={"username": "13800139999", "password": "TestPass1"},
     )
     token = login.get_json()["access_token"]
     res = client.get("/api/members", headers={"Authorization": f"Bearer {token}"})
@@ -125,7 +121,7 @@ def test_section_leader_only_same_voice_part(client, app):
 
     login = client.post(
         "/api/auth/login",
-        json={"choir_slug": "choir_test", "username": "13800138888", "password": "TestPass1"},
+        json={"username": "13800138888", "password": "TestPass1"},
     )
     headers = {"Authorization": f"Bearer {login.get_json()['access_token']}"}
     res = client.get("/api/members", headers=headers)
@@ -157,11 +153,7 @@ def test_login_requires_captcha_after_failures(client, app):
 
     res = client.post(
         "/api/auth/login",
-        json={
-            "choir_slug": "choir_test",
-            "username": "13900000001",
-            "password": "wrong",
-        },
+        json={"username": "13900000001", "password": "wrong"},
     )
     assert res.status_code == 400
     assert "验证码" in res.get_json().get("error", "")

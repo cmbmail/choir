@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>登录 — 弦歌合唱团</title>
+  <title>登录 — 雅歌</title>
   <link rel="stylesheet" href="css/theme.css" />
   <script>
   if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
@@ -14,17 +14,9 @@
 </head>
 <body>
   <div class="auth-card">
-    <h1>弦歌合唱团</h1>
-    <p class="sub">登录（手机号）</p>
+    <h1>雅歌</h1>
+    <p class="sub" id="login-subtitle">合唱团管理系统</p>
     <form id="login-form">
-      <label for="login_mode">登录身份</label>
-      <select id="login_mode">
-        <option value="choir">团内成员 / 团内超管</option>
-        <option value="system">系统超管（不选团）</option>
-      </select>
-      <label for="choir_slug">合唱团</label>
-      <select id="choir_slug" required>
-      </select>
       <label for="username">手机号</label>
       <input id="username" type="text" inputmode="numeric" autocomplete="username" required />
       <label for="password">密码</label>
@@ -40,78 +32,98 @@
       <button type="submit" id="submit-btn">登录</button>
       <p class="msg" id="msg"></p>
     </form>
+
+    <div id="identity-picker" class="identity-picker" hidden>
+      <p class="identity-picker-title">请选择登录身份</p>
+      <div id="identity-list" class="identity-list"></div>
+      <button type="button" class="btn-back-login" id="btn-back-login">返回修改账号</button>
+    </div>
+
     <p class="links"><a href="register.html">邀请码注册</a></p>
   </div>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    const slugEl = document.getElementById("choir_slug");
-    const modeEl = document.getElementById("login_mode");
     const msgEl = document.getElementById("msg");
+    const loginForm = document.getElementById("login-form");
+    const identityPicker = document.getElementById("identity-picker");
+    const identityList = document.getElementById("identity-list");
+    const submitBtn = document.getElementById("submit-btn");
     let captchaId = null;
-    const captchaBlock = document.getElementById("captcha-block");
-    const captchaImg = document.getElementById("captcha_img");
-    const captchaCode = document.getElementById("captcha_code");
 
     async function loadCaptcha() {
       const cap = await ChoirAPI.get("/auth/captcha");
       captchaId = cap.captcha_id;
-      captchaImg.src = cap.image_base64;
-      captchaCode.value = "";
-      captchaBlock.hidden = false;
-      captchaBlock.style.display = "block";
+      document.getElementById("captcha_img").src = cap.image_base64;
+      document.getElementById("captcha_code").value = "";
+      const block = document.getElementById("captcha-block");
+      block.hidden = false;
+      block.style.display = "block";
     }
 
     document.getElementById("btn-captcha-refresh").addEventListener("click", () => {
       loadCaptcha().catch((e) => { msgEl.textContent = e.message; });
     });
-    captchaImg.addEventListener("click", () => {
+    document.getElementById("captcha_img").addEventListener("click", () => {
       loadCaptcha().catch((e) => { msgEl.textContent = e.message; });
     });
 
-    function syncChoirSelect() {
-      const isSystem = modeEl.value === "system";
-      slugEl.disabled = isSystem;
-      slugEl.required = !isSystem;
-      const choirLabel = document.querySelector('label[for="choir_slug"]');
-      if (choirLabel) choirLabel.style.opacity = isSystem ? "0.5" : "1";
-    }
-
-    modeEl.addEventListener("change", syncChoirSelect);
-
-    async function loadChoirs() {
-      const data = await ChoirAPI.get("/choirs/public");
-      slugEl.innerHTML = "";
-      for (const c of data.choirs || []) {
-        const opt = document.createElement("option");
-        opt.value = c.slug;
-        opt.textContent = `${c.name} (${c.slug})`;
-        slugEl.appendChild(opt);
-      }
-      syncChoirSelect();
-    }
-
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msgEl.textContent = "";
+    function loginBody(userId) {
       const body = {
         username: document.getElementById("username").value.trim(),
         password: document.getElementById("password").value,
       };
-      if (modeEl.value === "choir") {
-        const slug = slugEl.value;
-        if (!slug) {
-          msgEl.textContent = "请选择合唱团";
-          return;
-        }
-        body.choir_slug = slug;
-      }
+      if (userId) body.user_id = userId;
       if (captchaId) {
         body.captcha_id = captchaId;
         body.captcha_code = document.getElementById("captcha_code").value.trim();
       }
+      return body;
+    }
+
+    function showIdentityPicker(identities) {
+      loginForm.hidden = true;
+      identityPicker.hidden = false;
+      document.querySelector(".links").hidden = true;
+      document.getElementById("login-subtitle").textContent = "验证成功，请选择要进入的身份";
+      identityList.innerHTML = identities
+        .map(
+          (item) => `
+        <button type="button" class="identity-card" data-user-id="${item.user_id}">
+          <span class="identity-card-kind">${item.kind === "system" ? "系统" : "合唱团"}</span>
+          <span class="identity-card-label">${item.label}</span>
+        </button>`
+        )
+        .join("");
+      identityList.querySelectorAll(".identity-card").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = +btn.dataset.userId;
+          submitLogin(id).catch(() => {});
+        });
+      });
+    }
+
+    function hideIdentityPicker() {
+      loginForm.hidden = false;
+      identityPicker.hidden = true;
+      document.querySelector(".links").hidden = false;
+      document.getElementById("login-subtitle").textContent = "合唱团管理系统";
+    }
+
+    document.getElementById("btn-back-login").addEventListener("click", hideIdentityPicker);
+
+    async function submitLogin(userId) {
+      msgEl.textContent = "";
+      submitBtn.disabled = true;
       try {
-        const data = await ChoirAPI.post("/auth/login", body);
+        const data = await ChoirAPI.post("/auth/login", loginBody(userId));
+        if (data.need_identity_select && data.identities?.length) {
+          if (data.identities.length === 1) {
+            return submitLogin(data.identities[0].user_id);
+          }
+          showIdentityPicker(data.identities);
+          return;
+        }
         ChoirAuth.saveSession(data);
         ChoirAuth.routeAfterLogin(data.user);
       } catch (err) {
@@ -121,10 +133,15 @@
             await loadCaptcha();
           } catch (_) {}
         }
+      } finally {
+        submitBtn.disabled = false;
       }
-    });
+    }
 
-    loadChoirs().catch((e) => { msgEl.textContent = e.message; });
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitLogin();
+    });
   </script>
 </body>
 </html>

@@ -19,7 +19,7 @@ def test_choir_suspend_blocks_login(client, choir_admin_headers, app):
 
     login = client.post(
         "/api/auth/login",
-        json={"choir_slug": "choir_test", "username": "13900000001", "password": "ChoirAdmin1"},
+        json={"username": "13900000001", "password": "ChoirAdmin1"},
     )
     assert login.status_code == 401
 
@@ -58,7 +58,7 @@ def test_member_cannot_list_logs(client, app):
 
     login = client.post(
         "/api/auth/login",
-        json={"choir_slug": "choir_test", "username": "13800990002", "password": "TestPass1"},
+        json={"username": "13800990002", "password": "TestPass1"},
     )
     assert login.status_code == 200
     token = login.get_json()["access_token"]

@@ -760,12 +760,6 @@ toggleSwitch.addEventListener('click', () => {
   updateRoleUI();
 });
 
-// Initialize
-updateRoleUI();
-
-renderRehearsals();
-renderNotifications();
-
 /* Home cards data and render */
 const notifications = [
   { tag: 'important', tagText: '重要', title: '六月汇演彩排时间调整为5月25日，请全体团员准时参加', time: '今天 09:00' },
@@ -790,6 +784,11 @@ function renderNotifications() {
       +'<div class="notif-time">'+n.time+'</div></li>';
   }).join('');
 }
+
+// Initialize
+updateRoleUI();
+renderRehearsals();
+renderNotifications();
 
 </script>
 <script src="/js/api.js"></script>

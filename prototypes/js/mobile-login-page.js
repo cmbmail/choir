@@ -1,9 +1,8 @@
 /**
- * 手机登录页 — 接 /api/auth/login 与合唱团列表
+ * 手机登录页 — 验证后按身份登录
  */
 (function () {
   let captchaId = null;
-  let choirs = [];
 
   function showToast(msg) {
     const toast = document.getElementById("toast");
@@ -13,18 +12,14 @@
     setTimeout(() => toast.classList.remove("show"), 2800);
   }
 
-  async function loadChoirs() {
-    const data = await ChoirAPI.get("/choirs/public");
-    choirs = data.choirs || [];
-    const sel = document.getElementById("choir_slug");
-    if (!sel) return;
-    sel.innerHTML = "";
-    for (const c of choirs) {
-      const opt = document.createElement("option");
-      opt.value = c.slug;
-      opt.textContent = c.name;
-      sel.appendChild(opt);
+  function loginBody(account, password, userId) {
+    const body = { username: account, password };
+    if (userId) body.user_id = userId;
+    if (captchaId) {
+      body.captcha_id = captchaId;
+      body.captcha_code = (document.getElementById("captcha_code")?.value || "").trim();
     }
+    return body;
   }
 
   async function loadCaptcha() {
@@ -38,42 +33,43 @@
     if (code) code.value = "";
   }
 
-  async function handleLogin(e) {
-    e.preventDefault();
-    const account = document.getElementById("account").value.trim();
-    const password = document.getElementById("password").value;
+  function showIdentityPicker(identities, account, password) {
+    const form = document.getElementById("loginForm");
+    const picker = document.getElementById("identity-picker-mobile");
+    const list = document.getElementById("identity-list-mobile");
+    if (!picker || !list) return;
+    form.hidden = true;
+    picker.hidden = false;
+    list.innerHTML = identities
+      .map(
+        (item) => `
+      <button type="button" class="identity-card-mobile" data-user-id="${item.user_id}">
+        <span class="identity-card-kind">${item.kind === "system" ? "系统" : "合唱团"}</span>
+        <span>${item.label}</span>
+      </button>`
+      )
+      .join("");
+    list.querySelectorAll(".identity-card-mobile").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        doLogin(account, password, +btn.dataset.userId);
+      });
+    });
+  }
+
+  async function doLogin(account, password, userId) {
     const btn = document.getElementById("loginBtn");
-    const accountGroup = document.getElementById("accountGroup");
-    const passwordGroup = document.getElementById("passwordGroup");
-
-    accountGroup?.classList.remove("has-error");
-    passwordGroup?.classList.remove("has-error");
-
-    let hasError = false;
-    if (!account) {
-      accountGroup?.classList.add("has-error");
-      hasError = true;
-    }
-    if (!password) {
-      passwordGroup?.classList.add("has-error");
-      hasError = true;
-    }
-    if (hasError) return;
-
-    const slugEl = document.getElementById("choir_slug");
-    const body = { username: account, password };
-    if (slugEl && slugEl.value) body.choir_slug = slugEl.value;
-    if (captchaId) {
-      body.captcha_id = captchaId;
-      body.captcha_code = (document.getElementById("captcha_code")?.value || "").trim();
-    }
-
     btn?.classList.add("loading");
     const prevText = btn?.textContent;
     if (btn) btn.textContent = "";
-
     try {
-      const data = await ChoirAPI.post("/auth/login", body);
+      const data = await ChoirAPI.post("/auth/login", loginBody(account, password, userId));
+      if (data.need_identity_select && data.identities?.length) {
+        if (data.identities.length === 1) {
+          return doLogin(account, password, data.identities[0].user_id);
+        }
+        showIdentityPicker(data.identities, account, password);
+        return;
+      }
       ChoirAuth.saveSession(data);
       showToast("登录成功，正在跳转…");
       setTimeout(() => ChoirAuth.routeAfterLogin(data.user), 400);
@@ -90,9 +86,29 @@
     }
   }
 
+  async function handleLogin(e) {
+    e.preventDefault();
+    const account = document.getElementById("account").value.trim();
+    const password = document.getElementById("password").value;
+    const accountGroup = document.getElementById("accountGroup");
+    const passwordGroup = document.getElementById("passwordGroup");
+
+    accountGroup?.classList.remove("has-error");
+    passwordGroup?.classList.remove("has-error");
+
+    if (!account) {
+      accountGroup?.classList.add("has-error");
+      return;
+    }
+    if (!password) {
+      passwordGroup?.classList.add("has-error");
+      return;
+    }
+    await doLogin(account, password);
+  }
+
   function setup() {
-    const form = document.getElementById("loginForm");
-    form?.addEventListener("submit", handleLogin);
+    document.getElementById("loginForm")?.addEventListener("submit", handleLogin);
     document.getElementById("account")?.addEventListener("input", () => {
       document.getElementById("accountGroup")?.classList.remove("has-error");
     });
@@ -105,14 +121,16 @@
     document.getElementById("captcha_img")?.addEventListener("click", () => {
       loadCaptcha().catch((e) => showToast(e.message));
     });
+    document.getElementById("btn-back-login-mobile")?.addEventListener("click", () => {
+      document.getElementById("loginForm").hidden = false;
+      document.getElementById("identity-picker-mobile").hidden = true;
+    });
 
     if (ChoirAuth.getToken()) {
       ChoirAuth.refreshUser().then((u) => {
         if (u) ChoirAuth.routeAfterLogin(u);
       });
-      return;
     }
-    loadChoirs().catch((e) => showToast(e.message));
   }
 
   window.togglePassword = function togglePassword() {
