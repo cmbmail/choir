@@ -7,6 +7,9 @@
   }
 
   function fillUserUI(user) {
+    if (window.ChoirAppShell?.fillBrandTitle) {
+      ChoirAppShell.fillBrandTitle(user);
+    }
     const name = user.name || user.username;
     document.querySelectorAll(".avatar-m, .profile-avatar").forEach((el) => {
       el.textContent = avatarChar(name);

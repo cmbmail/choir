@@ -69,9 +69,28 @@
     el.style.display = "flex";
   }
 
+  function brandTitle(user) {
+    if (user?.system_super_admin) return "雅歌合唱团管理系统";
+    return (
+      user?.choir_name ||
+      user?.choir?.name ||
+      "合唱团"
+    );
+  }
+
+  function fillBrandTitle(user) {
+    const title = brandTitle(user);
+    document.querySelectorAll(".brand-name, .brand-name-m").forEach((el) => {
+      el.textContent = title;
+      el.style.textTransform = "none";
+      el.style.letterSpacing = "0.05em";
+    });
+  }
+
   function fillUserUI(user) {
     const name = user.name || user.username;
     const role = user.role_name || (user.system_super_admin ? "系统超管" : "成员");
+    fillBrandTitle(user);
     document.querySelectorAll(".sidebar-user-name").forEach((n) => {
       n.textContent = name;
     });
@@ -160,6 +179,8 @@
   window.ChoirAppShell = {
     init,
     fillUserUI,
+    fillBrandTitle,
+    brandTitle,
     openPasswordModal,
   };
 })();
