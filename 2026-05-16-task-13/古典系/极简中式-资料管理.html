@@ -235,7 +235,18 @@ a{color:inherit;text-decoration:none}
     <div class="page-header">
       <div class="page-title-group">
         <h1 class="page-title">资料管理</h1>
-        <p class="page-subtitle">合唱团文档、乐谱、演出资料集中管理</p>
+        <p class="page-subtitle">作品与团内资料集中管理</p>
+      </div>
+      <div class="page-actions" id="workListActions" hidden>
+        <button type="button" class="btn btn-outline" id="btnImportPdf" data-perm="documents.write">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          导入
+        </button>
+        <button type="button" class="btn btn-gold" id="btnNewWork" data-perm="documents.write">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新建
+        </button>
+        <input type="file" id="importPdfInput" accept=".pdf,application/pdf" multiple hidden/>
       </div>
     </div>
 
@@ -315,15 +326,23 @@ a{color:inherit;text-decoration:none}
       <div class="card-header">
         <span class="card-title">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          资料列表
+          <span id="listCardTitle">作品列表</span>
         </span>
         <span style="font-size:0.75rem;color:var(--text-muted)" id="docCount">共 12 条</span>
       </div>
       <table class="doc-table">
-        <thead>
-          <tr>
+        <thead id="listTableHead">
+          <tr id="worksTableHeadRow" hidden>
+            <th>作品名称</th>
+            <th>作曲者</th>
+            <th>乐谱</th>
+            <th>资料</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+          <tr id="docsTableHeadRow">
             <th>资料名称</th>
-            <th id="thWork">所属作品</th>
+            <th>所属作品</th>
             <th>分类</th>
             <th>上传人</th>
             <th>上传时间</th>
@@ -369,7 +388,7 @@ function closeVideoModal() {
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260519"></script>
+<script src="/js/documents-page.js?v=20260520"></script>
 
 </body>
 </html>

@@ -1,5 +1,5 @@
 /**
- * 资料管理 — 团内资料浏览（含作品下上传的文件）
+ * 资料管理 — 「全部资料」为作品列表；其它标签为团内资料
  */
 (function () {
   const ADMIN_CHOIR_KEY = "choir_admin_selected_choir_id";
@@ -27,6 +27,7 @@
 
   let currentUser = null;
   let docs = [];
+  let works = [];
   let choirs = [];
   let currentTab = "all";
   let searchKeyword = "";
@@ -65,11 +66,32 @@
     alert(msg);
   }
 
+  function isWorksListTab() {
+    return currentTab === "all";
+  }
+
   function getAdminChoirId() {
     const sel = document.getElementById("adminChoirSelect");
     if (!sel?.value) return null;
     const cid = parseInt(sel.value, 10);
     return Number.isFinite(cid) ? cid : null;
+  }
+
+  function requireChoirIdForWrite() {
+    if (currentUser?.system_super_admin) {
+      const cid = getAdminChoirId();
+      if (!cid) {
+        alert("请先选择所属合唱团");
+        return null;
+      }
+      return cid;
+    }
+    return currentUser.choir_id;
+  }
+
+  function workNameFromPdfFilename(filename) {
+    const base = (filename || "").replace(/\.[^.]+$/, "").trim();
+    return base || "未命名作品";
   }
 
   function tabFromUrl() {
@@ -84,6 +106,30 @@
     document.querySelectorAll(".tab").forEach((t) => {
       t.classList.toggle("active", t.dataset.tab === tabId);
     });
+    updateListChrome();
+  }
+
+  function updateListChrome() {
+    const worksMode = isWorksListTab();
+    const actions = document.getElementById("workListActions");
+    const stats = document.getElementById("docsStatsRow");
+    const subFilters = document.getElementById("scoreFilters");
+    const worksHead = document.getElementById("worksTableHeadRow");
+    const docsHead = document.getElementById("docsTableHeadRow");
+    const cardTitle = document.getElementById("listCardTitle");
+    const search = document.getElementById("searchInput");
+
+    if (actions) actions.hidden = !worksMode || !canWrite();
+    if (stats) stats.hidden = worksMode;
+    if (subFilters) subFilters.style.display = worksMode ? "none" : "none";
+    if (worksHead) worksHead.hidden = !worksMode;
+    if (docsHead) docsHead.hidden = worksMode;
+    if (cardTitle) cardTitle.textContent = worksMode ? "作品列表" : "资料列表";
+    if (search) {
+      search.placeholder = worksMode
+        ? "搜索作品名称、作曲者..."
+        : "搜索资料名称、合集、风格、分类...";
+    }
   }
 
   async function loadChoirsForAdmin() {
@@ -102,8 +148,162 @@
     }
     sel.addEventListener("change", () => {
       sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
-      loadDocs().catch((e) => toast(e.message || "加载失败"));
+      reloadList().catch((e) => toast(e.message || "加载失败"));
     });
+  }
+
+  async function reloadList() {
+    if (isWorksListTab()) await loadWorks();
+    else await loadDocs();
+  }
+
+  async function loadWorks() {
+    let path = "/works?include_recordings=0";
+    if (currentUser?.system_super_admin) {
+      const cid = getAdminChoirId();
+      if (!cid) {
+        works = [];
+        renderWorks();
+        return;
+      }
+      path += `&choir_id=${cid}`;
+    }
+    const data = await ChoirAPI.get(path);
+    works = data.works || [];
+    renderWorks();
+  }
+
+  function filterWorksList() {
+    const q = searchKeyword.trim().toLowerCase();
+    if (!q) return works;
+    return works.filter(
+      (w) =>
+        (w.name || "").toLowerCase().includes(q) ||
+        (w.composer || "").toLowerCase().includes(q)
+    );
+  }
+
+  function renderWorks() {
+    const list = filterWorksList();
+    const countEl = document.getElementById("docCount");
+    if (countEl) countEl.textContent = "共 " + list.length + " 个作品";
+    const body = document.getElementById("docTableBody");
+    if (!body) return;
+    if (!list.length) {
+      body.innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无作品，可点击「新建」或「导入」批量添加 PDF 歌谱</td></tr>';
+      return;
+    }
+    body.innerHTML = list
+      .map((w) => {
+        const owner =
+          !w.is_owner && w.owner_choir_name
+            ? '<br><span style="font-size:0.65rem;color:var(--text-muted)">来自 ' +
+              esc(w.owner_choir_name) +
+              "</span>"
+            : "";
+        return (
+          "<tr>" +
+          '<td><div class="doc-name-cell">' +
+          '<div class="doc-icon doc-icon-pdf"></div>' +
+          '<div><div class="doc-name-text">' +
+          '<a href="极简中式-作品详情.html?work_id=' +
+          w.work_id +
+          '" style="color:inherit">' +
+          esc(w.name) +
+          "</a>" +
+          owner +
+          "</div></div></td>" +
+          "<td>" +
+          esc(w.composer || "—") +
+          "</td>" +
+          "<td>" +
+          (w.score_count || 0) +
+          "</td>" +
+          "<td>" +
+          (w.doc_count || 0) +
+          "</td>" +
+          "<td>" +
+          formatDate(w.created_at) +
+          "</td>" +
+          '<td><a class="doc-action-btn" href="极简中式-作品详情.html?work_id=' +
+          w.work_id +
+          '">进入</a></td>' +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  async function createWork() {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return;
+    const name = prompt("作品名称");
+    if (!name || !name.trim()) return;
+    const composer = prompt("作曲者（可选）", "") || "";
+    const body = { name: name.trim(), composer: composer.trim() };
+    if (currentUser.system_super_admin) body.choir_id = choirId;
+    try {
+      const res = await ChoirAPI.post("/works", body);
+      await loadWorks();
+      if (res.work_id) {
+        window.location.href = "极简中式-作品详情.html?work_id=" + res.work_id;
+      }
+    } catch (e) {
+      toast(e.message || "创建失败");
+    }
+  }
+
+  function openPdfImport() {
+    if (!canWrite()) return;
+    document.getElementById("importPdfInput")?.click();
+  }
+
+  async function importPdfScores(fileList) {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return;
+    const pdfs = Array.from(fileList || []).filter((f) =>
+      (f.name || "").toLowerCase().endsWith(".pdf")
+    );
+    if (!pdfs.length) {
+      toast("请选择 PDF 歌谱文件");
+      return;
+    }
+    if (
+      !confirm(
+        `将导入 ${pdfs.length} 个 PDF，每个文件创建一个作品（名称为文件名），并上传为歌谱。是否继续？`
+      )
+    ) {
+      return;
+    }
+
+    let ok = 0;
+    const errors = [];
+    for (const file of pdfs) {
+      const workName = workNameFromPdfFilename(file.name).slice(0, 100);
+      try {
+        const body = { name: workName, composer: "" };
+        if (currentUser.system_super_admin) body.choir_id = choirId;
+        const work = await ChoirAPI.post("/works", body);
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("title", file.name);
+        fd.append("doc_type", "score");
+        fd.append("work_id", String(work.work_id));
+        await ChoirAPI.postForm("/documents/upload", fd);
+        ok += 1;
+      } catch (e) {
+        errors.push(`${file.name}: ${e.message || "失败"}`);
+      }
+    }
+    await loadWorks();
+    if (errors.length && ok) {
+      toast(`成功 ${ok} 个，失败 ${errors.length} 个：\n` + errors.slice(0, 5).join("\n"));
+    } else if (errors.length) {
+      toast("导入失败：\n" + errors.slice(0, 8).join("\n"));
+    } else {
+      toast(`已成功导入 ${ok} 个作品及歌谱`);
+    }
   }
 
   async function loadDocs() {
@@ -245,7 +445,7 @@
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", async () => {
         setActiveTab(tab.dataset.tab);
-        await loadDocs();
+        await reloadList();
       });
     });
   }
@@ -260,7 +460,7 @@
         if (setVar === "category") filterCategory = opt.dataset.val;
         if (setVar === "collection") filterCollection = opt.dataset.val;
         if (setVar === "style") filterStyle = opt.dataset.val;
-        loadDocs();
+        if (!isWorksListTab()) loadDocs();
       });
     });
   }
@@ -271,6 +471,22 @@
     window.ChoirPermissions.applyNavPermissions(currentUser);
 
     setActiveTab(tabFromUrl());
+
+    const btnNew = document.getElementById("btnNewWork");
+    if (btnNew && canWrite()) btnNew.addEventListener("click", createWork);
+
+    const btnImport = document.getElementById("btnImportPdf");
+    if (btnImport && canWrite()) btnImport.addEventListener("click", openPdfImport);
+
+    const importInput = document.getElementById("importPdfInput");
+    if (importInput) {
+      importInput.addEventListener("change", () => {
+        const files = importInput.files;
+        importInput.value = "";
+        if (files?.length) importPdfScores(files);
+      });
+    }
+
     bindTabs();
     initFilter("filterCategory", "category");
     initFilter("filterCollection", "collection");
@@ -279,12 +495,13 @@
     if (search) {
       search.addEventListener("input", (e) => {
         searchKeyword = e.target.value;
-        loadDocs();
+        if (isWorksListTab()) renderWorks();
+        else loadDocs();
       });
     }
 
     await loadChoirsForAdmin();
-    await loadDocs();
+    await reloadList();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -292,7 +509,7 @@
     ChoirAppShell.init();
     init().catch((e) => {
       console.error(e);
-      if (e.message !== "未登录") alert(e.message || "加载失败");
+      if (e.message !== "未登录") toast(e.message || "加载失败");
     });
   });
 })();
