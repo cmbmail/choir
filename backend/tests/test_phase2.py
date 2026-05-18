@@ -4,6 +4,9 @@ import tempfile
 import pytest
 
 from app.config import Config
+from app.extensions import db
+from app.models import Choir, User
+from app.services.password import hash_password
 
 
 @pytest.fixture
@@ -93,6 +96,42 @@ def test_works_and_recordings(client, choir_admin_headers, app_phase2):
     res = client.get(stream_url)
     assert res.status_code == 200
     assert res.data == audio
+
+
+def test_super_admin_works_list_needs_choir_id(client, app_phase2):
+    with client.application.app_context():
+        choir = Choir.query.first()
+        choir_id = choir.choir_id
+        sa = User(
+            username="19900000001",
+            password_hash=hash_password("SysAdmin99x"),
+            name="系统超管",
+            system_super_admin=True,
+            status="active",
+        )
+        db.session.add(sa)
+        db.session.commit()
+
+    login = client.post(
+        "/api/auth/login",
+        json={"username": "19900000001", "password": "SysAdmin99x"},
+    )
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.get_json()['access_token']}"}
+
+    assert client.get("/api/works", headers=headers).get_json()["works"] == []
+
+    created = client.post(
+        "/api/works",
+        json={"name": "超管作品", "choir_id": choir_id},
+        headers=headers,
+    )
+    assert created.status_code == 201
+    work_id = created.get_json()["work_id"]
+
+    listed = client.get(f"/api/works?choir_id={choir_id}", headers=headers)
+    assert listed.status_code == 200
+    assert any(w["work_id"] == work_id for w in listed.get_json()["works"])
 
 
 def test_work_shares(client, choir_admin_headers, app_phase2):

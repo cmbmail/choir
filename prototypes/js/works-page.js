@@ -2,6 +2,7 @@
  * 作品管理 — 仅列表与新建，上传在作品详情页
  */
 (function () {
+  const ADMIN_CHOIR_KEY = "choir_admin_selected_choir_id";
   let currentUser = null;
   let works = [];
   let choirs = [];
@@ -27,6 +28,13 @@
     return iso.slice(0, 10);
   }
 
+  function getAdminChoirId() {
+    const sel = document.getElementById("adminChoirSelect");
+    if (!sel?.value) return null;
+    const cid = parseInt(sel.value, 10);
+    return Number.isFinite(cid) ? cid : null;
+  }
+
   async function loadChoirsForAdmin() {
     const wrap = document.getElementById("adminChoirWrap");
     const sel = document.getElementById("adminChoirSelect");
@@ -37,10 +45,28 @@
     sel.innerHTML = choirs
       .map((c) => `<option value="${c.choir_id}">${esc(c.name)}</option>`)
       .join("");
+    const saved = sessionStorage.getItem(ADMIN_CHOIR_KEY);
+    if (saved && choirs.some((c) => String(c.choir_id) === saved)) {
+      sel.value = saved;
+    }
+    sel.addEventListener("change", () => {
+      sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
+      loadWorks().catch((e) => alert(e.message || "加载失败"));
+    });
   }
 
   async function loadWorks() {
-    const data = await ChoirAPI.get("/works?include_recordings=0");
+    let path = "/works?include_recordings=0";
+    if (currentUser?.system_super_admin) {
+      const cid = getAdminChoirId();
+      if (!cid) {
+        works = [];
+        renderWorks([]);
+        return;
+      }
+      path += `&choir_id=${cid}`;
+    }
+    const data = await ChoirAPI.get(path);
     works = data.works || [];
     renderWorks(works);
   }
@@ -102,13 +128,13 @@
     const composer = prompt("作曲者（可选）", "") || "";
     const body = { name: name.trim(), composer: composer.trim() };
     if (currentUser.system_super_admin) {
-      const sel = document.getElementById("adminChoirSelect");
-      const cid = sel?.value ? parseInt(sel.value, 10) : null;
+      const cid = getAdminChoirId();
       if (!cid) {
         alert("请选择所属合唱团");
         return;
       }
       body.choir_id = cid;
+      sessionStorage.setItem(ADMIN_CHOIR_KEY, String(cid));
     }
     try {
       const res = await ChoirAPI.post("/works", body);
