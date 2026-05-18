@@ -73,10 +73,38 @@
     if (wrap) wrap.style.display = "none";
   }
 
+  async function downloadDocument(documentId, fileName) {
+    const data = await ChoirAPI.get(`/documents/${documentId}/play-url`);
+    const url = absUrl(data.url);
+    if (!url) {
+      throw new Error("无法获取下载地址");
+    }
+    if (data.kind === "external") {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "download";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   async function playDocument(documentId) {
     const data = await ChoirAPI.get(`/documents/${documentId}/play-url`);
     if (data.kind === "external") {
-      openVideoModal(data.url, "");
+      const mime = (data.mime_type || "").toLowerCase();
+      if (mime.startsWith("audio/")) {
+        playAudioUrl(data.url, "");
+        return;
+      }
+      if (mime.startsWith("video/")) {
+        openVideoModal(data.url, "");
+        return;
+      }
+      window.open(absUrl(data.url), "_blank", "noopener,noreferrer");
       return;
     }
     const mime = (data.mime_type || "").toLowerCase();
@@ -99,6 +127,7 @@
     openVideoModal,
     playDocument,
     playRecording,
+    downloadDocument,
     close,
   };
 })();

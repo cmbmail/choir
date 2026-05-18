@@ -155,9 +155,13 @@ a{color:inherit;text-decoration:none}
 .asset-action:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
 .asset-action.danger{color:var(--error);border-color:rgba(176,48,48,0.35)}
 .asset-empty{padding:1.25rem;text-align:center;font-size:0.8rem;color:var(--text-muted);border:1px dashed var(--border);border-radius:4px;margin-bottom:0.75rem}
-.asset-download-panel{margin-bottom:0.75rem}
-.asset-download-title{font-size:0.75rem;color:var(--ink-gold);letter-spacing:0.08em;margin-bottom:0.5rem}
-.asset-download-table{width:100%;border-collapse:collapse;font-size:0.78rem}
+.asset-download-panel{margin-bottom:0.75rem;margin-top:0.75rem;padding:0.75rem;border:1px solid var(--border-gold);border-radius:4px;background:rgba(184,134,11,0.04)}
+.asset-download-panel--highlight{box-shadow:0 0 0 2px rgba(184,134,11,0.35)}
+.asset-download-title{font-size:0.8rem;color:var(--ink-gold);letter-spacing:0.08em;margin-bottom:0.5rem;font-weight:400}
+.asset-download-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.asset-download-table{width:100%;min-width:520px;border-collapse:collapse;font-size:0.78rem}
+.asset-action-dl{background:var(--ink-gold);color:#fff;border-color:var(--ink-gold)}
+.asset-action-dl:hover{background:var(--ink-gold-light);color:#fff;border-color:var(--ink-gold-light)}
 .asset-download-table th{text-align:left;padding:0.45rem 0.6rem;color:var(--text-muted);font-weight:400;border-bottom:1px solid var(--border)}
 .asset-download-table td{padding:0.55rem 0.6rem;border-bottom:1px solid rgba(28,28,28,0.06);vertical-align:middle}
 .asset-download-table tr:last-child td{border-bottom:none}
@@ -301,7 +305,7 @@ a{color:inherit;text-decoration:none}
 <script src="/js/permissions.js"></script>
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
-<script src="/js/media-player.js"></script>
-<script src="/js/work-detail-page.js"></script>
+<script src="/js/media-player.js?v=20260518"></script>
+<script src="/js/work-detail-page.js?v=20260518"></script>
 </body>
 </html>

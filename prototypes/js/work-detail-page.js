@@ -60,7 +60,8 @@
 
   function getWorkId() {
     const p = new URLSearchParams(window.location.search);
-    return parseInt(p.get("work_id") || "0", 10);
+    const raw = p.get("work_id") || p.get("id") || "0";
+    return parseInt(raw, 10);
   }
 
   function sectionForDoc(d) {
@@ -129,28 +130,9 @@
     return docs.filter((d) => sectionForDoc(d) === sectionId);
   }
 
-  function absApiUrl(path) {
-    if (!path) return "";
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return (window.location.origin || "") + path;
-  }
-
   async function downloadDocument(docId, fileName) {
     try {
-      const data = await ChoirAPI.get(`/documents/${docId}/play-url`);
-      const url = absApiUrl(data.url);
-      if (!url) {
-        alert("无法获取下载地址");
-        return;
-      }
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName || "download";
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      await window.ChoirMedia.downloadDocument(docId, fileName);
     } catch (e) {
       alert(e.message || "下载失败");
     }
@@ -169,7 +151,9 @@
       actions += `<button type="button" class="asset-action" data-edit="${d.document_id}">重命名</button>`;
       actions += `<button type="button" class="asset-action danger" data-del="${d.document_id}">删除</button>`;
     }
-    actions = `<button type="button" class="asset-action" data-dl="${d.document_id}">下载</button> ` + actions;
+    actions =
+      `<button type="button" class="asset-action asset-action-dl" data-dl="${d.document_id}">下载</button> ` +
+      actions;
     return `<tr>
       <td>${esc(title)}</td>
       <td>${formatSize(d.file_size)}</td>
@@ -186,12 +170,14 @@
     root.innerHTML = ASSET_SECTIONS.map((sec) => {
       const list = docsForSection(sec.id);
       const filesHtml = list.length
-        ? `<div class="asset-download-panel">
+        ? `<div class="asset-download-panel" data-download-panel="${sec.id}">
             <div class="asset-download-title">下载清单</div>
-            <table class="asset-download-table">
-              <thead><tr><th>文件名</th><th>大小</th><th>上传日期</th><th>操作</th></tr></thead>
-              <tbody>${list.map(renderFileRow).join("")}</tbody>
-            </table>
+            <div class="asset-download-scroll">
+              <table class="asset-download-table">
+                <thead><tr><th>文件名</th><th>大小</th><th>上传日期</th><th>操作</th></tr></thead>
+                <tbody>${list.map(renderFileRow).join("")}</tbody>
+              </table>
+            </div>
           </div>`
         : `<div class="asset-empty">暂无${esc(sec.label)}</div>`;
       const uploadBtn = write
@@ -206,8 +192,8 @@
           <span class="asset-section-count">${list.length} 个文件</span>
         </div>
         <p class="asset-section-hint">${esc(sec.hint)}</p>
-        ${filesHtml}
         ${uploadBtn}
+        ${filesHtml}
       </section>`;
     }).join("");
 
@@ -278,8 +264,12 @@
     }
     await loadDocs();
     await loadWork(work.work_id);
-    const sectionEl = document.querySelector(`[data-section="${sectionId}"]`);
-    if (sectionEl && ok) sectionEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const panel = document.querySelector(`[data-download-panel="${sectionId}"]`);
+    if (panel && ok) {
+      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      panel.classList.add("asset-download-panel--highlight");
+      setTimeout(() => panel.classList.remove("asset-download-panel--highlight"), 2400);
+    }
     if (ok && !lastErr) {
       alert(ok > 1 ? `已上传 ${ok} 个文件，见下方下载清单` : "上传成功，见下方下载清单");
     } else if (ok && lastErr) {
