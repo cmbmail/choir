@@ -1,5 +1,5 @@
 /**
- * 资料管理 — 作品列表 + 团内资料浏览
+ * 资料管理 — 团内资料浏览（含作品下上传的文件）
  */
 (function () {
   const ADMIN_CHOIR_KEY = "choir_admin_selected_choir_id";
@@ -27,9 +27,8 @@
 
   let currentUser = null;
   let docs = [];
-  let works = [];
   let choirs = [];
-  let currentTab = "works";
+  let currentTab = "all";
   let searchKeyword = "";
   let filterCategory = "all";
   let filterCollection = "all";
@@ -62,20 +61,8 @@
     );
   }
 
-  function canCreateWork() {
-    return (
-      currentUser?.system_super_admin ||
-      window.ChoirAuth.hasPermission(currentUser, "documents.write") ||
-      window.ChoirAuth.hasPermission(currentUser, "recordings.write")
-    );
-  }
-
   function toast(msg) {
     alert(msg);
-  }
-
-  function isWorksTab() {
-    return currentTab === "works";
   }
 
   function getAdminChoirId() {
@@ -85,21 +72,11 @@
     return Number.isFinite(cid) ? cid : null;
   }
 
-  function updatePanels() {
-    const worksPanel = document.getElementById("worksPanel");
-    const docsPanel = document.getElementById("docsPanel");
-    const statsRow = document.getElementById("docsStatsRow");
-    const btnNew = document.getElementById("btnNewWork");
-    if (worksPanel) worksPanel.hidden = !isWorksTab();
-    if (docsPanel) docsPanel.hidden = isWorksTab();
-    if (statsRow) statsRow.hidden = isWorksTab();
-    if (btnNew) btnNew.hidden = !isWorksTab() || !canCreateWork();
-  }
-
   function tabFromUrl() {
     const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "works") return "all";
     if (tab && document.querySelector(`.tab[data-tab="${tab}"]`)) return tab;
-    return "works";
+    return "all";
   }
 
   function setActiveTab(tabId) {
@@ -107,7 +84,6 @@
     document.querySelectorAll(".tab").forEach((t) => {
       t.classList.toggle("active", t.dataset.tab === tabId);
     });
-    updatePanels();
   }
 
   async function loadChoirsForAdmin() {
@@ -126,106 +102,8 @@
     }
     sel.addEventListener("change", () => {
       sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
-      const reload = isWorksTab() ? loadWorks() : loadDocs();
-      reload.catch((e) => toast(e.message || "加载失败"));
+      loadDocs().catch((e) => toast(e.message || "加载失败"));
     });
-  }
-
-  async function loadWorks() {
-    const container = document.getElementById("workList");
-    if (container) {
-      container.innerHTML =
-        '<div class="empty-state"><p>正在加载作品…</p></div>';
-    }
-    let path = "/works?include_recordings=0";
-    if (currentUser?.system_super_admin) {
-      const cid = getAdminChoirId();
-      if (!cid) {
-        works = [];
-        renderWorks([]);
-        return;
-      }
-      path += `&choir_id=${cid}`;
-    }
-    const data = await ChoirAPI.get(path);
-    works = data.works || [];
-    renderWorks(works);
-  }
-
-  function filterWorks() {
-    const q = (document.getElementById("searchWork")?.value || "").trim().toLowerCase();
-    const list = !q
-      ? works
-      : works.filter(
-          (w) =>
-            (w.name || "").toLowerCase().includes(q) ||
-            (w.composer || "").toLowerCase().includes(q)
-        );
-    renderWorks(list);
-  }
-
-  function renderWorks(list) {
-    const container = document.getElementById("workList");
-    if (!container) return;
-    if (!list.length) {
-      container.innerHTML =
-        '<div class="empty-state"><p>暂无作品</p><p class="hint">点击「新建作品」创建，进入作品后上传乐谱、伴奏与资料</p></div>';
-      return;
-    }
-    container.innerHTML = list
-      .map((w) => {
-        const shared =
-          w.shared_choir_names && w.shared_choir_names.length
-            ? `<span class="work-meta-item">共享：${esc(w.shared_choir_names.join("、"))}</span>`
-            : "";
-        const owner =
-          !w.is_owner && w.owner_choir_name
-            ? `<span class="work-meta-item">来自 ${esc(w.owner_choir_name)}</span>`
-            : "";
-        return `
-        <a class="work-card work-card-link" href="极简中式-作品详情.html?work_id=${w.work_id}">
-          <div class="work-card-header">
-            <div class="work-info">
-              <div class="work-name">${esc(w.name)}</div>
-              <div class="work-meta">
-                ${w.composer ? `<span class="work-meta-item">${esc(w.composer)}</span>` : ""}
-                <span class="work-meta-item">乐谱 ${w.score_count || 0}</span>
-                <span class="work-meta-item">资料 ${w.doc_count || 0}</span>
-                <span class="work-meta-item">${formatDate(w.created_at)}</span>
-                ${owner}
-                ${shared}
-              </div>
-            </div>
-            <span class="work-open-hint">进入 →</span>
-          </div>
-        </a>`;
-      })
-      .join("");
-  }
-
-  async function createWork() {
-    const name = prompt("作品名称");
-    if (!name || !name.trim()) return;
-    const composer = prompt("作曲者（可选）", "") || "";
-    const body = { name: name.trim(), composer: composer.trim() };
-    if (currentUser.system_super_admin) {
-      const cid = getAdminChoirId();
-      if (!cid) {
-        alert("请选择所属合唱团");
-        return;
-      }
-      body.choir_id = cid;
-      sessionStorage.setItem(ADMIN_CHOIR_KEY, String(cid));
-    }
-    try {
-      const res = await ChoirAPI.post("/works", body);
-      await loadWorks();
-      if (res.work_id) {
-        window.location.href = "极简中式-作品详情.html?work_id=" + res.work_id;
-      }
-    } catch (e) {
-      toast(e.message || "创建失败");
-    }
   }
 
   async function loadDocs() {
@@ -312,7 +190,7 @@
           '"></div>' +
           '<div><div class="doc-name-text">' +
           esc(title) +
-          "</div></div></div></td>" +
+          "</div></div></td>" +
           workCol +
           '<td><span class="doc-tag ' +
           tc.cls +
@@ -367,8 +245,7 @@
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", async () => {
         setActiveTab(tab.dataset.tab);
-        if (isWorksTab()) await loadWorks();
-        else await loadDocs();
+        await loadDocs();
       });
     });
   }
@@ -383,7 +260,7 @@
         if (setVar === "category") filterCategory = opt.dataset.val;
         if (setVar === "collection") filterCollection = opt.dataset.val;
         if (setVar === "style") filterStyle = opt.dataset.val;
-        if (!isWorksTab()) loadDocs();
+        loadDocs();
       });
     });
   }
@@ -394,14 +271,6 @@
     window.ChoirPermissions.applyNavPermissions(currentUser);
 
     setActiveTab(tabFromUrl());
-
-    const btnNew = document.getElementById("btnNewWork");
-    if (btnNew) {
-      if (canCreateWork()) btnNew.addEventListener("click", createWork);
-      else btnNew.hidden = true;
-    }
-
-    document.getElementById("searchWork")?.addEventListener("input", filterWorks);
     bindTabs();
     initFilter("filterCategory", "category");
     initFilter("filterCollection", "collection");
@@ -410,13 +279,12 @@
     if (search) {
       search.addEventListener("input", (e) => {
         searchKeyword = e.target.value;
-        if (!isWorksTab()) loadDocs();
+        loadDocs();
       });
     }
 
     await loadChoirsForAdmin();
-    if (isWorksTab()) await loadWorks();
-    else await loadDocs();
+    await loadDocs();
   }
 
   document.addEventListener("DOMContentLoaded", () => {

@@ -138,25 +138,6 @@ a{color:inherit;text-decoration:none}
 .doc-action-btn:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
 .doc-action-btn.danger:hover{border-color:var(--error);color:var(--error)}
 
-/* === WORK LIST (作品) === */
-.work-list{display:flex;flex-direction:column;gap:1rem}
-.work-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:all var(--transition)}
-.work-card:hover{box-shadow:0 4px 16px rgba(28,28,28,0.08);border-color:var(--ink-gold)}
-.work-card-link{display:block;color:inherit}
-.work-card-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem}
-.work-card-header:hover{background:rgba(184,134,11,0.02)}
-.work-info{display:flex;flex-direction:column;gap:0.25rem;flex:1;min-width:0}
-.work-name{font-size:1rem;font-weight:400;color:var(--ink-black)}
-.work-meta{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-size:0.7rem;color:var(--text-muted)}
-.work-meta-item{display:flex;align-items:center;gap:0.3rem}
-.work-open-hint{font-size:0.75rem;color:var(--ink-gold);flex-shrink:0}
-.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-muted)}
-.empty-state .hint{font-size:0.7rem;margin-top:0.25rem}
-.filter-bar{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.filter-group{display:flex;align-items:center;gap:0.5rem}
-.filter-label{font-size:0.75rem;color:var(--text-muted)}
-.filter-select{padding:0.5rem 2rem 0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;font-size:0.8rem;background:var(--silk-white);color:var(--text-primary);cursor:pointer}
-
 /* === PART BUTTONS (分部伴奏) === */
 .part-btn{font-size:0.6rem;padding:0.15rem 0.4rem;border:1px solid var(--border-gold);border-radius:2px;background:rgba(184,134,11,0.06);color:var(--ink-gold);cursor:pointer;transition:all var(--transition);white-space:nowrap}
 .part-btn:hover{background:var(--ink-gold);color:#fff}
@@ -254,13 +235,7 @@ a{color:inherit;text-decoration:none}
     <div class="page-header">
       <div class="page-title-group">
         <h1 class="page-title">资料管理</h1>
-        <p class="page-subtitle">作品、乐谱、伴奏与团内资料集中管理</p>
-      </div>
-      <div class="page-actions">
-        <button type="button" class="btn btn-gold" id="btnNewWork" data-perm="documents.write" hidden>
-          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          新建作品
-        </button>
+        <p class="page-subtitle">合唱团文档、乐谱、演出资料集中管理</p>
       </div>
     </div>
 
@@ -291,21 +266,12 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div class="tabs" id="docTabs">
-      <div class="tab active" data-tab="works">作品</div>
-      <div class="tab" data-tab="all">全部资料</div>
+      <div class="tab active" data-tab="all">全部资料</div>
       <div class="tab" data-tab="perf">演出资料</div>
       <div class="tab" data-tab="rehearsal">排练资料</div>
       <div class="tab" data-tab="rule">规章制度</div>
     </div>
 
-    <div id="worksPanel">
-      <div class="filter-bar">
-        <input type="text" class="search-input" id="searchWork" placeholder="搜索作品名称、作曲者..." style="flex:1;min-width:200px"/>
-      </div>
-      <div class="work-list" id="workList"></div>
-    </div>
-
-    <div id="docsPanel" hidden>
     <!-- 乐谱子筛选（保留结构，默认隐藏） -->
     <div class="sub-filters" id="scoreFilters" style="display:none;">
       <div class="filter-group">
@@ -368,7 +334,6 @@ a{color:inherit;text-decoration:none}
         <tbody id="docTableBody"></tbody>
       </table>
     </div>
-    </div>
   </main>
 </div>
 
@@ -404,7 +369,7 @@ function closeVideoModal() {
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260518d"></script>
+<script src="/js/documents-page.js?v=20260519"></script>
 
 </body>
 </html>
