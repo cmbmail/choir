@@ -98,9 +98,10 @@ def make_play_url(
     cde_file_id: str,
     ttl_seconds: int = 3600,
     mime_type: Optional[str] = None,
+    force_stream: bool = False,
 ) -> Dict[str, object]:
     """Build play-url payload for documents or recordings."""
-    if is_pds_mode():
+    if is_pds_mode() and not force_stream:
         url = get_download_url(cde_file_id, ttl_seconds, mime_type)
         return {
             "url": url,

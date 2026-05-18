@@ -356,6 +356,7 @@ def documents_play_url(document_id: int):
     if not doc.cde_file_id:
         return jsonify({"error": "无可播放文件"}), 404
     ttl = int(request.args.get("ttl", 3600))
+    embed = request.args.get("embed", "").lower() in ("1", "true", "yes")
     try:
         return jsonify(
             make_play_url(
@@ -365,6 +366,7 @@ def documents_play_url(document_id: int):
                 doc.cde_file_id,
                 ttl,
                 doc.mime_type,
+                force_stream=embed,
             )
         )
     except CdeError as e:

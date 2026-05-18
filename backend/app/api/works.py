@@ -145,8 +145,12 @@ def works_get(work_id: int):
     work = Work.query.get_or_404(work_id)
     if not can_read_work(user, work):
         return jsonify({"error": "无权限"}), 403
-    if not can_read_recordings(user) and not can_read_documents(user):
-        return jsonify({"error": "无权限"}), 403
+    if (
+        not user.system_super_admin
+        and not can_read_recordings(user)
+        and not can_read_documents(user)
+    ):
+        return jsonify({"error": "无权限", "required": "documents.read"}), 403
     choir_id = user.choir_id or work.choir_id
     return jsonify(_work_payload(work, choir_id, include_recordings=True))
 

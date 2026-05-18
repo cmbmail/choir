@@ -65,6 +65,13 @@
     const headers = {};
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
+    let csrf = getCsrfToken();
+    if (!csrf) {
+      try {
+        csrf = await fetchCsrf();
+      } catch (_) {}
+    }
+    if (csrf) headers["X-CSRF-Token"] = csrf;
     const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
       headers,

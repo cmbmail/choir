@@ -243,13 +243,22 @@
     if (dlMain) dlMain.hidden = !d?.document_id;
   }
 
+  function absApiUrl(path) {
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    return (window.location.origin || "") + path;
+  }
+
   async function resolvePreviewUrl(doc) {
     if (!doc?.document_id) return null;
     try {
-      const play = await ChoirAPI.get("/documents/" + doc.document_id + "/play-url");
-      if (play.kind === "external") return null;
-      return play.url;
-    } catch {
+      const play = await ChoirAPI.get(
+        "/documents/" + doc.document_id + "/play-url?embed=1"
+      );
+      if (play.kind === "external" && doc.video_url) return null;
+      return absApiUrl(play.url);
+    } catch (e) {
+      console.warn("preview url", e);
       return null;
     }
   }
@@ -721,7 +730,15 @@
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
     init().catch((e) => {
-      if (e.message !== "未登录") alert(e.message || "加载失败");
+      if (e.message === "未登录") return;
+      const msg =
+        e.status === 403
+          ? "无权限查看该作品或乐谱，请确认已登录且有资料阅读权限。"
+          : e.message || "加载失败";
+      alert(msg);
+      if (e.status === 403 || e.status === 410) {
+        window.location.href = "极简中式-资料管理.html";
+      }
     });
   });
 })();

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from app.models import Document, User, Work
 from app.services.permissions import has_permission, is_section_leader
-from app.services.work_access import work_shared_to_choir
+from app.services.work_access import can_read_work, work_shared_to_choir
 
 
 def can_read_documents(user: User) -> bool:
@@ -48,14 +48,21 @@ def document_visible_to_user(user: User, doc: Document) -> bool:
         return False
     if user.system_super_admin:
         return True
-    if not can_read_documents(user):
+    work = Work.query.get(doc.work_id) if doc.work_id else None
+    via_work = bool(work and can_read_work(user, work))
+    if not can_read_documents(user) and not via_work:
         return False
-    same_choir = user.choir_id == doc.choir_id
-    via_shared_work = bool(
-        doc.work_id and user.choir_id and work_shared_to_choir(doc.work_id, user.choir_id)
-    )
-    if not same_choir and not via_shared_work:
-        return False
+    if via_work:
+        pass
+    else:
+        same_choir = user.choir_id == doc.choir_id
+        via_shared_work = bool(
+            doc.work_id
+            and user.choir_id
+            and work_shared_to_choir(doc.work_id, user.choir_id)
+        )
+        if not same_choir and not via_shared_work:
+            return False
     if is_section_leader(user) and user.voice_part is not None:
         parts: List[int] = doc.voice_parts or []
         if parts and user.voice_part not in parts:
