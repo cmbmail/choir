@@ -1,5 +1,5 @@
 /**
- * 作品管理 — 仅列表与新建，上传在作品详情页
+ * 作品管理 — 仅列表与新建，上传在乐谱详情页
  */
 (function () {
   const ADMIN_CHOIR_KEY = "choir_admin_selected_choir_id";

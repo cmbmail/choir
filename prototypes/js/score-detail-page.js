@@ -512,12 +512,6 @@
         esc(d.title || d.file_name) +
         '</div><div class="related-meta">相关乐谱</div></div></a>';
     });
-    if (work?.work_id) {
-      html +=
-        '<a class="related-item" href="极简中式-作品详情.html?work_id=' +
-        work.work_id +
-        '"><div class="related-info"><div class="related-name">作品资料（伴奏等）</div></div></a>';
-    }
     list.innerHTML = html;
   }
 
