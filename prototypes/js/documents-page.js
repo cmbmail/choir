@@ -94,6 +94,21 @@
     return base || "未命名作品";
   }
 
+  function workEntryHref(w) {
+    if (w.primary_score_id) {
+      return "极简中式-乐谱详情.html?id=" + w.primary_score_id;
+    }
+    return "极简中式-作品详情.html?work_id=" + w.work_id;
+  }
+
+  function workEntryLabel(w) {
+    return w.primary_score_id ? "查看歌谱" : "进入";
+  }
+
+  function navigateToWork(w) {
+    window.location.href = workEntryHref(w);
+  }
+
   function tabFromUrl() {
     const tab = new URLSearchParams(window.location.search).get("tab");
     if (tab === "works") return "all";
@@ -207,8 +222,8 @@
           '<td><div class="doc-name-cell">' +
           '<div class="doc-icon doc-icon-pdf"></div>' +
           '<div><div class="doc-name-text">' +
-          '<a href="极简中式-作品详情.html?work_id=' +
-          w.work_id +
+          '<a href="' +
+          workEntryHref(w) +
           '" style="color:inherit">' +
           esc(w.name) +
           "</a>" +
@@ -226,9 +241,11 @@
           "<td>" +
           formatDate(w.created_at) +
           "</td>" +
-          '<td><a class="doc-action-btn" href="极简中式-作品详情.html?work_id=' +
-          w.work_id +
-          '">进入</a></td>' +
+          '<td><a class="doc-action-btn" href="' +
+          workEntryHref(w) +
+          '">' +
+          workEntryLabel(w) +
+          "</a></td>" +
           "</tr>"
         );
       })
@@ -247,7 +264,7 @@
       const res = await ChoirAPI.post("/works", body);
       await loadWorks();
       if (res.work_id) {
-        window.location.href = "极简中式-作品详情.html?work_id=" + res.work_id;
+        navigateToWork(res);
       }
     } catch (e) {
       toast(e.message || "创建失败");
@@ -278,6 +295,7 @@
     }
 
     let ok = 0;
+    let lastImportedWork = null;
     const errors = [];
     for (const file of pdfs) {
       const workName = workNameFromPdfFilename(file.name).slice(0, 100);
@@ -290,8 +308,12 @@
         fd.append("title", file.name);
         fd.append("doc_type", "score");
         fd.append("work_id", String(work.work_id));
-        await ChoirAPI.postForm("/documents/upload", fd);
+        const uploaded = await ChoirAPI.postForm("/documents/upload", fd);
         ok += 1;
+        if (uploaded.document_id) {
+          work.primary_score_id = uploaded.document_id;
+          lastImportedWork = work;
+        }
       } catch (e) {
         errors.push(`${file.name}: ${e.message || "失败"}`);
       }
@@ -303,6 +325,9 @@
       toast("导入失败：\n" + errors.slice(0, 8).join("\n"));
     } else {
       toast(`已成功导入 ${ok} 个作品及歌谱`);
+      if (ok === 1 && lastImportedWork?.primary_score_id) {
+        navigateToWork(lastImportedWork);
+      }
     }
   }
 

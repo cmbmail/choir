@@ -52,6 +52,12 @@ def _work_payload(work: Work, choir_id, include_recordings=False):
         work_id=work.work_id, doc_type="score"
     ).count()
     item["doc_count"] = Document.query.filter_by(work_id=work.work_id).count()
+    primary_score = (
+        Document.query.filter_by(work_id=work.work_id, doc_type="score")
+        .order_by(Document.created_at.desc())
+        .first()
+    )
+    item["primary_score_id"] = primary_score.document_id if primary_score else None
     shared_names = []
     if shares:
         rows = Choir.query.filter(Choir.choir_id.in_(shares)).all()

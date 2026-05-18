@@ -19,6 +19,14 @@
     return document.getElementById(id);
   }
 
+  function esc(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   function formatSize(n) {
     if (!n) return "—";
     if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
@@ -34,6 +42,18 @@
     doc = await ChoirAPI.get(`/documents/${id}`);
     document.title = (doc.title || "乐谱") + " · 弦歌合唱团";
 
+    const bc = document.querySelector(".breadcrumb");
+    if (bc) {
+      const workCrumb = doc.work_id
+        ? `<a href="极简中式-作品详情.html?work_id=${doc.work_id}">${esc(doc.work_name || "作品")}</a><span class="sep">/</span>`
+        : "";
+      bc.innerHTML =
+        '<a href="极简中式-资料管理.html">资料管理</a><span class="sep">/</span>' +
+        workCrumb +
+        '<span class="current">' +
+        esc(doc.title || doc.file_name || "乐谱") +
+        "</span>";
+    }
     if ($("bcName")) $("bcName").textContent = doc.title || "";
     if ($("viewerTitle")) {
       $("viewerTitle").textContent = (doc.file_name || doc.title || "乐谱") + "";
@@ -158,8 +178,15 @@
       };
     }
     if ($("relatedList")) {
-      $("relatedList").innerHTML =
+      let related =
         '<a class="related-item" href="极简中式-资料管理.html">← 返回资料列表</a>';
+      if (doc.work_id) {
+        related +=
+          '<a class="related-item" href="极简中式-作品详情.html?work_id=' +
+          doc.work_id +
+          '">作品资料（伴奏等）</a>';
+      }
+      $("relatedList").innerHTML = related;
     }
   }
 
