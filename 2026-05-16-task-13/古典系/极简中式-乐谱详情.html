@@ -73,6 +73,16 @@ a{color:inherit;text-decoration:none}
 
 /* Detail Layout */
 .detail-layout{display:grid;grid-template-columns:1fr 380px;gap:1.5rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:600;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;padding:1.5rem;width:min(480px,100%);max-height:90vh;overflow-y:auto}
+.modal-box h2{font-size:1.1rem;font-weight:400;margin-bottom:1rem}
+.meta-form{display:flex;flex-direction:column;gap:0.75rem}
+.meta-form label{font-size:0.75rem;color:var(--text-secondary)}
+.meta-form input,.meta-form select{width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:3px;background:var(--silk-white)}
+.meta-form .readonly{padding:0.5rem;font-size:0.85rem;color:var(--text-primary);background:rgba(237,232,220,0.35);border-radius:3px}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
 @media(max-width:1200px){.detail-layout{grid-template-columns:1fr}}
 
 /* === SCORE VIEWER (left column) === */
@@ -443,6 +453,61 @@ a{color:inherit;text-decoration:none}
   </main>
 </div>
 
+<!-- 编辑基本信息 -->
+<div id="metaEditModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-box">
+    <h2>编辑基本信息</h2>
+    <form class="meta-form" id="metaEditForm">
+      <div>
+        <label for="metaEditWork">所属作品</label>
+        <select id="metaEditWork" required></select>
+      </div>
+      <div>
+        <label for="metaEditCategory">分类</label>
+        <input id="metaEditCategory" list="metaCategoryList" placeholder="如：古诗词"/>
+        <datalist id="metaCategoryList">
+          <option value="古诗词"></option>
+          <option value="现代合唱"></option>
+          <option value="外国作品"></option>
+          <option value="民谣改编"></option>
+          <option value="宗教合唱"></option>
+        </datalist>
+      </div>
+      <div>
+        <label for="metaEditStyle">风格</label>
+        <input id="metaEditStyle" list="metaStyleList" placeholder="如：柔美抒情"/>
+        <datalist id="metaStyleList">
+          <option value="气势恢宏"></option>
+          <option value="柔美抒情"></option>
+          <option value="轻快活泼"></option>
+          <option value="庄严神圣"></option>
+        </datalist>
+      </div>
+      <div>
+        <label for="metaEditCollection">合集</label>
+        <input id="metaEditCollection" list="metaCollectionList" placeholder="如：春之季"/>
+        <datalist id="metaCollectionList">
+          <option value="春之季"></option>
+          <option value="端午特辑"></option>
+          <option value="中秋晚会"></option>
+          <option value="年终汇演"></option>
+        </datalist>
+      </div>
+      <div>
+        <label for="metaEditKey">调性</label>
+        <input id="metaEditKey" placeholder="如：D 大调"/>
+      </div>
+      <div>
+        <label>上传人</label>
+        <div class="readonly" id="metaEditUploader">—</div>
+      </div>
+    </form>
+    <div class="modal-actions">
+      <button type="button" class="btn-mini" id="metaEditCancel">取消</button>
+      <button type="button" class="btn-mini" style="background:var(--ink-gold);color:#fff;border-color:var(--ink-gold)" id="metaEditSave">保存</button>
+    </div>
+  </div>
+</div>
 
 <script src="/js/api.js"></script>
 <script src="/js/auth.js"></script>
@@ -450,6 +515,6 @@ a{color:inherit;text-decoration:none}
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/score-detail-page.js?v=20260526"></script>
+<script src="/js/score-detail-page.js?v=20260528"></script>
 </body>
 </html>

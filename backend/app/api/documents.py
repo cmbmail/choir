@@ -226,7 +226,7 @@ def documents_patch(document_id: int):
         doc.category = (data.get("category") or "").strip() or None
     if "style" in data:
         doc.style = (data.get("style") or "").strip() or None
-    if "collection_name" in data:
+    if "collection_name" in data or "collection" in data:
         doc.collection_name = (data.get("collection") or data.get("collection_name") or "").strip() or None
     if "description" in data:
         doc.description = (data.get("description") or "").strip() or None

@@ -18,6 +18,7 @@
   let scoreDoc = null;
   let workDocs = [];
   let scorePreviewUrl = null;
+  let choirWorks = [];
 
   function $(id) {
     return document.getElementById(id);
@@ -544,26 +545,105 @@
     renderIntro();
   }
 
-  async function editMeta() {
+  async function loadChoirWorks() {
+    let path = "/works?include_recordings=0";
+    const choirId = work?.choir_id || currentUser?.choir_id;
+    if (currentUser?.system_super_admin && choirId) {
+      path += "&choir_id=" + choirId;
+    }
+    const data = await ChoirAPI.get(path);
+    choirWorks = data.works || [];
+  }
+
+  function closeMetaModal() {
+    const modal = $("metaEditModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  async function openMetaModal() {
     if (!scoreDoc?.document_id) {
       alert("请先上传乐谱");
       return;
     }
-    const category = prompt("分类", scoreDoc.category || "");
-    if (category === null) return;
-    const style = prompt("风格", scoreDoc.style || "");
-    if (style === null) return;
-    const collection = prompt("合集", scoreDoc.collection || scoreDoc.collection_name || "");
-    if (collection === null) return;
-    const musical_key = prompt("调性", scoreDoc.musical_key || "");
-    if (musical_key === null) return;
-    scoreDoc = await patchDoc(scoreDoc.document_id, {
-      category,
-      style,
-      collection_name: collection,
-      musical_key,
-    });
-    renderMeta();
+    await loadChoirWorks();
+    const sel = $("metaEditWork");
+    if (!sel) return;
+    if (!choirWorks.length) {
+      alert("暂无可用作品，请先在资料管理中创建作品");
+      return;
+    }
+    const currentWorkId = work?.work_id || scoreDoc.work_id;
+    sel.innerHTML = choirWorks
+      .map((w) => {
+        const label =
+          esc(w.name) + (w.composer ? " · " + esc(w.composer) : "");
+        const selected = w.work_id === currentWorkId ? " selected" : "";
+        return (
+          '<option value="' +
+          w.work_id +
+          '"' +
+          selected +
+          ">" +
+          label +
+          "</option>"
+        );
+      })
+      .join("");
+
+    const d = scoreDoc;
+    if ($("metaEditCategory")) $("metaEditCategory").value = d.category || "";
+    if ($("metaEditStyle")) $("metaEditStyle").value = d.style || "";
+    if ($("metaEditCollection")) {
+      $("metaEditCollection").value = d.collection || d.collection_name || "";
+    }
+    if ($("metaEditKey")) $("metaEditKey").value = d.musical_key || "";
+    if ($("metaEditUploader")) {
+      $("metaEditUploader").textContent = d.uploader || "—";
+    }
+
+    const modal = $("metaEditModal");
+    if (modal) {
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+  }
+
+  async function saveMetaModal() {
+    if (!scoreDoc?.document_id) return;
+    const sel = $("metaEditWork");
+    const workId = sel ? parseInt(sel.value, 10) : NaN;
+    if (!Number.isFinite(workId)) {
+      alert("请选择所属作品");
+      return;
+    }
+
+    const body = {
+      work_id: workId,
+      category: ($("metaEditCategory")?.value || "").trim(),
+      style: ($("metaEditStyle")?.value || "").trim(),
+      collection_name: ($("metaEditCollection")?.value || "").trim(),
+      musical_key: ($("metaEditKey")?.value || "").trim(),
+    };
+
+    const prevWorkId = work?.work_id;
+    scoreDoc = await patchDoc(scoreDoc.document_id, body);
+
+    if (workId !== prevWorkId) {
+      work = await ChoirAPI.get("/works/" + workId);
+      const qs = new URLSearchParams(window.location.search);
+      qs.set("id", String(scoreDoc.document_id));
+      qs.delete("work_id");
+      history.replaceState(null, "", "?" + qs.toString());
+      await refresh();
+    } else {
+      renderMeta();
+      setBreadcrumb();
+      setViewerTitle();
+    }
+    closeMetaModal();
   }
 
   async function editVideoSummary() {
@@ -651,7 +731,16 @@
 
   function bindUi() {
     $("btnEditIntro")?.addEventListener("click", () => editIntro().catch((e) => alert(e.message)));
-    $("btnEditMeta")?.addEventListener("click", () => editMeta().catch((e) => alert(e.message)));
+    $("btnEditMeta")?.addEventListener("click", () =>
+      openMetaModal().catch((e) => alert(e.message || "打开失败"))
+    );
+    $("metaEditCancel")?.addEventListener("click", closeMetaModal);
+    $("metaEditSave")?.addEventListener("click", () =>
+      saveMetaModal().catch((e) => alert(e.message || "保存失败"))
+    );
+    $("metaEditModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "metaEditModal") closeMetaModal();
+    });
     $("btnEditVideoDesc")?.addEventListener("click", () =>
       editVideoSummary().catch((e) => alert(e.message))
     );
