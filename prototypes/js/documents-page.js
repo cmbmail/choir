@@ -126,7 +126,8 @@
     }
     sel.addEventListener("change", () => {
       sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
-      loadWorks().catch((e) => toast(e.message || "加载失败"));
+      const reload = isWorksTab() ? loadWorks() : loadDocs();
+      reload.catch((e) => toast(e.message || "加载失败"));
     });
   }
 
@@ -233,6 +234,15 @@
     if (filterCategory !== "all") p.set("category", filterCategory);
     if (filterCollection !== "all") p.set("collection", filterCollection);
     if (searchKeyword) p.set("q", searchKeyword);
+    if (currentUser?.system_super_admin) {
+      const cid = getAdminChoirId();
+      if (!cid) {
+        docs = [];
+        renderDocs();
+        return;
+      }
+      p.set("choir_id", String(cid));
+    }
     const qs = p.toString() ? `?${p}` : "";
     const data = await ChoirAPI.get(`/documents${qs}`);
     docs = data.documents || [];
@@ -258,12 +268,6 @@
         const title = d.title || d.name || "未命名";
         const isScore = d.doc_type === "score" || d.type === "score";
         let actionHtml = "";
-        if (d.work_id) {
-          actionHtml +=
-            '<a class="doc-action-btn" href="极简中式-作品详情.html?work_id=' +
-            d.work_id +
-            '">作品</a> ';
-        }
         if (isScore) {
           actionHtml +=
             '<a class="doc-action-btn" href="极简中式-乐谱详情.html?id=' +
@@ -277,17 +281,11 @@
             '" data-title="' +
             esc(title) +
             '">▶ 播放</button>';
-        } else if (d.stream_url || d.cde_file_id) {
+        } else if (d.stream_url) {
           actionHtml +=
             '<button type="button" class="doc-action-btn" data-play-stream="' +
             d.document_id +
-            '">▶ 播放</button>';
-          actionHtml +=
-            '<button type="button" class="doc-action-btn" data-dl="' +
-            d.document_id +
-            '" data-name="' +
-            esc(d.file_name || title) +
-            '">下载</button>';
+            '">▶ 在线播放</button>';
         }
         let delBtn = "";
         if (canWrite()) {
@@ -349,15 +347,6 @@
           await window.ChoirMedia.playDocument(btn.dataset.playStream);
         } catch (e) {
           toast(e.message || "无法播放");
-        }
-      });
-    });
-    body.querySelectorAll("[data-dl]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        try {
-          await window.ChoirMedia.downloadDocument(btn.dataset.dl, btn.dataset.name);
-        } catch (e) {
-          toast(e.message || "下载失败");
         }
       });
     });

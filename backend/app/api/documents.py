@@ -2,6 +2,7 @@ import json
 import mimetypes
 
 from flask import jsonify, redirect, request, send_file
+from sqlalchemy import or_
 
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
@@ -26,7 +27,7 @@ from app.services.document_access import (
 )
 from app.services.operation_log import write_operation_log
 from app.services.upload_validation import validate_upload
-from app.services.work_access import can_read_work, can_write_work
+from app.services.work_access import can_read_work, can_write_work, works_for_choir_query
 
 
 def _choir_scope(user):
@@ -55,7 +56,16 @@ def documents_list():
             return jsonify({"error": "缺少 choir_id"}), 400
         if not choir_id:
             return jsonify({"documents": []})
-        q = Document.query.filter_by(choir_id=choir_id)
+        work_ids = [
+            wid
+            for (wid,) in works_for_choir_query(choir_id).with_entities(Work.work_id).all()
+        ]
+        if work_ids:
+            q = Document.query.filter(
+                or_(Document.choir_id == choir_id, Document.work_id.in_(work_ids))
+            )
+        else:
+            q = Document.query.filter_by(choir_id=choir_id)
 
     doc_type = request.args.get("type") or request.args.get("doc_type")
     category = request.args.get("category")

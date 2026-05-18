@@ -264,6 +264,13 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
 
+    <div class="filter-bar" id="adminChoirBar" style="margin-bottom:1rem">
+      <div id="adminChoirWrap" class="filter-group" hidden>
+        <span class="filter-label">所属团</span>
+        <select class="filter-select" id="adminChoirSelect"></select>
+      </div>
+    </div>
+
     <div class="stats-row" id="docsStatsRow">
       <div class="stat-box">
         <div class="stat-value" id="statTotal">16</div>
@@ -293,10 +300,6 @@ a{color:inherit;text-decoration:none}
 
     <div id="worksPanel">
       <div class="filter-bar">
-        <div id="adminChoirWrap" class="filter-group" hidden>
-          <span class="filter-label">所属团</span>
-          <select class="filter-select" id="adminChoirSelect"></select>
-        </div>
         <input type="text" class="search-input" id="searchWork" placeholder="搜索作品名称、作曲者..." style="flex:1;min-width:200px"/>
       </div>
       <div class="work-list" id="workList"></div>
@@ -401,7 +404,7 @@ function closeVideoModal() {
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260518c"></script>
+<script src="/js/documents-page.js?v=20260518d"></script>
 
 </body>
 </html>
