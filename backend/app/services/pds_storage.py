@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import http.client
 import logging
 import os
 import re
-import urllib.error
-import urllib.request
 from typing import BinaryIO, Dict, Optional, Tuple
+from urllib.parse import urlparse
 
 from flask import current_app
 
@@ -94,6 +94,40 @@ def _client():
 def _safe_name(name: str) -> str:
     base = os.path.basename(name or "file").strip() or "file"
     return re.sub(r"[/\\]+", "_", base)[:200]
+
+
+def _put_upload_url(upload_url: str, data: bytes, timeout: int = 300) -> None:
+    """PUT file bytes to PDS/OSS presigned URL.
+
+    Presigned URLs reject extra headers (urllib adds User-Agent, etc.).
+    Only Content-Length is sent, per Aliyun PDS upload guide.
+    """
+    if not data:
+        raise PdsStorageError("空文件无法上传")
+    parsed = urlparse(upload_url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise PdsStorageError("无效的上传地址")
+    path = parsed.path or "/"
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
+    conn = http.client.HTTPSConnection(parsed.hostname, timeout=timeout)
+    try:
+        conn.request(
+            "PUT",
+            path,
+            body=data,
+            headers={"Content-Length": str(len(data))},
+        )
+        res = conn.getresponse()
+        body = res.read(512)
+        if res.status >= 400:
+            snippet = body.decode("utf-8", errors="replace")[:200]
+            raise PdsStorageError(
+                f"上传分片失败 HTTP {res.status}"
+                + (f": {snippet}" if snippet else "")
+            )
+    finally:
+        conn.close()
 
 
 def _response_body(resp):
@@ -200,15 +234,7 @@ def upload_file(
     if not upload_id or not file_id:
         raise PdsStorageError("PDS 上传任务信息不完整")
 
-    req = urllib.request.Request(upload_url, data=data, method="PUT")
-    if content_type:
-        req.add_header("Content-Type", content_type)
-    try:
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            if resp.status and resp.status >= 400:
-                raise PdsStorageError(f"上传分片失败 HTTP {resp.status}")
-    except urllib.error.URLError as e:
-        raise PdsStorageError(f"上传分片失败: {e}") from e
+    _put_upload_url(upload_url, data)
 
     complete_req = models.CompleteFileRequest(
         drive_id=drive_id,
