@@ -122,8 +122,9 @@ def documents_upload():
         return jsonify({"error": "声部长只能上传本声部资料"}), 403
 
     work_id = request.form.get("work_id", type=int)
-    if doc_type == "score" and not work_id:
-        return jsonify({"error": "上传乐谱须指定作品"}), 400
+    work_bound_types = ("score", "accompaniment", "performance_video", "notes")
+    if doc_type in work_bound_types and not work_id:
+        return jsonify({"error": "上传作品资料须指定作品"}), 400
     if work_id:
         work = Work.query.get(work_id)
         if not work or not can_write_work(user, work):

@@ -98,6 +98,45 @@ def test_works_and_recordings(client, choir_admin_headers, app_phase2):
     assert res.data == audio
 
 
+def test_work_asset_doc_types(client, choir_admin_headers, app_phase2):
+    res = client.post(
+        "/api/works",
+        json={"name": "资产类型测试", "composer": "测试"},
+        headers=choir_admin_headers,
+    )
+    assert res.status_code == 201
+    work_id = res.get_json()["work_id"]
+
+    for doc_type, filename, data in (
+        ("accompaniment", "backing.mp3", b"ID3fake"),
+        ("performance_video", "perf.mp4", b"\x00\x00\x00\x20ftyp"),
+        ("notes", "readme.txt", b"notes text"),
+        ("notes", "readme2.pdf", b"%PDF-notes"),
+    ):
+        up = client.post(
+            "/api/documents/upload",
+            data={
+                "file": (io.BytesIO(data), filename),
+                "title": filename,
+                "doc_type": doc_type,
+                "work_id": str(work_id),
+            },
+            headers=choir_admin_headers,
+            content_type="multipart/form-data",
+        )
+        assert up.status_code == 201, (doc_type, up.get_json())
+
+    listed = client.get(
+        f"/api/documents?work_id={work_id}",
+        headers=choir_admin_headers,
+    )
+    assert listed.status_code == 200
+    types = {d["doc_type"] for d in listed.get_json()["documents"]}
+    assert "accompaniment" in types
+    assert "performance_video" in types
+    assert sum(1 for d in listed.get_json()["documents"] if d["doc_type"] == "notes") == 2
+
+
 def test_super_admin_works_list_needs_choir_id(client, app_phase2):
     with client.application.app_context():
         choir = Choir.query.first()

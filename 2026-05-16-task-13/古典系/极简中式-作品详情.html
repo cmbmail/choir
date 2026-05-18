@@ -138,6 +138,26 @@ a{color:inherit;text-decoration:none}
 .empty-state p{font-size:0.85rem;margin-top:0.5rem}
 .empty-state .hint{font-size:0.7rem;margin-top:0.25rem}
 
+/* === WORK ASSET SECTIONS === */
+.work-assets{display:flex;flex-direction:column;gap:1.25rem}
+.asset-section{border:1px solid var(--border);border-radius:4px;background:var(--silk-white);padding:1rem 1.25rem 1.25rem}
+.asset-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:0.35rem}
+.asset-section-title{font-size:1rem;font-weight:400;color:var(--ink-black);letter-spacing:0.03em}
+.asset-section-count{font-size:0.7rem;color:var(--text-muted)}
+.asset-section-hint{font-size:0.72rem;color:var(--text-muted);margin-bottom:0.75rem}
+.asset-list{list-style:none;display:flex;flex-direction:column;gap:0.5rem;margin:0 0 0.75rem;padding:0}
+.asset-file{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:0.65rem 0.75rem;border:1px solid var(--border);border-radius:4px;background:rgba(237,232,220,0.15)}
+.asset-file-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.2rem}
+.asset-file-name{font-size:0.85rem;color:var(--text-primary);word-break:break-all}
+.asset-file-meta{font-size:0.68rem;color:var(--text-muted)}
+.asset-file-actions{display:flex;flex-wrap:wrap;gap:0.35rem;flex-shrink:0}
+.asset-action{padding:0.3rem 0.55rem;border:1px solid var(--border);border-radius:3px;font-size:0.68rem;color:var(--text-secondary);background:var(--silk-white);cursor:pointer;text-decoration:none}
+.asset-action:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
+.asset-action.danger{color:var(--error);border-color:rgba(176,48,48,0.35)}
+.asset-empty{padding:1.25rem;text-align:center;font-size:0.8rem;color:var(--text-muted);border:1px dashed var(--border);border-radius:4px;margin-bottom:0.75rem}
+.asset-upload-btn{margin-top:0.25rem}
+.share-chk{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.8rem;cursor:pointer}
+
 /* === FOOTER === */
 .footer{background:var(--silk-white);border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;flex-shrink:0}
 .footer-text{font-size:0.7rem;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase}
@@ -254,7 +274,6 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="page-actions">
         <button type="button" class="btn btn-outline" id="btnEditWork" hidden>编辑作品</button>
-        <button type="button" class="btn btn-gold" id="btnUploadDoc" data-perm="documents.write" hidden>上传资料</button>
       </div>
     </div>
     <div id="sharePanel" style="padding:1rem 1.25rem;margin-bottom:1.5rem;border:1px solid var(--border);border-radius:4px;background:var(--silk-white)" hidden>
@@ -262,31 +281,7 @@ a{color:inherit;text-decoration:none}
       <div id="shareChoirList" style="display:flex;flex-wrap:wrap;gap:0.75rem 1.25rem;margin-bottom:0.75rem"></div>
       <button type="button" class="btn btn-outline" id="btnSaveShare">保存共享</button>
     </div>
-    <div style="display:flex;gap:0;margin-bottom:1rem;border-bottom:1px solid var(--border)">
-      <div class="doc-tab active" data-type="score" style="padding:0.75rem 1rem;cursor:pointer;border-bottom:2px solid var(--ink-gold);color:var(--ink-gold)">乐谱</div>
-      <div class="doc-tab" data-type="perf" style="padding:0.75rem 1rem;cursor:pointer;color:var(--text-muted)">演出</div>
-      <div class="doc-tab" data-type="rehearsal" style="padding:0.75rem 1rem;cursor:pointer;color:var(--text-muted)">排练</div>
-      <div class="doc-tab" data-type="video" style="padding:0.75rem 1rem;cursor:pointer;color:var(--text-muted)">视频</div>
-      <div class="doc-tab" data-type="audio" style="padding:0.75rem 1rem;cursor:pointer;color:var(--text-muted)">音频</div>
-      <div class="doc-tab" data-type="other" style="padding:0.75rem 1rem;cursor:pointer;color:var(--text-muted)">其他</div>
-    </div>
-    <div style="border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--silk-white)">
-      <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
-        <span>作品资料</span>
-        <span id="docCount" style="font-size:0.75rem;color:var(--text-muted)">共 0 条</span>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
-        <thead><tr style="background:rgba(237,232,220,0.3)">
-          <th style="text-align:left;padding:0.6rem 1rem">名称</th>
-          <th style="text-align:left;padding:0.6rem">类型</th>
-          <th style="text-align:left;padding:0.6rem">上传人</th>
-          <th style="text-align:left;padding:0.6rem">日期</th>
-          <th style="text-align:left;padding:0.6rem">大小</th>
-          <th style="text-align:left;padding:0.6rem">操作</th>
-        </tr></thead>
-        <tbody id="docTableBody"></tbody>
-      </table>
-    </div>
+    <div id="workAssetSections" class="work-assets"></div>
   </main>
 </div>
 

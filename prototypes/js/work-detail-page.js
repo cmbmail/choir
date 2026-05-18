@@ -1,22 +1,50 @@
 /**
- * 作品详情 — 编辑作品、共享、上传/管理资料
+ * 作品详情 — 伴奏 / 献唱视频 / 歌谱 / 说明（分区上传，说明可多文件）
  */
 (function () {
-  const DOC_TYPES = [
-    { id: "score", label: "乐谱" },
-    { id: "perf", label: "演出资料" },
-    { id: "rehearsal", label: "排练资料" },
-    { id: "video", label: "视频" },
-    { id: "audio", label: "音频" },
-    { id: "other", label: "其他" },
+  const ASSET_SECTIONS = [
+    {
+      id: "accompaniment",
+      label: "伴奏",
+      hint: "音频文件，如 MP3、WAV",
+      accept: "audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg",
+      multiple: true,
+    },
+    {
+      id: "performance_video",
+      label: "献唱视频",
+      hint: "视频文件，如 MP4、MOV",
+      accept: "video/*,.mp4,.mov,.webm,.m4v",
+      multiple: true,
+    },
+    {
+      id: "score",
+      label: "歌谱",
+      hint: "PDF 或图片",
+      accept: ".pdf,image/*,.jpg,.jpeg,.png,.webp",
+      multiple: true,
+    },
+    {
+      id: "notes",
+      label: "说明",
+      hint: "可上传多个文件（文稿、图片、PDF 等）",
+      accept: "*",
+      multiple: true,
+    },
   ];
+
+  const LEGACY_SECTION = {
+    audio: "accompaniment",
+    video: "performance_video",
+    perf: "notes",
+    rehearsal: "notes",
+    other: "notes",
+  };
 
   let currentUser = null;
   let work = null;
   let docs = [];
   let shareTargets = [];
-  let currentDocTab = "score";
-  let allWorks = [];
 
   function $(id) {
     return document.getElementById(id);
@@ -33,6 +61,12 @@
   function getWorkId() {
     const p = new URLSearchParams(window.location.search);
     return parseInt(p.get("work_id") || "0", 10);
+  }
+
+  function sectionForDoc(d) {
+    const t = (d.doc_type || "").toLowerCase();
+    if (ASSET_SECTIONS.some((s) => s.id === t)) return t;
+    return LEGACY_SECTION[t] || "notes";
   }
 
   function canWrite() {
@@ -60,6 +94,13 @@
     return iso.slice(0, 10);
   }
 
+  function isPlayable(d) {
+    const mime = (d.mime_type || "").toLowerCase();
+    const ext = (d.ext || "").toLowerCase();
+    if (mime.startsWith("audio/") || mime.startsWith("video/")) return true;
+    return ["mp3", "wav", "m4a", "aac", "mp4", "mov", "webm"].includes(ext);
+  }
+
   async function loadWork(id) {
     work = await ChoirAPI.get(`/works/${id}`);
     document.title = (work.name || "作品") + " · 弦歌合唱团";
@@ -72,109 +113,148 @@
         formatDate(work.created_at);
     }
     const editBtn = $("btnEditWork");
-    const uploadBtn = $("btnUploadDoc");
     if (editBtn) editBtn.hidden = !canWrite();
-    if (uploadBtn) uploadBtn.hidden = !canWrite();
     const sharePanel = $("sharePanel");
     if (sharePanel) sharePanel.hidden = !canShare();
   }
 
   async function loadDocs() {
     const id = getWorkId();
-    const p = new URLSearchParams({ work_id: String(id) });
-    if (currentDocTab !== "all") p.set("type", currentDocTab);
-    const data = await ChoirAPI.get("/documents?" + p);
+    const data = await ChoirAPI.get("/documents?" + new URLSearchParams({ work_id: String(id) }));
     docs = data.documents || [];
-    renderDocs();
+    renderSections();
   }
 
-  function renderDocs() {
-    const body = $("docTableBody");
-    const count = $("docCount");
-    if (count) count.textContent = "共 " + docs.length + " 条";
-    if (!body) return;
-    if (!docs.length) {
-      body.innerHTML =
-        '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无资料，点击上传</td></tr>';
-      return;
-    }
-    body.innerHTML = docs
-      .map((d) => {
-        const title = d.title || d.file_name || "未命名";
-        let actions =
-          d.doc_type === "score"
-            ? `<a class="doc-action-btn" href="极简中式-乐谱详情.html?id=${d.document_id}">查看</a> `
-            : "";
-        if (d.stream_url) {
-          actions += `<button type="button" class="doc-action-btn" data-play="${d.document_id}">播放</button> `;
-        }
-        if (canWrite()) {
-          actions += `<button type="button" class="doc-action-btn" data-edit="${d.document_id}">编辑</button> `;
-          actions += `<button type="button" class="doc-action-btn danger" data-del="${d.document_id}">删除</button>`;
-        }
-        return `<tr>
-          <td>${esc(title)}</td>
-          <td>${esc(d.doc_type)}</td>
-          <td>${esc(d.uploader || "—")}</td>
-          <td>${formatDate(d.created_at)}</td>
-          <td>${formatSize(d.file_size)}</td>
-          <td style="display:flex;flex-wrap:wrap;gap:4px">${actions}</td>
-        </tr>`;
-      })
-      .join("");
+  function docsForSection(sectionId) {
+    return docs.filter((d) => sectionForDoc(d) === sectionId);
+  }
 
-    body.querySelectorAll("[data-play]").forEach((btn) => {
+  function renderFileRow(d) {
+    const title = d.title || d.file_name || "未命名";
+    let actions = "";
+    if (sectionForDoc(d) === "score") {
+      actions += `<a class="asset-action" href="极简中式-乐谱详情.html?id=${d.document_id}">查看</a>`;
+    }
+    if (isPlayable(d)) {
+      actions += `<button type="button" class="asset-action" data-play="${d.document_id}">播放</button>`;
+    }
+    if (canWrite()) {
+      actions += `<button type="button" class="asset-action" data-edit="${d.document_id}">重命名</button>`;
+      actions += `<button type="button" class="asset-action danger" data-del="${d.document_id}">删除</button>`;
+    }
+    return `<li class="asset-file">
+      <div class="asset-file-main">
+        <span class="asset-file-name">${esc(title)}</span>
+        <span class="asset-file-meta">${formatSize(d.file_size)} · ${formatDate(d.created_at)} · ${esc(d.uploader || "—")}</span>
+      </div>
+      <div class="asset-file-actions">${actions}</div>
+    </li>`;
+  }
+
+  function renderSections() {
+    const root = $("workAssetSections");
+    if (!root) return;
+    const write = canWrite();
+
+    root.innerHTML = ASSET_SECTIONS.map((sec) => {
+      const list = docsForSection(sec.id);
+      const filesHtml = list.length
+        ? `<ul class="asset-list">${list.map(renderFileRow).join("")}</ul>`
+        : `<div class="asset-empty">暂无${esc(sec.label)}</div>`;
+      const uploadBtn = write
+        ? `<button type="button" class="btn btn-outline asset-upload-btn" data-upload="${sec.id}">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            上传${esc(sec.label)}${sec.multiple ? "（可多选）" : ""}
+          </button>`
+        : "";
+      return `<section class="asset-section" data-section="${sec.id}">
+        <div class="asset-section-head">
+          <h2 class="asset-section-title">${esc(sec.label)}</h2>
+          <span class="asset-section-count">${list.length} 个文件</span>
+        </div>
+        <p class="asset-section-hint">${esc(sec.hint)}</p>
+        ${filesHtml}
+        ${uploadBtn}
+      </section>`;
+    }).join("");
+
+    root.querySelectorAll("[data-play]").forEach((btn) => {
       btn.addEventListener("click", () => window.ChoirMedia.playDocument(btn.dataset.play));
     });
-    body.querySelectorAll("[data-del]").forEach((btn) => {
+    root.querySelectorAll("[data-del]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (!confirm("确定删除？")) return;
+        if (!confirm("确定删除该文件？")) return;
         await ChoirAPI.del(`/documents/${btn.dataset.del}`);
         await loadDocs();
         await loadWork(getWorkId());
       });
     });
-    body.querySelectorAll("[data-edit]").forEach((btn) => {
-      btn.addEventListener("click", () => editDocument(parseInt(btn.dataset.edit, 10)));
+    root.querySelectorAll("[data-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => renameDocument(parseInt(btn.dataset.edit, 10)));
+    });
+    root.querySelectorAll("[data-upload]").forEach((btn) => {
+      btn.addEventListener("click", () => openUpload(btn.dataset.upload));
     });
   }
 
-  async function editDocument(docId) {
+  function openUpload(sectionId) {
+    const sec = ASSET_SECTIONS.find((s) => s.id === sectionId);
+    if (!sec || !canWrite()) return;
+    let input = document.querySelector(`input[data-file-input="${sectionId}"]`);
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "file";
+      input.hidden = true;
+      input.dataset.fileInput = sectionId;
+      input.accept = sec.accept;
+      if (sec.multiple) input.multiple = true;
+      document.body.appendChild(input);
+      input.addEventListener("change", () => {
+        const files = Array.from(input.files || []);
+        input.value = "";
+        if (files.length) uploadFiles(sectionId, files);
+      });
+    }
+    input.accept = sec.accept;
+    input.multiple = !!sec.multiple;
+    input.click();
+  }
+
+  async function uploadFiles(sectionId, files) {
+    let ok = 0;
+    let lastErr = null;
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("title", file.name);
+      fd.append("doc_type", sectionId);
+      fd.append("work_id", String(work.work_id));
+      try {
+        await ChoirAPI.postForm("/documents/upload", fd);
+        ok += 1;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    await loadDocs();
+    await loadWork(work.work_id);
+    if (ok && !lastErr) {
+      alert(ok > 1 ? `已上传 ${ok} 个文件` : "上传成功");
+    } else if (ok && lastErr) {
+      alert(`部分成功：${ok} 个已上传；失败：${lastErr.message || "未知错误"}`);
+    } else if (lastErr) {
+      alert(lastErr.message || "上传失败");
+    }
+  }
+
+  async function renameDocument(docId) {
     const d = docs.find((x) => x.document_id === docId);
     if (!d) return;
-    const title = prompt("资料标题", d.title || "");
-    if (title === null) return;
-    const category = prompt("分类（可选）", d.category || "") ?? d.category;
-    const style = prompt("风格（可选）", d.style || "") ?? d.style;
-    const collection = prompt("合集（可选）", d.collection || "") ?? d.collection;
-
-    let workId = d.work_id;
-    if (allWorks.length === 0) {
-      const wdata = await ChoirAPI.get("/works?include_recordings=0");
-      allWorks = wdata.works || [];
-    }
-    const opts = allWorks
-      .filter((w) => w.is_owner !== false)
-      .map((w) => `${w.work_id}:${w.name}`)
-      .join("\n");
-    const pick = prompt(
-      `所属作品 ID（留空取消关联）\n当前: ${d.work_id || "无"}\n可选:\n${opts}`,
-      d.work_id ? String(d.work_id) : ""
-    );
-    if (pick === null) return;
-    const body = {
-      title: (title || d.title).trim(),
-      category: category || null,
-      style: style || null,
-      collection_name: collection || null,
-    };
-    if (pick.trim() === "") body.work_id = null;
-    else body.work_id = parseInt(pick.trim(), 10);
-
+    const title = prompt("显示名称", d.title || d.file_name || "");
+    if (title === null || !title.trim()) return;
     try {
-      await ChoirAPI.patch(`/documents/${docId}`, body);
+      await ChoirAPI.patch(`/documents/${docId}`, { title: title.trim() });
       await loadDocs();
-      alert("已保存");
     } catch (e) {
       alert(e.message || "保存失败");
     }
@@ -217,34 +297,6 @@
     }
   }
 
-  function bindDocTabs() {
-    document.querySelectorAll(".doc-tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".doc-tab").forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        currentDocTab = tab.dataset.type;
-        loadDocs();
-      });
-    });
-  }
-
-  async function onUpload(file) {
-    if (!file || !canWrite()) return;
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("title", file.name);
-    fd.append("doc_type", currentDocTab === "all" ? "other" : currentDocTab);
-    fd.append("work_id", String(work.work_id));
-    try {
-      await ChoirAPI.postForm("/documents/upload", fd);
-      await loadDocs();
-      await loadWork(work.work_id);
-      alert("上传成功");
-    } catch (e) {
-      alert(e.message || "上传失败");
-    }
-  }
-
   async function editWorkMeta() {
     const name = prompt("作品名称", work.name || "");
     if (!name || !name.trim()) return;
@@ -273,26 +325,8 @@
     window.ChoirPermissions.applyNavPermissions(currentUser);
     await loadWork(id);
     await loadSharePanel();
-    bindDocTabs();
-
     $("btnEditWork")?.addEventListener("click", editWorkMeta);
     $("btnSaveShare")?.addEventListener("click", saveShares);
-
-    const uploadBtn = $("btnUploadDoc");
-    let input = $("docFileInput");
-    if (!input) {
-      input = document.createElement("input");
-      input.type = "file";
-      input.id = "docFileInput";
-      input.hidden = true;
-      document.body.appendChild(input);
-      input.addEventListener("change", () => {
-        if (input.files[0]) onUpload(input.files[0]);
-        input.value = "";
-      });
-    }
-    uploadBtn?.addEventListener("click", () => input.click());
-
     await loadDocs();
   }
 
