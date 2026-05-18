@@ -2,7 +2,7 @@ import json
 import mimetypes
 from io import BytesIO
 
-from flask import jsonify, request, send_file
+from flask import jsonify, redirect, request, send_file
 
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
@@ -11,7 +11,9 @@ from app.models import Choir, Document, Recording, Work, WorkShare
 from app.services.cde_service import (
     CdeError,
     delete_file,
-    make_stream_token,
+    get_download_url,
+    is_pds_mode,
+    make_play_url,
     resolve_file_path,
     upload_file,
     verify_stream_token,
@@ -308,6 +310,13 @@ def recordings_stream(recording_id: int):
     elif not rec.cde_file_id or not verify_stream_token(rec.choir_id, rec.cde_file_id, token):
         return jsonify({"error": "链接无效或已过期"}), 403
 
+    if is_pds_mode():
+        try:
+            url = get_download_url(rec.cde_file_id or "", mime_type=rec.mime_type)
+            return redirect(url)
+        except CdeError as e:
+            return jsonify({"error": str(e)}), 404
+
     path = resolve_file_path(rec.choir_id, rec.cde_file_id or "")
     if not path:
         return jsonify({"error": "文件不存在"}), 404
@@ -328,7 +337,15 @@ def recordings_play_url(recording_id: int):
     if not rec.cde_file_id:
         return jsonify({"error": "无可播放文件"}), 404
     ttl = int(request.args.get("ttl", 3600))
-    token = make_stream_token(rec.choir_id, rec.cde_file_id, ttl)
-    return jsonify(
-        {"url": f"/api/recordings/{rec.recording_id}/stream?token={token}", "expires_in": ttl}
-    )
+    try:
+        payload = make_play_url(
+            "recordings",
+            rec.recording_id,
+            rec.choir_id,
+            rec.cde_file_id,
+            ttl,
+            rec.mime_type,
+        )
+        return jsonify({"url": payload["url"], "expires_in": payload["expires_in"]})
+    except CdeError as e:
+        return jsonify({"error": str(e)}), 503

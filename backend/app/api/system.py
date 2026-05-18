@@ -3,7 +3,8 @@ from flask import current_app, jsonify, request
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
 from app.models import OperationLog, User
-from app.services.cde_service import is_mock_mode, storage_usage_bytes
+from app.services.cde_service import is_mock_mode, is_pds_mode, storage_usage_bytes
+from app.services import pds_storage
 from app.services.permissions import has_permission
 
 
@@ -20,12 +21,26 @@ def system_storage():
 
     used = storage_usage_bytes(choir_id)
     quota = int(current_app.config.get("CDE_STORAGE_QUOTA_BYTES", 50 * 1024**3))
+    if is_pds_mode():
+        try:
+            drive_used, drive_total = pds_storage.drive_usage_bytes()
+            if drive_used:
+                used = drive_used
+            if drive_total:
+                quota = drive_total
+        except Exception:
+            pass
+    mode = "mock"
+    if is_pds_mode():
+        mode = "pds"
+    elif not is_mock_mode():
+        mode = "cde"
     return jsonify(
         {
             "choir_id": choir_id,
             "used_bytes": used,
             "quota_bytes": quota,
-            "cde_mode": "mock" if is_mock_mode() else "cde",
+            "cde_mode": mode,
             "usage_percent": round(used * 100.0 / quota, 2) if quota else 0,
         }
     )

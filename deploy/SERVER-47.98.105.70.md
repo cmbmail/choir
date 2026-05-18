@@ -319,7 +319,10 @@ mkdir -p /opt/choir/storage && chown choir:choir /opt/choir/storage
 systemctl restart choir-api
 ```
 
-阶段二环境变量（`.env`）：`CDE_MODE=mock`、`CDE_STORAGE_ROOT=/opt/choir/storage`（未配置阿里云 CDE 时使用本地 mock 存储）。
+阶段二环境变量（`.env`）：
+
+- **本地 mock**：`CDE_MODE=mock`、`CDE_STORAGE_ROOT=/opt/choir/storage`
+- **PDS 企业版真机**：`CDE_MODE=pds` + RAM AK/SK + `CDE_DOMAIN_ID` + `CDE_DRIVE_ID`，详见 [deploy/PDS-ENTERPRISE.md](PDS-ENTERPRISE.md)
 
 ---
 

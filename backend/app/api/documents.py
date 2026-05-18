@@ -1,7 +1,7 @@
 import json
 import mimetypes
 
-from flask import jsonify, request, send_file
+from flask import jsonify, redirect, request, send_file
 
 from app.api import api_bp
 from app.auth.decorators import get_current_user, login_required
@@ -10,7 +10,9 @@ from app.models import Document, User, Work
 from app.services.cde_service import (
     CdeError,
     delete_file,
-    make_stream_token,
+    get_download_url,
+    is_pds_mode,
+    make_play_url,
     resolve_file_path,
     upload_file,
     verify_stream_token,
@@ -146,9 +148,10 @@ def documents_upload():
 
     from io import BytesIO
 
+    storage_category = "scores" if doc_type == "score" else (doc_type or "documents")
     try:
         cde_id, stored_size = upload_file(
-            choir_id, "documents", BytesIO(data), f.filename or "file", f.mimetype
+            choir_id, storage_category, BytesIO(data), f.filename or "file", f.mimetype
         )
     except CdeError as e:
         return jsonify({"error": str(e)}), 503
@@ -281,6 +284,16 @@ def documents_stream(document_id: int):
     elif not doc.cde_file_id or not verify_stream_token(doc.choir_id, doc.cde_file_id, token):
         return jsonify({"error": "链接无效或已过期"}), 403
 
+    if is_pds_mode():
+        try:
+            url = get_download_url(
+                doc.cde_file_id or "",
+                mime_type=doc.mime_type,
+            )
+            return redirect(url)
+        except CdeError as e:
+            return jsonify({"error": str(e)}), 404
+
     path = resolve_file_path(doc.choir_id, doc.cde_file_id or "")
     if not path:
         return jsonify({"error": "文件不存在"}), 404
@@ -307,13 +320,16 @@ def documents_play_url(document_id: int):
     if not doc.cde_file_id:
         return jsonify({"error": "无可播放文件"}), 404
     ttl = int(request.args.get("ttl", 3600))
-    token = make_stream_token(doc.choir_id, doc.cde_file_id, ttl)
-    url = f"/api/documents/{doc.document_id}/stream?token={token}"
-    return jsonify(
-        {
-            "url": url,
-            "kind": "stream",
-            "expires_in": ttl,
-            "mime_type": doc.mime_type or "",
-        }
-    )
+    try:
+        return jsonify(
+            make_play_url(
+                "documents",
+                doc.document_id,
+                doc.choir_id,
+                doc.cde_file_id,
+                ttl,
+                doc.mime_type,
+            )
+        )
+    except CdeError as e:
+        return jsonify({"error": str(e)}), 503

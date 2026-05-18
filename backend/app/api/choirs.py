@@ -74,6 +74,13 @@ def choirs_create():
         detail={"name": choir.name, "slug": choir.slug},
     )
     db.session.commit()
+    if current_app.config.get("CDE_MODE", "mock").lower() in ("pds", "cde"):
+        try:
+            from app.services.pds_storage import ensure_choir_root_folder
+
+            ensure_choir_root_folder(choir)
+        except Exception as exc:
+            current_app.logger.warning("PDS 建团目录失败 choir_id=%s: %s", choir.choir_id, exc)
     return jsonify({"choir_id": choir.choir_id, "slug": choir.slug, "name": choir.name}), 201
 
 

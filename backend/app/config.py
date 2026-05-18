@@ -37,3 +37,12 @@ class Config:
     MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(4 * 1024 * 1024 * 1024)))
     UPLOAD_BLOCKLIST_EXT = os.getenv("UPLOAD_BLOCKLIST_EXT", "exe,bat,cmd,sh,msi,dmg")
     CDE_STORAGE_QUOTA_BYTES = int(os.getenv("CDE_STORAGE_QUOTA_BYTES", str(50 * 1024**3)))
+
+    ALIYUN_ACCESS_KEY_ID = os.getenv("ALIYUN_ACCESS_KEY_ID", "")
+    ALIYUN_ACCESS_KEY_SECRET = os.getenv("ALIYUN_ACCESS_KEY_SECRET", "")
+    # PDS 企业版：domain ID（企业代码），见控制台
+    CDE_DOMAIN_ID = os.getenv("CDE_DOMAIN_ID") or os.getenv("CDE_ENTERPRISE_ID", "")
+    CDE_ENTERPRISE_ID = CDE_DOMAIN_ID
+    CDE_ENDPOINT = os.getenv("CDE_ENDPOINT", "")
+    CDE_DRIVE_ID = os.getenv("CDE_DRIVE_ID", "")
+    CDE_ROOT_FOLDER_ID = os.getenv("CDE_ROOT_FOLDER_ID", "root")
