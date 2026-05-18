@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from app.models import Document, User
+from app.models import Document, User, Work
 from app.services.permissions import has_permission, is_section_leader
 from app.services.work_access import work_shared_to_choir
 
@@ -36,7 +36,16 @@ def can_delete_document(user: User, doc: Document) -> bool:
     return doc.uploaded_by == user.user_id
 
 
+def _work_deleted(doc: Document) -> bool:
+    if not doc.work_id:
+        return False
+    work = Work.query.get(doc.work_id)
+    return bool(work and work.deleted_at)
+
+
 def document_visible_to_user(user: User, doc: Document) -> bool:
+    if _work_deleted(doc):
+        return False
     if user.system_super_admin:
         return True
     if not can_read_documents(user):

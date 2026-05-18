@@ -17,7 +17,26 @@ def work_shared_to_choir(work_id: int, choir_id: Optional[int]) -> bool:
     )
 
 
+def _is_choir_admin(user: User) -> bool:
+    return user.role_code in ("super_admin", "conductor", "general_affairs")
+
+
+def can_manage_trash(user: User, choir_id: int) -> bool:
+    if user.system_super_admin:
+        return True
+    if user.choir_id != choir_id:
+        return False
+    return _is_choir_admin(user)
+
+
+def can_delete_work(user: User, work: Work) -> bool:
+    """Move work to recycle bin (owner choir administrators)."""
+    return can_manage_trash(user, work.choir_id)
+
+
 def can_read_work(user: User, work: Work) -> bool:
+    if work.deleted_at is not None:
+        return can_delete_work(user, work)
     if user.system_super_admin:
         return True
     if user.choir_id == work.choir_id:
@@ -49,8 +68,17 @@ def works_for_choir_query(choir_id: Optional[int]):
         return Work.query.filter(False)
     return (
         Work.query.outerjoin(WorkShare, WorkShare.work_id == Work.work_id)
+        .filter(Work.deleted_at.is_(None))
         .filter(or_(Work.choir_id == choir_id, WorkShare.choir_id == choir_id))
         .distinct()
+    )
+
+
+def works_trash_for_choir_query(choir_id: Optional[int]):
+    if not choir_id:
+        return Work.query.filter(False)
+    return Work.query.filter(
+        Work.choir_id == choir_id, Work.deleted_at.isnot(None)
     )
 
 

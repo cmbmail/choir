@@ -1,5 +1,6 @@
 import json
 import mimetypes
+from datetime import datetime, timezone
 from io import BytesIO
 
 from flask import jsonify, redirect, request, send_file
@@ -26,11 +27,23 @@ from app.services.document_access import (
 )
 from app.services.operation_log import write_operation_log
 from app.services.work_access import (
+    can_delete_work,
+    can_manage_trash,
     can_manage_work_shares,
     can_read_work,
     can_write_work,
     shared_choir_ids,
     works_for_choir_query,
+    works_trash_for_choir_query,
+)
+from app.services.work_trash import (
+    TRASH_RETENTION_DAYS,
+    hard_delete_work,
+    is_purge_eligible,
+    purge_available_at,
+    purge_expired_works,
+    restore_work,
+    soft_delete_work,
 )
 from app.services.upload_validation import validate_upload
 
@@ -41,7 +54,7 @@ def _choir_id(user):
     return user.choir_id
 
 
-def _work_payload(work: Work, choir_id, include_recordings=False):
+def _work_payload(work: Work, choir_id, include_recordings=False, trash_meta=False):
     shares = shared_choir_ids(work.work_id)
     item = work.to_dict(
         include_recordings=include_recordings,
@@ -63,6 +76,13 @@ def _work_payload(work: Work, choir_id, include_recordings=False):
         rows = Choir.query.filter(Choir.choir_id.in_(shares)).all()
         shared_names = [c.name for c in rows]
     item["shared_choir_names"] = shared_names
+    if trash_meta and work.deleted_at:
+        purge_at = purge_available_at(work.deleted_at)
+        now = datetime.now(timezone.utc)
+        item["purge_at"] = purge_at.isoformat()
+        item["purge_eligible"] = is_purge_eligible(work, now)
+        remaining = (purge_at - now).total_seconds()
+        item["days_until_purge"] = max(0, int((remaining + 86399) // 86400))
     return item
 
 
@@ -79,6 +99,43 @@ def works_list():
     rows = works_for_choir_query(choir_id).order_by(Work.created_at.desc()).all()
     works = [_work_payload(w, choir_id, include_recordings) for w in rows]
     return jsonify({"works": works})
+
+
+@api_bp.get("/works/trash")
+@login_required
+def works_trash_list():
+    user = get_current_user()
+    choir_id = _choir_id(user)
+    if not choir_id:
+        return jsonify({"works": [], "retention_days": TRASH_RETENTION_DAYS})
+    if not can_manage_trash(user, choir_id):
+        return jsonify({"error": "无权限"}), 403
+    rows = works_trash_for_choir_query(choir_id).order_by(Work.deleted_at.desc()).all()
+    works = [_work_payload(w, choir_id, include_recordings=False, trash_meta=True) for w in rows]
+    return jsonify({"works": works, "retention_days": TRASH_RETENTION_DAYS})
+
+
+@api_bp.post("/works/trash/purge")
+@login_required
+def works_trash_purge():
+    user = get_current_user()
+    choir_id = _choir_id(user)
+    if not choir_id:
+        return jsonify({"error": "缺少 choir_id"}), 400
+    if not can_manage_trash(user, choir_id):
+        return jsonify({"error": "无权限"}), 403
+    scope = choir_id if not user.system_super_admin else request.args.get(
+        "choir_id", type=int
+    ) or choir_id
+    removed = purge_expired_works(scope)
+    write_operation_log(
+        "works.trash_purge",
+        user=user,
+        resource_type="work",
+        resource_id="*",
+        detail={"choir_id": scope, "removed": removed},
+    )
+    return jsonify({"removed": removed, "retention_days": TRASH_RETENTION_DAYS})
 
 
 @api_bp.get("/works/<int:work_id>")
@@ -128,11 +185,98 @@ def works_create():
     return jsonify(_work_payload(work, viewer)), 201
 
 
+@api_bp.delete("/works/<int:work_id>")
+@login_required
+def works_soft_delete(work_id: int):
+    user = get_current_user()
+    work = Work.query.get_or_404(work_id)
+    if not can_delete_work(user, work):
+        return jsonify({"error": "无权限"}), 403
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站"}), 409
+
+    doc_count = Document.query.filter_by(work_id=work.work_id).count()
+    rec_count = Recording.query.filter_by(work_id=work.work_id).count()
+    soft_delete_work(work, user)
+    db.session.commit()
+    write_operation_log(
+        "works.soft_delete",
+        user=user,
+        resource_type="work",
+        resource_id=str(work_id),
+        detail={"doc_count": doc_count, "recording_count": rec_count},
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "work_id": work_id,
+            "retention_days": TRASH_RETENTION_DAYS,
+            "doc_count": doc_count,
+            "recording_count": rec_count,
+        }
+    )
+
+
+@api_bp.post("/works/<int:work_id>/restore")
+@login_required
+def works_restore(work_id: int):
+    user = get_current_user()
+    work = Work.query.get_or_404(work_id)
+    if not can_delete_work(user, work):
+        return jsonify({"error": "无权限"}), 403
+    if not work.deleted_at:
+        return jsonify({"error": "作品不在回收站"}), 409
+    restore_work(work)
+    db.session.commit()
+    write_operation_log(
+        "works.restore",
+        user=user,
+        resource_type="work",
+        resource_id=str(work_id),
+    )
+    choir_id = user.choir_id or work.choir_id
+    return jsonify(_work_payload(work, choir_id))
+
+
+@api_bp.delete("/works/<int:work_id>/permanent")
+@login_required
+def works_permanent_delete(work_id: int):
+    user = get_current_user()
+    work = Work.query.get_or_404(work_id)
+    if not can_delete_work(user, work):
+        return jsonify({"error": "无权限"}), 403
+    if not work.deleted_at:
+        return jsonify({"error": "请先将作品移入回收站"}), 409
+    if not is_purge_eligible(work):
+        purge_at = purge_available_at(work.deleted_at)
+        return (
+            jsonify(
+                {
+                    "error": f"删除未满 {TRASH_RETENTION_DAYS} 天，须至 {purge_at.date()} 后方可永久清理",
+                    "purge_at": purge_at.isoformat(),
+                    "retention_days": TRASH_RETENTION_DAYS,
+                }
+            ),
+            403,
+        )
+    hard_delete_work(work)
+    db.session.commit()
+    write_operation_log(
+        "works.purge",
+        user=user,
+        resource_type="work",
+        resource_id=str(work_id),
+    )
+    return jsonify({"ok": True})
+
+
 @api_bp.patch("/works/<int:work_id>")
 @login_required
 def works_patch(work_id: int):
     user = get_current_user()
     work = Work.query.get_or_404(work_id)
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站，请先恢复"}), 410
     if not can_write_work(user, work):
         return jsonify({"error": "无权限"}), 403
 
@@ -160,6 +304,8 @@ def works_patch(work_id: int):
 def works_set_shares(work_id: int):
     user = get_current_user()
     work = Work.query.get_or_404(work_id)
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站"}), 410
     if not can_manage_work_shares(user, work):
         return jsonify({"error": "无权限设置共享"}), 403
 
@@ -220,6 +366,8 @@ def recordings_upload(work_id: int):
         return jsonify({"error": "无权限", "required": "recordings.write"}), 403
 
     work = Work.query.get_or_404(work_id)
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站"}), 410
     if not can_write_work(user, work):
         return jsonify({"error": "无权限"}), 403
 
@@ -279,6 +427,8 @@ def recordings_delete(recording_id: int):
     work = Work.query.get(rec.work_id)
     if not work or not can_write_work(user, work):
         return jsonify({"error": "无权限"}), 403
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站"}), 410
     if not can_write_recordings(user):
         return jsonify({"error": "无权限"}), 403
 

@@ -173,10 +173,15 @@ CREATE TABLE works (
   name              VARCHAR(100) NOT NULL,
   composer          VARCHAR(50) NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at        TIMESTAMP NULL DEFAULT NULL,
+  deleted_by        INT UNSIGNED NULL,
   PRIMARY KEY (work_id),
   KEY idx_works_choir (choir_id),
+  KEY idx_works_deleted (deleted_at),
   CONSTRAINT fk_works_choir
-    FOREIGN KEY (choir_id) REFERENCES choirs (choir_id) ON DELETE CASCADE
+    FOREIGN KEY (choir_id) REFERENCES choirs (choir_id) ON DELETE CASCADE,
+  CONSTRAINT fk_works_deleted_by
+    FOREIGN KEY (deleted_by) REFERENCES users (user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE recordings (

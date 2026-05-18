@@ -281,7 +281,12 @@ a{color:inherit;text-decoration:none}
       <div class="tab" data-tab="perf">演出资料</div>
       <div class="tab" data-tab="rehearsal">排练资料</div>
       <div class="tab" data-tab="rule">规章制度</div>
+      <div class="tab" data-tab="trash" id="tabTrash" hidden>回收站</div>
     </div>
+
+    <p id="trashHint" style="margin:0 0 1rem;display:none;font-size:0.8rem;color:var(--text-muted)">
+      删除的作品及全部资料保留 7 天，到期后可永久清理；7 天内可恢复。
+    </p>
 
     <!-- 乐谱子筛选（保留结构，默认隐藏） -->
     <div class="sub-filters" id="scoreFilters" style="display:none;">
@@ -340,6 +345,14 @@ a{color:inherit;text-decoration:none}
             <th>创建时间</th>
             <th>操作</th>
           </tr>
+          <tr id="trashTableHeadRow" hidden>
+            <th>作品名称</th>
+            <th>作曲者</th>
+            <th>资料</th>
+            <th>删除时间</th>
+            <th>可清理</th>
+            <th>操作</th>
+          </tr>
           <tr id="docsTableHeadRow">
             <th>资料名称</th>
             <th>所属作品</th>
@@ -388,7 +401,7 @@ function closeVideoModal() {
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260522"></script>
+<script src="/js/documents-page.js?v=20260523"></script>
 
 </body>
 </html>

@@ -45,6 +45,8 @@ def documents_list():
     work_id = request.args.get("work_id", type=int)
     if work_id:
         work = Work.query.get_or_404(work_id)
+        if work.deleted_at:
+            return jsonify({"error": "作品已在回收站"}), 410
         if not can_read_work(user, work):
             return jsonify({"error": "无权限"}), 403
         q = Document.query.filter_by(work_id=work_id)
@@ -138,6 +140,8 @@ def documents_upload():
         work = Work.query.get(work_id)
         if not work or not can_write_work(user, work):
             return jsonify({"error": "作品不存在或无上传权限"}), 400
+        if work.deleted_at:
+            return jsonify({"error": "作品已在回收站，请先恢复后再上传"}), 410
     else:
         work = None
         if user.system_super_admin:

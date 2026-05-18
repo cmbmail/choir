@@ -11,6 +11,8 @@ class Work(db.Model):
     name = db.Column(db.String(100), nullable=False)
     composer = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
 
     recordings = db.relationship(
         "Recording", back_populates="work", cascade="all, delete-orphan"
@@ -37,6 +39,7 @@ class Work(db.Model):
             "name": self.name,
             "composer": self.composer or "",
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
             "is_owner": viewer_choir_id is not None and self.choir_id == viewer_choir_id,
         }
         if shared_choir_ids is not None:

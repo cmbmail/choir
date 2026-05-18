@@ -28,8 +28,10 @@
   let currentUser = null;
   let docs = [];
   let works = [];
+  let trashWorks = [];
   let choirs = [];
   let currentTab = "all";
+  let trashRetentionDays = 7;
   let searchKeyword = "";
   let filterCategory = "all";
   let filterCollection = "all";
@@ -62,12 +64,28 @@
     );
   }
 
+  function canDeleteWork(w) {
+    if (currentUser?.system_super_admin) return true;
+    if (w && w.is_owner === false) return false;
+    return ["super_admin", "conductor", "general_affairs"].includes(
+      currentUser?.role_code || ""
+    );
+  }
+
+  function canManageTrash() {
+    return canDeleteWork({ is_owner: true });
+  }
+
   function toast(msg) {
     alert(msg);
   }
 
   function isWorksListTab() {
     return currentTab === "all";
+  }
+
+  function isTrashTab() {
+    return currentTab === "trash";
   }
 
   function getAdminChoirId() {
@@ -126,24 +144,38 @@
 
   function updateListChrome() {
     const worksMode = isWorksListTab();
+    const trashMode = isTrashTab();
     const actions = document.getElementById("workListActions");
     const stats = document.getElementById("docsStatsRow");
     const subFilters = document.getElementById("scoreFilters");
     const worksHead = document.getElementById("worksTableHeadRow");
+    const trashHead = document.getElementById("trashTableHeadRow");
     const docsHead = document.getElementById("docsTableHeadRow");
     const cardTitle = document.getElementById("listCardTitle");
     const search = document.getElementById("searchInput");
+    const trashHint = document.getElementById("trashHint");
+    const tabTrash = document.getElementById("tabTrash");
 
+    if (tabTrash) tabTrash.hidden = !canManageTrash();
     if (actions) actions.hidden = !worksMode || !canWrite();
-    if (stats) stats.hidden = worksMode;
-    if (subFilters) subFilters.style.display = worksMode ? "none" : "none";
+    if (stats) stats.hidden = worksMode || trashMode;
+    if (subFilters) subFilters.style.display = "none";
     if (worksHead) worksHead.hidden = !worksMode;
-    if (docsHead) docsHead.hidden = worksMode;
-    if (cardTitle) cardTitle.textContent = worksMode ? "作品列表" : "资料列表";
+    if (trashHead) trashHead.hidden = !trashMode;
+    if (docsHead) docsHead.hidden = worksMode || trashMode;
+    if (trashHint) trashHint.style.display = trashMode ? "block" : "none";
+    if (cardTitle) {
+      cardTitle.textContent = trashMode
+        ? "回收站"
+        : worksMode
+          ? "作品列表"
+          : "资料列表";
+    }
     if (search) {
-      search.placeholder = worksMode
-        ? "搜索作品名称、作曲者..."
-        : "搜索资料名称、合集、风格、分类...";
+      search.placeholder =
+        worksMode || trashMode
+          ? "搜索作品名称、作曲者..."
+          : "搜索资料名称、合集、风格、分类...";
     }
   }
 
@@ -168,8 +200,137 @@
   }
 
   async function reloadList() {
-    if (isWorksListTab()) await loadWorks();
+    if (isTrashTab()) await loadTrash();
+    else if (isWorksListTab()) await loadWorks();
     else await loadDocs();
+  }
+
+  async function loadTrash() {
+    let path = "/works/trash";
+    if (currentUser?.system_super_admin) {
+      const cid = getAdminChoirId();
+      if (!cid) {
+        trashWorks = [];
+        renderTrash();
+        return;
+      }
+      path += `?choir_id=${cid}`;
+    }
+    const data = await ChoirAPI.get(path);
+    trashWorks = data.works || [];
+    trashRetentionDays = data.retention_days || 7;
+    renderTrash();
+  }
+
+  function filterTrashList() {
+    const q = searchKeyword.trim().toLowerCase();
+    if (!q) return trashWorks;
+    return trashWorks.filter(
+      (w) =>
+        (w.name || "").toLowerCase().includes(q) ||
+        (w.composer || "").toLowerCase().includes(q)
+    );
+  }
+
+  function renderTrash() {
+    const list = filterTrashList();
+    const countEl = document.getElementById("docCount");
+    if (countEl) countEl.textContent = "共 " + list.length + " 个";
+    const body = document.getElementById("docTableBody");
+    if (!body) return;
+    if (!list.length) {
+      body.innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">回收站为空</td></tr>';
+      return;
+    }
+    body.innerHTML = list
+      .map((w) => {
+        const purgeLabel = w.purge_eligible
+          ? "可清理"
+          : `约 ${w.days_until_purge || trashRetentionDays} 天后`;
+        let actions =
+          '<button type="button" class="doc-action-btn" data-restore="' +
+          w.work_id +
+          '">恢复</button> ';
+        if (w.purge_eligible) {
+          actions +=
+            '<button type="button" class="doc-action-btn" style="color:var(--cinnabar)" data-purge="' +
+            w.work_id +
+            '">永久删除</button>';
+        }
+        return (
+          "<tr>" +
+          "<td>" +
+          esc(w.name) +
+          "</td>" +
+          "<td>" +
+          esc(w.composer || "—") +
+          "</td>" +
+          "<td>" +
+          (w.doc_count || 0) +
+          "</td>" +
+          "<td>" +
+          formatDate(w.deleted_at) +
+          "</td>" +
+          "<td>" +
+          purgeLabel +
+          "</td>" +
+          '<td style="display:flex;flex-wrap:wrap;gap:4px;">' +
+          actions +
+          "</td></tr>"
+        );
+      })
+      .join("");
+    body.querySelectorAll("[data-restore]").forEach((btn) => {
+      btn.addEventListener("click", () => restoreWork(parseInt(btn.dataset.restore, 10)));
+    });
+    body.querySelectorAll("[data-purge]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        purgeWorkPermanent(parseInt(btn.dataset.purge, 10))
+      );
+    });
+  }
+
+  async function deleteWork(workId, workName) {
+    const msg =
+      `确定将作品「${workName || ""}」移入回收站？\n` +
+      `将同时隐藏该作品下的全部资料（歌谱、伴奏等），保留 ${trashRetentionDays} 天后可永久清理。`;
+    if (!confirm(msg)) return;
+    try {
+      await ChoirAPI.del(`/works/${workId}`);
+      await loadWorks();
+      toast("已移入回收站");
+    } catch (e) {
+      toast(e.message || "删除失败");
+    }
+  }
+
+  async function restoreWork(workId) {
+    if (!confirm("确定恢复该作品及全部资料？")) return;
+    try {
+      await ChoirAPI.post(`/works/${workId}/restore`, {});
+      await loadTrash();
+      toast("已恢复");
+    } catch (e) {
+      toast(e.message || "恢复失败");
+    }
+  }
+
+  async function purgeWorkPermanent(workId) {
+    if (
+      !confirm(
+        "永久删除后无法恢复，将清除作品及全部资料文件。确定继续？"
+      )
+    ) {
+      return;
+    }
+    try {
+      await ChoirAPI.del(`/works/${workId}/permanent`);
+      await loadTrash();
+      toast("已永久删除");
+    } catch (e) {
+      toast(e.message || "清理失败");
+    }
   }
 
   async function loadWorks() {
@@ -241,15 +402,32 @@
           "<td>" +
           formatDate(w.created_at) +
           "</td>" +
-          '<td><a class="doc-action-btn" href="' +
+          '<td style="display:flex;flex-wrap:wrap;gap:4px;">' +
+          '<a class="doc-action-btn" href="' +
           workEntryHref(w) +
           '">' +
           workEntryLabel() +
-          "</a></td>" +
+          "</a>" +
+          (canDeleteWork(w)
+            ? '<button type="button" class="doc-action-btn" style="color:var(--cinnabar)" data-del-work="' +
+              w.work_id +
+              '" data-work-name="' +
+              esc(w.name) +
+              '">删除</button>'
+            : "") +
+          "</td>" +
           "</tr>"
         );
       })
       .join("");
+    body.querySelectorAll("[data-del-work]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        deleteWork(
+          parseInt(btn.dataset.delWork, 10),
+          btn.getAttribute("data-work-name")
+        )
+      );
+    });
   }
 
   async function createWork() {
@@ -496,6 +674,7 @@
     window.ChoirPermissions.applyNavPermissions(currentUser);
 
     setActiveTab(tabFromUrl());
+    updateListChrome();
 
     const btnNew = document.getElementById("btnNewWork");
     if (btnNew && canWrite()) btnNew.addEventListener("click", createWork);
@@ -520,7 +699,8 @@
     if (search) {
       search.addEventListener("input", (e) => {
         searchKeyword = e.target.value;
-        if (isWorksListTab()) renderWorks();
+        if (isTrashTab()) renderTrash();
+        else if (isWorksListTab()) renderWorks();
         else loadDocs();
       });
     }

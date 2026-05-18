@@ -26,4 +26,8 @@ def create_app(config_class=Config):
     def health():
         return {"status": "ok"}
 
+    from app.cli import register_cli
+
+    register_cli(app)
+
     return app
