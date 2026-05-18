@@ -331,10 +331,7 @@ def documents_stream(document_id: int):
     if is_pds_mode():
         try:
             if inline and (is_pdf or is_image):
-                upstream = pds_storage.open_download_stream(
-                    doc.cde_file_id or "",
-                    content_type=doc.mime_type,
-                )
+                upstream = pds_storage.open_download_stream(doc.cde_file_id or "")
 
                 def generate():
                     try:

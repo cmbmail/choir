@@ -271,8 +271,7 @@ def open_download_stream(
     """Open PDS file as readable stream (server-side fetch)."""
     import urllib.request
 
-    ct = content_type or mime_type
-    url = get_download_url(file_id, ttl_seconds, ct)
+    url = get_download_url(file_id, ttl_seconds)
     try:
         return urllib.request.urlopen(url, timeout=120)
     except Exception as e:
@@ -293,8 +292,7 @@ def get_download_url(
         file_id=file_id,
         expire_sec=expire,
     )
-    if content_type:
-        req.response_content_type = content_type
+    # response_content_type triggers HTTP 400 on our PDS drive; rely on object MIME.
     try:
         resp = client.get_download_url(req)
     except Exception as e:
