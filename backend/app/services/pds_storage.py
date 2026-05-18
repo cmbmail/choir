@@ -266,11 +266,13 @@ def open_download_stream(
     file_id: str,
     ttl_seconds: int = 3600,
     content_type: Optional[str] = None,
+    mime_type: Optional[str] = None,
 ):
     """Open PDS file as readable stream (server-side fetch)."""
     import urllib.request
 
-    url = get_download_url(file_id, ttl_seconds, content_type)
+    ct = content_type or mime_type
+    url = get_download_url(file_id, ttl_seconds, ct)
     try:
         return urllib.request.urlopen(url, timeout=120)
     except Exception as e:
