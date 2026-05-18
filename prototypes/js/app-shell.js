@@ -102,6 +102,33 @@
     });
   }
 
+  function loadMobileTabbar(user) {
+    const page = (location.pathname.split("/").pop() || "").split("?")[0];
+    const skip = new Set([
+      "极简中式-手机登录.html",
+      "极简中式-手机注册.html",
+      "极简中式-手机端.html",
+      "极简中式-展示页.html",
+      "login.html",
+      "register.html",
+    ]);
+    if (skip.has(page)) return;
+    if (document.querySelector(".phone-frame .tab-bar")) return;
+
+    const run = () => window.ChoirMobileTabbar?.mount(user);
+    if (window.ChoirMobileTabbar) {
+      run();
+      return;
+    }
+    if (document.querySelector("script[data-choir-mobile-tabbar]")) return;
+    const s = document.createElement("script");
+    s.src = "/js/mobile-tabbar.js?v=20260528";
+    s.dataset.choirMobileTabbar = "1";
+    s.onload = run;
+    s.onerror = () => {};
+    document.body.appendChild(s);
+  }
+
   async function init(opts = {}) {
     if (!ChoirAuth.requireAuth()) return null;
     const user = await ChoirAuth.refreshUser();
@@ -125,6 +152,7 @@
     if (window.ChoirPermissions) {
       ChoirPermissions.applyNavPermissions(user);
     }
+    loadMobileTabbar(user);
     if (typeof opts.onReady === "function") opts.onReady(user);
     return user;
   }
