@@ -36,6 +36,7 @@
   let filterCategory = "all";
   let filterCollection = "all";
   let filterStyle = "all";
+  let pendingImportFiles = [];
 
   function esc(s) {
     return String(s ?? "")
@@ -70,6 +71,12 @@
     return ["super_admin", "conductor", "general_affairs"].includes(
       currentUser?.role_code || ""
     );
+  }
+
+  function canEditWorkMeta(w) {
+    if (!canWrite()) return false;
+    if (w && w.is_owner === false) return false;
+    return true;
   }
 
   function canManageTrash() {
@@ -408,6 +415,13 @@
           '">' +
           workEntryLabel() +
           "</a>" +
+          (canEditWorkMeta(w)
+            ? '<button type="button" class="doc-action-btn" data-rename-work="' +
+              w.work_id +
+              '" data-work-name="' +
+              esc(w.name) +
+              '">改名</button>'
+            : "") +
           (canDeleteWork(w)
             ? '<button type="button" class="doc-action-btn" style="color:var(--cinnabar)" data-del-work="' +
               w.work_id +
@@ -424,6 +438,14 @@
       btn.addEventListener("click", () =>
         deleteWork(
           parseInt(btn.dataset.delWork, 10),
+          btn.getAttribute("data-work-name")
+        )
+      );
+    });
+    body.querySelectorAll("[data-rename-work]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        renameWork(
+          parseInt(btn.dataset.renameWork, 10),
           btn.getAttribute("data-work-name")
         )
       );
@@ -454,9 +476,24 @@
     document.getElementById("importPdfInput")?.click();
   }
 
-  async function importPdfScores(fileList) {
-    const choirId = requireChoirIdForWrite();
-    if (!choirId) return;
+  function closeImportModal() {
+    const modal = document.getElementById("importPdfModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    pendingImportFiles = [];
+    const tbody = document.getElementById("importPdfRows");
+    if (tbody) tbody.innerHTML = "";
+    const status = document.getElementById("importStatus");
+    if (status) status.textContent = "";
+    const confirmBtn = document.getElementById("importPdfConfirm");
+    const cancelBtn = document.getElementById("importPdfCancel");
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+  }
+
+  function showImportModal(fileList) {
     const pdfs = Array.from(fileList || []).filter((f) =>
       (f.name || "").toLowerCase().endsWith(".pdf")
     );
@@ -464,21 +501,83 @@
       toast("请选择 PDF 歌谱文件");
       return;
     }
-    if (
-      !confirm(
-        `将导入 ${pdfs.length} 个 PDF，每个文件创建一个作品（名称为文件名），并上传为歌谱。是否继续？`
+    if (!requireChoirIdForWrite()) return;
+
+    pendingImportFiles = pdfs;
+    const tbody = document.getElementById("importPdfRows");
+    if (!tbody) return;
+    tbody.innerHTML = pdfs
+      .map(
+        (file, i) =>
+          "<tr>" +
+          '<td class="import-file" title="' +
+          esc(file.name) +
+          '">' +
+          esc(file.name) +
+          "</td>" +
+          '<td><input type="text" class="import-name-input" data-idx="' +
+          i +
+          '" value="' +
+          esc(workNameFromPdfFilename(file.name).slice(0, 100)) +
+          '" maxlength="100"/></td>' +
+          "</tr>"
       )
-    ) {
+      .join("");
+
+    const modal = document.getElementById("importPdfModal");
+    if (modal) {
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    tbody.querySelector(".import-name-input")?.focus();
+  }
+
+  async function renameWork(workId, currentName) {
+    const name = prompt("修改作品名称", currentName || "");
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast("作品名称不能为空");
       return;
     }
+    try {
+      await ChoirAPI.patch(`/works/${workId}`, { name: trimmed });
+      await loadWorks();
+    } catch (e) {
+      toast(e.message || "保存失败");
+    }
+  }
+
+  async function confirmPdfImport() {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return;
+
+    const inputs = document.querySelectorAll("#importPdfRows .import-name-input");
+    const entries = [];
+    inputs.forEach((input) => {
+      const idx = parseInt(input.dataset.idx, 10);
+      const file = pendingImportFiles[idx];
+      if (!file) return;
+      const name =
+        (input.value || "").trim() || workNameFromPdfFilename(file.name);
+      entries.push({ file, name: name.slice(0, 100) });
+    });
+    if (!entries.length) return;
+
+    const confirmBtn = document.getElementById("importPdfConfirm");
+    const cancelBtn = document.getElementById("importPdfCancel");
+    const status = document.getElementById("importStatus");
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
 
     let ok = 0;
     let lastImportedWork = null;
     const errors = [];
-    for (const file of pdfs) {
-      const workName = workNameFromPdfFilename(file.name).slice(0, 100);
+    for (let i = 0; i < entries.length; i++) {
+      const { file, name } = entries[i];
+      if (status) status.textContent = `导入中 ${i + 1}/${entries.length}…`;
       try {
-        const body = { name: workName, composer: "" };
+        const body = { name, composer: "" };
         if (currentUser.system_super_admin) body.choir_id = choirId;
         const work = await ChoirAPI.post("/works", body);
         const fd = new FormData();
@@ -496,6 +595,8 @@
         errors.push(`${file.name}: ${e.message || "失败"}`);
       }
     }
+
+    closeImportModal();
     await loadWorks();
     if (errors.length && ok) {
       toast(`成功 ${ok} 个，失败 ${errors.length} 个：\n` + errors.slice(0, 5).join("\n"));
@@ -687,9 +788,17 @@
       importInput.addEventListener("change", () => {
         const files = importInput.files;
         importInput.value = "";
-        if (files?.length) importPdfScores(files);
+        if (files?.length) showImportModal(files);
       });
     }
+
+    document.getElementById("importPdfCancel")?.addEventListener("click", closeImportModal);
+    document.getElementById("importPdfConfirm")?.addEventListener("click", () => {
+      confirmPdfImport().catch((e) => toast(e.message || "导入失败"));
+    });
+    document.getElementById("importPdfModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "importPdfModal") closeImportModal();
+    });
 
     bindTabs();
     initFilter("filterCategory", "category");
