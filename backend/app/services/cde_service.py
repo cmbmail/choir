@@ -110,7 +110,8 @@ def make_play_url(
             "mime_type": mime_type or "",
         }
     token = make_stream_token(choir_id, cde_file_id, ttl_seconds)
-    path = f"/api/{resource}/{resource_id}/stream?token={token}"
+    inline_q = "&inline=1" if force_stream else ""
+    path = f"/api/{resource}/{resource_id}/stream?token={token}{inline_q}"
     return {
         "url": path,
         "kind": "stream",

@@ -1,7 +1,9 @@
 import json
 import mimetypes
 
-from flask import jsonify, redirect, request, send_file
+from urllib.parse import quote
+
+from flask import Response, jsonify, redirect, request, send_file, stream_with_context
 from sqlalchemy import or_
 
 from app.api import api_bp
@@ -18,6 +20,7 @@ from app.services.cde_service import (
     upload_file,
     verify_stream_token,
 )
+from app.services import pds_storage
 from app.services.document_access import (
     can_delete_document,
     can_edit_document,
@@ -320,8 +323,40 @@ def documents_stream(document_id: int):
     elif not doc.cde_file_id or not verify_stream_token(doc.choir_id, doc.cde_file_id, token):
         return jsonify({"error": "链接无效或已过期"}), 403
 
+    mime = doc.mime_type or mimetypes.guess_type(doc.file_name or "")[0] or "application/octet-stream"
+    inline = request.args.get("inline", "").lower() in ("1", "true", "yes")
+    is_pdf = "pdf" in mime.lower() or (doc.file_name or "").lower().endswith(".pdf")
+    is_image = mime.lower().startswith("image/")
+
     if is_pds_mode():
         try:
+            if inline and (is_pdf or is_image):
+                upstream = pds_storage.open_download_stream(
+                    doc.cde_file_id or "",
+                    mime_type=doc.mime_type,
+                )
+
+                def generate():
+                    try:
+                        while True:
+                            chunk = upstream.read(65536)
+                            if not chunk:
+                                break
+                            yield chunk
+                    finally:
+                        upstream.close()
+
+                filename = doc.file_name or "file"
+                return Response(
+                    stream_with_context(generate()),
+                    mimetype=mime,
+                    headers={
+                        "Content-Disposition": (
+                            f"inline; filename*=UTF-8''{quote(filename)}"
+                        ),
+                        "Cache-Control": "private, max-age=300",
+                    },
+                )
             url = get_download_url(
                 doc.cde_file_id or "",
                 mime_type=doc.mime_type,
@@ -329,12 +364,13 @@ def documents_stream(document_id: int):
             return redirect(url)
         except CdeError as e:
             return jsonify({"error": str(e)}), 404
+        except pds_storage.PdsStorageError as e:
+            return jsonify({"error": str(e)}), 502
 
     path = resolve_file_path(doc.choir_id, doc.cde_file_id or "")
     if not path:
         return jsonify({"error": "文件不存在"}), 404
 
-    mime = doc.mime_type or mimetypes.guess_type(doc.file_name or "")[0] or "application/octet-stream"
     return send_file(
         path,
         mimetype=mime,
