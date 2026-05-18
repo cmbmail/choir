@@ -362,7 +362,7 @@
     const id = getWorkId();
     if (!id) {
       alert("缺少作品 ID");
-      window.location.href = "极简中式-作品管理.html";
+      window.location.href = "极简中式-资料管理.html?tab=works";
       return;
     }
     window.ChoirPermissions.applyNavPermissions(currentUser);

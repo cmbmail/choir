@@ -10,7 +10,6 @@
     "极简中式-成员管理.html": "members.read",
     "极简中式-系统管理.html": "__system_admin__",
     "极简中式-资料管理.html": "documents.read",
-    "极简中式-作品管理.html": "documents.read",
     "极简中式-作品详情.html": "documents.read",
     "极简中式-录音管理.html": "recordings.read",
   };

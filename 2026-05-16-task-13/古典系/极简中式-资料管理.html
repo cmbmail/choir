@@ -138,6 +138,25 @@ a{color:inherit;text-decoration:none}
 .doc-action-btn:hover{border-color:var(--ink-gold);color:var(--ink-gold)}
 .doc-action-btn.danger:hover{border-color:var(--error);color:var(--error)}
 
+/* === WORK LIST (作品) === */
+.work-list{display:flex;flex-direction:column;gap:1rem}
+.work-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:all var(--transition)}
+.work-card:hover{box-shadow:0 4px 16px rgba(28,28,28,0.08);border-color:var(--ink-gold)}
+.work-card-link{display:block;color:inherit}
+.work-card-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem}
+.work-card-header:hover{background:rgba(184,134,11,0.02)}
+.work-info{display:flex;flex-direction:column;gap:0.25rem;flex:1;min-width:0}
+.work-name{font-size:1rem;font-weight:400;color:var(--ink-black)}
+.work-meta{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-size:0.7rem;color:var(--text-muted)}
+.work-meta-item{display:flex;align-items:center;gap:0.3rem}
+.work-open-hint{font-size:0.75rem;color:var(--ink-gold);flex-shrink:0}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-muted)}
+.empty-state .hint{font-size:0.7rem;margin-top:0.25rem}
+.filter-bar{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:0.5rem}
+.filter-label{font-size:0.75rem;color:var(--text-muted)}
+.filter-select{padding:0.5rem 2rem 0.5rem 0.75rem;border:1px solid var(--border);border-radius:4px;font-size:0.8rem;background:var(--silk-white);color:var(--text-primary);cursor:pointer}
+
 /* === PART BUTTONS (分部伴奏) === */
 .part-btn{font-size:0.6rem;padding:0.15rem 0.4rem;border:1px solid var(--border-gold);border-radius:2px;background:rgba(184,134,11,0.06);color:var(--ink-gold);cursor:pointer;transition:all var(--transition);white-space:nowrap}
 .part-btn:hover{background:var(--ink-gold);color:#fff}
@@ -210,10 +229,6 @@ a{color:inherit;text-decoration:none}
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3 14.1V9a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 12 9.35c.63 0 1.22-.3 1.57-.8.35-.5.43-1.12.24-1.68A1.65 1.65 0 0 0 13.9 6V3a2 2 0 0 1 4 0v.09c0 .63.3 1.22.8 1.57.5.35 1.12.43 1.68.24A1.65 1.65 0 0 0 21 6.9V9a2 2 0 0 1-4 0v-.09c0-.63-.3-1.22-.8-1.57-.5-.35-1.12-.43-1.68-.24z"/></svg>
         系统管理
       </a>
-      <a class="sidebar-item" href="极简中式-作品管理.html">
-        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        作品管理
-      </a>
       <a class="sidebar-item active" href="极简中式-资料管理.html">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         资料管理
@@ -239,14 +254,17 @@ a{color:inherit;text-decoration:none}
     <div class="page-header">
       <div class="page-title-group">
         <h1 class="page-title">资料管理</h1>
-        <p class="page-subtitle">合唱团文档、乐谱、演出资料集中管理</p>
+        <p class="page-subtitle">作品、乐谱、伴奏与团内资料集中管理</p>
       </div>
       <div class="page-actions">
-        <a class="btn btn-gold" href="极简中式-作品管理.html" data-perm="documents.read">作品管理</a>
+        <button type="button" class="btn btn-gold" id="btnNewWork" data-perm="documents.write" hidden>
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新建作品
+        </button>
       </div>
     </div>
 
-    <div class="stats-row">
+    <div class="stats-row" id="docsStatsRow">
       <div class="stat-box">
         <div class="stat-value" id="statTotal">16</div>
         <div class="stat-label">资料总数</div>
@@ -266,18 +284,26 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div class="tabs" id="docTabs">
-      <div class="tab active" data-tab="all">全部资料</div>
-      <div class="tab" data-tab="score">乐谱</div>
+      <div class="tab active" data-tab="works">作品</div>
+      <div class="tab" data-tab="all">全部资料</div>
       <div class="tab" data-tab="perf">演出资料</div>
       <div class="tab" data-tab="rehearsal">排练资料</div>
       <div class="tab" data-tab="rule">规章制度</div>
     </div>
 
-    <div id="scoreWorkBanner" style="display:none;margin-bottom:1rem;padding:0.75rem 1rem;background:rgba(184,134,11,0.08);border:1px solid var(--border-gold);border-radius:4px;font-size:0.8rem">
-      乐谱按作品管理：请先 <a href="极简中式-作品管理.html" style="color:var(--ink-gold)">新建作品</a>，进入作品详情后上传乐谱与资料。
+    <div id="worksPanel">
+      <div class="filter-bar">
+        <div id="adminChoirWrap" class="filter-group" hidden>
+          <span class="filter-label">所属团</span>
+          <select class="filter-select" id="adminChoirSelect"></select>
+        </div>
+        <input type="text" class="search-input" id="searchWork" placeholder="搜索作品名称、作曲者..." style="flex:1;min-width:200px"/>
+      </div>
+      <div class="work-list" id="workList"></div>
     </div>
 
-    <!-- 乐谱子筛选栏，仅乐谱tab可见 -->
+    <div id="docsPanel" hidden>
+    <!-- 乐谱子筛选（保留结构，默认隐藏） -->
     <div class="sub-filters" id="scoreFilters" style="display:none;">
       <div class="filter-group">
         <span class="filter-label">分类</span>
@@ -328,7 +354,7 @@ a{color:inherit;text-decoration:none}
         <thead>
           <tr>
             <th>资料名称</th>
-            <th id="thWork" hidden>所属作品</th>
+            <th id="thWork">所属作品</th>
             <th>分类</th>
             <th>上传人</th>
             <th>上传时间</th>
@@ -338,6 +364,7 @@ a{color:inherit;text-decoration:none}
         </thead>
         <tbody id="docTableBody"></tbody>
       </table>
+    </div>
     </div>
   </main>
 </div>
@@ -374,7 +401,7 @@ function closeVideoModal() {
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js"></script>
+<script src="/js/documents-page.js?v=20260518c"></script>
 
 </body>
 </html>
