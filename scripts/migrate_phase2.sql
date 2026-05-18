@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS documents (
   document_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   choir_id          INT UNSIGNED NOT NULL,
   title             VARCHAR(200) NOT NULL,
-  doc_type          ENUM('score','video','courseware','text','audio','perf','rule','rehearsal','other')
+  doc_type          VARCHAR(32) NOT NULL DEFAULT 'other'
                     NOT NULL DEFAULT 'other',
   category          VARCHAR(64) NULL,
   style             VARCHAR(64) NULL,

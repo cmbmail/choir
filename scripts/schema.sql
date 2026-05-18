@@ -225,7 +225,7 @@ CREATE TABLE documents (
   choir_id          INT UNSIGNED NOT NULL,
   work_id           INT UNSIGNED NULL,
   title             VARCHAR(200) NOT NULL,
-  doc_type          ENUM('score','video','courseware','text','audio','perf','rule','rehearsal','other')
+  doc_type          VARCHAR(32) NOT NULL DEFAULT 'other'
                     NOT NULL DEFAULT 'other',
   category          VARCHAR(64) NULL,
   style             VARCHAR(64) NULL,
