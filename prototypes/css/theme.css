@@ -102,6 +102,24 @@ button:disabled {
   color: var(--gold);
 }
 
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.remember-row input {
+  width: auto;
+  margin: 0;
+}
+
+#saved-account-select {
+  margin-bottom: 0.25rem;
+}
+
 .captcha-block {
   margin-top: 0.75rem;
   padding: 0.75rem;

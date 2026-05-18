@@ -3,6 +3,7 @@
  */
 (function () {
   let captchaId = null;
+  let accountStore = null;
 
   function showToast(msg) {
     const toast = document.getElementById("toast");
@@ -108,6 +109,14 @@
   }
 
   function setup() {
+    accountStore = window.ChoirLoginAccounts?.mount({
+      usernameInput: document.getElementById("account"),
+      passwordInput: document.getElementById("password"),
+      selectEl: document.getElementById("saved-account-select"),
+      rememberEl: document.getElementById("rememberMe"),
+    });
+    accountStore?.init();
+
     document.getElementById("loginForm")?.addEventListener("submit", handleLogin);
     document.getElementById("account")?.addEventListener("input", () => {
       document.getElementById("accountGroup")?.classList.remove("has-error");
