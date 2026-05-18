@@ -120,10 +120,21 @@
   }
 
   async function loadDocs() {
+    const root = $("workAssetSections");
     const id = getWorkId();
-    const data = await ChoirAPI.get("/documents?" + new URLSearchParams({ work_id: String(id) }));
-    docs = data.documents || [];
-    renderSections();
+    if (root) {
+      root.innerHTML = '<p class="asset-empty">正在加载资料…</p>';
+    }
+    try {
+      const data = await ChoirAPI.get("/documents?" + new URLSearchParams({ work_id: String(id) }));
+      docs = data.documents || [];
+      renderSections();
+    } catch (e) {
+      docs = [];
+      if (root) {
+        root.innerHTML = `<p class="asset-empty" style="color:var(--error)">资料加载失败：${esc(e.message || "无权限")}</p>`;
+      }
+    }
   }
 
   function docsForSection(sectionId) {

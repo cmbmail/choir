@@ -40,14 +40,6 @@ def _choir_scope(user):
 @login_required
 def documents_list():
     user = get_current_user()
-    if not can_read_documents(user):
-        return jsonify({"error": "无权限", "required": "documents.read"}), 403
-
-    choir_id = _choir_scope(user)
-    if not choir_id and not user.system_super_admin:
-        return jsonify({"error": "缺少 choir_id"}), 400
-    if not choir_id:
-        return jsonify({"documents": []})
 
     work_id = request.args.get("work_id", type=int)
     if work_id:
@@ -56,6 +48,13 @@ def documents_list():
             return jsonify({"error": "无权限"}), 403
         q = Document.query.filter_by(work_id=work_id)
     else:
+        if not can_read_documents(user):
+            return jsonify({"error": "无权限", "required": "documents.read"}), 403
+        choir_id = _choir_scope(user)
+        if not choir_id and not user.system_super_admin:
+            return jsonify({"error": "缺少 choir_id"}), 400
+        if not choir_id:
+            return jsonify({"documents": []})
         q = Document.query.filter_by(choir_id=choir_id)
 
     doc_type = request.args.get("type") or request.args.get("doc_type")
