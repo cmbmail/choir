@@ -106,10 +106,14 @@
     if (currentUser?.system_super_admin) {
       const cid = getAdminChoirId();
       if (!cid) {
-        alert("请先选择所属合唱团");
+        toast("请先选择所属合唱团");
         return null;
       }
       return cid;
+    }
+    if (!currentUser?.choir_id) {
+      toast("当前账号未绑定合唱团，无法操作");
+      return null;
     }
     return currentUser.choir_id;
   }
@@ -505,7 +509,11 @@
 
     pendingImportFiles = pdfs;
     const tbody = document.getElementById("importPdfRows");
-    if (!tbody) return;
+    const modal = document.getElementById("importPdfModal");
+    if (!tbody || !modal) {
+      toast("页面组件未加载完整，请强制刷新后重试（Ctrl+Shift+R）");
+      return;
+    }
     tbody.innerHTML = pdfs
       .map(
         (file, i) =>
@@ -524,11 +532,8 @@
       )
       .join("");
 
-    const modal = document.getElementById("importPdfModal");
-    if (modal) {
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
-    }
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
     tbody.querySelector(".import-name-input")?.focus();
   }
 
@@ -786,9 +791,9 @@
     const importInput = document.getElementById("importPdfInput");
     if (importInput) {
       importInput.addEventListener("change", () => {
-        const files = importInput.files;
+        const files = Array.from(importInput.files || []);
         importInput.value = "";
-        if (files?.length) showImportModal(files);
+        if (files.length) showImportModal(files);
       });
     }
 
