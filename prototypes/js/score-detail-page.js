@@ -38,6 +38,38 @@
     return parseInt(p.get("id") || p.get("document_id") || "0", 10);
   }
 
+  function getWorkId() {
+    const p = new URLSearchParams(window.location.search);
+    return parseInt(p.get("work_id") || "0", 10);
+  }
+
+  function showNoScoreForWork(work) {
+    document.title = (work.name || "作品") + " · 弦歌合唱团";
+    const bc = document.querySelector(".breadcrumb");
+    if (bc) {
+      bc.innerHTML =
+        '<a href="极简中式-资料管理.html">资料管理</a><span class="sep">/</span>' +
+        '<span class="current">' +
+        esc(work.name || "作品") +
+        "</span>";
+    }
+    if ($("viewerTitle")) $("viewerTitle").textContent = "尚未上传歌谱";
+    if ($("scorePage")) {
+      $("scorePage").innerHTML =
+        '<div class="score-page-placeholder" style="padding:2rem;text-align:center">' +
+        "<p>该作品还没有歌谱 PDF</p>" +
+        '<p class="hint" style="margin:1rem 0">请先在作品资料页上传歌谱，或返回资料列表导入 PDF</p>' +
+        '<a class="btn btn-gold" href="极简中式-作品详情.html?work_id=' +
+        work.work_id +
+        '">去上传歌谱</a>' +
+        "</div>";
+    }
+    if ($("relatedList")) {
+      $("relatedList").innerHTML =
+        '<a class="related-item" href="极简中式-资料管理.html">← 返回资料列表</a>';
+    }
+  }
+
   async function loadDocument(id) {
     doc = await ChoirAPI.get(`/documents/${id}`);
     document.title = (doc.title || "乐谱") + " · 弦歌合唱团";
@@ -194,12 +226,27 @@
     const user = await ChoirAuth.requireLogin();
     if (!user) return;
     const id = getDocId();
-    if (!id) {
-      alert("缺少资料 ID");
-      window.location.href = "极简中式-资料管理.html";
+    if (id) {
+      await loadDocument(id);
       return;
     }
-    await loadDocument(id);
+    const workId = getWorkId();
+    if (workId) {
+      const work = await ChoirAPI.get("/works/" + workId);
+      if (work.primary_score_id) {
+        const qs = new URLSearchParams(window.location.search);
+        qs.delete("work_id");
+        qs.set("id", String(work.primary_score_id));
+        window.location.replace(
+          "极简中式-乐谱详情.html?" + qs.toString()
+        );
+        return;
+      }
+      showNoScoreForWork(work);
+      return;
+    }
+    alert("缺少资料 ID");
+    window.location.href = "极简中式-资料管理.html";
   }
 
   document.addEventListener("DOMContentLoaded", () => {

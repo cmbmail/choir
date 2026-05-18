@@ -98,11 +98,11 @@
     if (w.primary_score_id) {
       return "极简中式-乐谱详情.html?id=" + w.primary_score_id;
     }
-    return "极简中式-作品详情.html?work_id=" + w.work_id;
+    return "极简中式-乐谱详情.html?work_id=" + w.work_id;
   }
 
-  function workEntryLabel(w) {
-    return w.primary_score_id ? "查看歌谱" : "进入";
+  function workEntryLabel() {
+    return "进入";
   }
 
   function navigateToWork(w) {
@@ -244,7 +244,7 @@
           '<td><a class="doc-action-btn" href="' +
           workEntryHref(w) +
           '">' +
-          workEntryLabel(w) +
+          workEntryLabel() +
           "</a></td>" +
           "</tr>"
         );

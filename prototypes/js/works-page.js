@@ -28,6 +28,13 @@
     return iso.slice(0, 10);
   }
 
+  function workEntryHref(w) {
+    if (w.primary_score_id) {
+      return "极简中式-乐谱详情.html?id=" + w.primary_score_id;
+    }
+    return "极简中式-乐谱详情.html?work_id=" + w.work_id;
+  }
+
   function getAdminChoirId() {
     const sel = document.getElementById("adminChoirSelect");
     if (!sel?.value) return null;
@@ -102,7 +109,7 @@
             ? `<span class="work-meta-item">来自 ${esc(w.owner_choir_name)}</span>`
             : "";
         return `
-        <a class="work-card work-card-link" href="极简中式-作品详情.html?work_id=${w.work_id}">
+        <a class="work-card work-card-link" href="${workEntryHref(w)}">
           <div class="work-card-header">
             <div class="work-info">
               <div class="work-name">${esc(w.name)}</div>
@@ -140,7 +147,7 @@
       const res = await ChoirAPI.post("/works", body);
       await loadWorks();
       if (res.work_id) {
-        window.location.href = "极简中式-作品详情.html?work_id=" + res.work_id;
+        window.location.href = workEntryHref(res);
       }
     } catch (e) {
       alert(e.message || "创建失败");
