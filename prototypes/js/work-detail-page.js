@@ -129,6 +129,33 @@
     return docs.filter((d) => sectionForDoc(d) === sectionId);
   }
 
+  function absApiUrl(path) {
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    return (window.location.origin || "") + path;
+  }
+
+  async function downloadDocument(docId, fileName) {
+    try {
+      const data = await ChoirAPI.get(`/documents/${docId}/play-url`);
+      const url = absApiUrl(data.url);
+      if (!url) {
+        alert("无法获取下载地址");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || "download";
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      alert(e.message || "下载失败");
+    }
+  }
+
   function renderFileRow(d) {
     const title = d.title || d.file_name || "未命名";
     let actions = "";
@@ -142,13 +169,13 @@
       actions += `<button type="button" class="asset-action" data-edit="${d.document_id}">重命名</button>`;
       actions += `<button type="button" class="asset-action danger" data-del="${d.document_id}">删除</button>`;
     }
-    return `<li class="asset-file">
-      <div class="asset-file-main">
-        <span class="asset-file-name">${esc(title)}</span>
-        <span class="asset-file-meta">${formatSize(d.file_size)} · ${formatDate(d.created_at)} · ${esc(d.uploader || "—")}</span>
-      </div>
-      <div class="asset-file-actions">${actions}</div>
-    </li>`;
+    actions = `<button type="button" class="asset-action" data-dl="${d.document_id}">下载</button> ` + actions;
+    return `<tr>
+      <td>${esc(title)}</td>
+      <td>${formatSize(d.file_size)}</td>
+      <td>${formatDate(d.created_at)}</td>
+      <td><div class="asset-file-actions">${actions}</div></td>
+    </tr>`;
   }
 
   function renderSections() {
@@ -159,7 +186,13 @@
     root.innerHTML = ASSET_SECTIONS.map((sec) => {
       const list = docsForSection(sec.id);
       const filesHtml = list.length
-        ? `<ul class="asset-list">${list.map(renderFileRow).join("")}</ul>`
+        ? `<div class="asset-download-panel">
+            <div class="asset-download-title">下载清单</div>
+            <table class="asset-download-table">
+              <thead><tr><th>文件名</th><th>大小</th><th>上传日期</th><th>操作</th></tr></thead>
+              <tbody>${list.map(renderFileRow).join("")}</tbody>
+            </table>
+          </div>`
         : `<div class="asset-empty">暂无${esc(sec.label)}</div>`;
       const uploadBtn = write
         ? `<button type="button" class="btn btn-outline asset-upload-btn" data-upload="${sec.id}">
@@ -178,6 +211,13 @@
       </section>`;
     }).join("");
 
+    root.querySelectorAll("[data-dl]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const docId = parseInt(btn.dataset.dl, 10);
+        const doc = docs.find((x) => x.document_id === docId);
+        downloadDocument(docId, doc?.file_name || doc?.title || "download");
+      });
+    });
     root.querySelectorAll("[data-play]").forEach((btn) => {
       btn.addEventListener("click", () => window.ChoirMedia.playDocument(btn.dataset.play));
     });
@@ -238,8 +278,10 @@
     }
     await loadDocs();
     await loadWork(work.work_id);
+    const sectionEl = document.querySelector(`[data-section="${sectionId}"]`);
+    if (sectionEl && ok) sectionEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     if (ok && !lastErr) {
-      alert(ok > 1 ? `已上传 ${ok} 个文件` : "上传成功");
+      alert(ok > 1 ? `已上传 ${ok} 个文件，见下方下载清单` : "上传成功，见下方下载清单");
     } else if (ok && lastErr) {
       alert(`部分成功：${ok} 个已上传；失败：${lastErr.message || "未知错误"}`);
     } else if (lastErr) {
