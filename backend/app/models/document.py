@@ -14,6 +14,8 @@ class Document(db.Model):
     category = db.Column(db.String(64))
     style = db.Column(db.String(64))
     collection_name = db.Column(db.String(64))
+    description = db.Column(db.Text)
+    musical_key = db.Column(db.String(32))
     cde_file_id = db.Column(db.String(128))
     file_name = db.Column(db.String(255))
     mime_type = db.Column(db.String(128))
@@ -44,6 +46,8 @@ class Document(db.Model):
             "style": self.style or "",
             "collection": self.collection_name or "",
             "collection_name": self.collection_name or "",
+            "description": self.description or "",
+            "musical_key": self.musical_key or "",
             "file_name": self.file_name,
             "mime_type": self.mime_type,
             "file_size": self.file_size,

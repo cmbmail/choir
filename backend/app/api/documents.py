@@ -120,6 +120,8 @@ def documents_upload():
     style = (request.form.get("style") or "").strip() or None
     collection_name = (request.form.get("collection") or request.form.get("collection_name") or "").strip() or None
     video_url = (request.form.get("video_url") or "").strip() or None
+    description = (request.form.get("description") or "").strip() or None
+    musical_key = (request.form.get("musical_key") or "").strip() or None
 
     voice_parts_raw = request.form.get("voice_parts")
     voice_parts = None
@@ -184,6 +186,8 @@ def documents_upload():
         file_size=stored_size,
         voice_parts=voice_parts,
         video_url=video_url,
+        description=description,
+        musical_key=musical_key[:32] if musical_key else None,
         uploaded_by=user.user_id,
     )
     db.session.add(doc)
@@ -221,6 +225,24 @@ def documents_patch(document_id: int):
         doc.style = (data.get("style") or "").strip() or None
     if "collection_name" in data:
         doc.collection_name = (data.get("collection") or data.get("collection_name") or "").strip() or None
+    if "description" in data:
+        doc.description = (data.get("description") or "").strip() or None
+    if "musical_key" in data:
+        raw_key = (data.get("musical_key") or "").strip()
+        doc.musical_key = raw_key[:32] if raw_key else None
+    if "video_url" in data:
+        doc.video_url = (data.get("video_url") or "").strip() or None
+    if "voice_parts" in data:
+        vp = data.get("voice_parts")
+        if vp is None:
+            doc.voice_parts = None
+        elif isinstance(vp, list):
+            try:
+                doc.voice_parts = [int(x) for x in vp]
+            except (TypeError, ValueError):
+                return jsonify({"error": "voice_parts 须为整数数组"}), 400
+        else:
+            return jsonify({"error": "voice_parts 须为数组"}), 400
     if "work_id" in data:
         raw = data.get("work_id")
         if raw is None or raw == "":

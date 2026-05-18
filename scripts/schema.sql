@@ -235,6 +235,8 @@ CREATE TABLE documents (
   category          VARCHAR(64) NULL,
   style             VARCHAR(64) NULL,
   collection_name   VARCHAR(64) NULL,
+  description       TEXT NULL,
+  musical_key       VARCHAR(32) NULL,
   cde_file_id       VARCHAR(128) NULL,
   file_name         VARCHAR(255) NULL,
   mime_type         VARCHAR(128) NULL,

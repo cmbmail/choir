@@ -1,5 +1,5 @@
 /**
- * 乐谱详情 — GET /api/documents/:id
+ * 乐谱详情 — 作品歌谱、介绍、分部音频、演示音频、视频
  */
 (function () {
   const VOICE = {
@@ -13,7 +13,11 @@
     8: "声部八",
   };
 
-  let doc = null;
+  let currentUser = null;
+  let work = null;
+  let scoreDoc = null;
+  let workDocs = [];
+  let scorePreviewUrl = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -29,6 +33,7 @@
 
   function formatSize(n) {
     if (!n) return "—";
+    if (n < 1024) return n + " B";
     if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
     return (n / (1024 * 1024)).toFixed(1) + " MB";
   }
@@ -43,210 +48,673 @@
     return parseInt(p.get("work_id") || "0", 10);
   }
 
-  function showNoScoreForWork(work) {
-    document.title = (work.name || "作品") + " · 弦歌合唱团";
+  function canWrite() {
+    if (currentUser?.system_super_admin) return true;
+    if (!work?.is_owner) return false;
+    return window.ChoirAuth.hasPermission(currentUser, "documents.write");
+  }
+
+  function isDemoAudio(d) {
+    return (
+      d.doc_type === "accompaniment" &&
+      (!d.voice_parts || !d.voice_parts.length)
+    );
+  }
+
+  function isPartAudio(d) {
+    return (
+      d.doc_type === "accompaniment" &&
+      d.voice_parts &&
+      d.voice_parts.length > 0
+    );
+  }
+
+  function isVideoDoc(d) {
+    return d.doc_type === "performance_video";
+  }
+
+  function scoreDocs() {
+    return workDocs.filter((d) => d.doc_type === "score");
+  }
+
+  function demoAudios() {
+    return workDocs.filter(isDemoAudio);
+  }
+
+  function partAudios() {
+    return workDocs.filter(isPartAudio);
+  }
+
+  function videoDocs() {
+    return workDocs.filter(isVideoDoc);
+  }
+
+  function primaryVideo() {
+    return videoDocs()[0] || null;
+  }
+
+  function setBreadcrumb() {
     const bc = document.querySelector(".breadcrumb");
+    const name = work?.name || scoreDoc?.work_name || scoreDoc?.title || "乐谱";
     if (bc) {
       bc.innerHTML =
         '<a href="极简中式-资料管理.html">资料管理</a><span class="sep">/</span>' +
         '<span class="current">' +
-        esc(work.name || "作品") +
+        esc(name) +
         "</span>";
     }
-    if ($("viewerTitle")) $("viewerTitle").textContent = "尚未上传歌谱";
-    if ($("scorePage")) {
-      $("scorePage").innerHTML =
-        '<div class="score-page-placeholder" style="padding:2rem;text-align:center">' +
-        "<p>该作品还没有歌谱 PDF</p>" +
-        '<p class="hint" style="margin:1rem 0">请先在作品资料页上传歌谱，或返回资料列表导入 PDF</p>' +
-        '<a class="btn btn-gold" href="极简中式-作品详情.html?work_id=' +
-        work.work_id +
-        '">去上传歌谱</a>' +
-        "</div>";
-    }
-    if ($("relatedList")) {
-      $("relatedList").innerHTML =
-        '<a class="related-item" href="极简中式-资料管理.html">← 返回资料列表</a>';
-    }
+    if ($("bcName")) $("bcName").textContent = name;
+    document.title = name + " · 弦歌合唱团";
   }
 
-  async function loadDocument(id) {
-    doc = await ChoirAPI.get(`/documents/${id}`);
-    document.title = (doc.title || "乐谱") + " · 弦歌合唱团";
-
-    const bc = document.querySelector(".breadcrumb");
-    if (bc) {
-      const workCrumb = doc.work_id
-        ? `<a href="极简中式-作品详情.html?work_id=${doc.work_id}">${esc(doc.work_name || "作品")}</a><span class="sep">/</span>`
-        : "";
-      bc.innerHTML =
-        '<a href="极简中式-资料管理.html">资料管理</a><span class="sep">/</span>' +
-        workCrumb +
-        '<span class="current">' +
-        esc(doc.title || doc.file_name || "乐谱") +
-        "</span>";
-    }
-    if ($("bcName")) $("bcName").textContent = doc.title || "";
-    if ($("viewerTitle")) {
-      $("viewerTitle").textContent = (doc.file_name || doc.title || "乐谱") + "";
-    }
-
-    if ($("diWork")) {
-      const workLabel = doc.work_name
-        ? doc.work_name + (doc.work_composer ? " · " + doc.work_composer : "")
-        : "—";
-      $("diWork").textContent = workLabel;
-    }
-    if ($("diCategory")) $("diCategory").textContent = doc.category || "—";
-    if ($("diStyle")) $("diStyle").textContent = doc.style || "—";
-    if ($("diCollection")) $("diCollection").textContent = doc.collection || doc.collection_name || "—";
-    if ($("diKey")) $("diKey").textContent = "—";
-    if ($("diUploader")) $("diUploader").textContent = doc.uploader || "—";
-    if ($("diDate")) $("diDate").textContent = (doc.created_at || "").slice(0, 10);
-    if ($("diSize")) $("diSize").textContent = formatSize(doc.file_size);
-    if ($("diPages")) $("diPages").textContent = "—";
-
-    if ($("diTags")) {
-      const tags = [];
-      if (doc.category) tags.push('<span class="detail-tag tag-cat">' + doc.category + "</span>");
-      if (doc.style) tags.push('<span class="detail-tag tag-style">' + doc.style + "</span>");
-      if (doc.collection) tags.push('<span class="detail-tag tag-coll">' + doc.collection + "</span>");
-      $("diTags").innerHTML = tags.join("");
-    }
-
-    if ($("introText")) {
-      $("introText").innerHTML =
-        "<p>" +
-        (doc.title || "") +
-        "</p><p style='margin-top:0.75rem;color:var(--text-muted);font-size:0.8rem'>在线预览，不提供下载。</p>";
-    }
-
-    const dlBtn = document.querySelector(".score-viewer-actions .btn");
-    if (dlBtn) dlBtn.hidden = true;
-
-    await renderViewer();
-    renderPartList();
-    renderVideoSection();
+  function setViewerTitle() {
+    const el = $("viewerTitle");
+    if (el) el.textContent = work?.name || scoreDoc?.work_name || "作品";
   }
 
-  async function renderViewer() {
-    const page = $("scorePage");
-    if (!page) return;
-    if (!doc.cde_file_id && !doc.video_url) {
+  async function loadWorkDocs(workId) {
+    const data = await ChoirAPI.get(
+      "/documents?" + new URLSearchParams({ work_id: String(workId) })
+    );
+    workDocs = data.documents || [];
+  }
+
+  function pickPrimaryScore(preferredId) {
+    if (preferredId) {
+      const found = workDocs.find((d) => d.document_id === preferredId);
+      if (found && found.doc_type === "score") return found;
+    }
+    const scores = scoreDocs();
+    return scores[0] || null;
+  }
+
+  async function loadContext(preferredDocId, workId) {
+    if (workId) {
+      work = await ChoirAPI.get("/works/" + workId);
+      await loadWorkDocs(workId);
+      scoreDoc = pickPrimaryScore(preferredDocId);
+      if (preferredDocId && !scoreDoc) {
+        const d = workDocs.find((x) => x.document_id === preferredDocId);
+        if (d) scoreDoc = d;
+      }
       return;
     }
-    try {
-      const play = await ChoirAPI.get(`/documents/${doc.document_id}/play-url`);
-      if (play.kind === "external" && doc.video_url) {
-        page.innerHTML =
-          '<div style="padding:1rem"><button type="button" class="btn btn-gold" id="btnWatchVideo">观看关联视频</button></div>';
-        $("btnWatchVideo")?.addEventListener("click", () => {
-          window.openVideoModal(doc.video_url, doc.title);
-        });
-        return;
-      }
-      const url = play.url;
-      const mime = (play.mime_type || doc.mime_type || "").toLowerCase();
-      if (mime.includes("pdf") || (doc.file_name || "").toLowerCase().endsWith(".pdf")) {
-        page.innerHTML =
-          '<iframe title="乐谱预览" style="width:100%;height:min(70vh,720px);border:0;background:#fff" src="' +
-          url +
-          '"></iframe>';
-      } else if (mime.startsWith("audio/")) {
-        page.innerHTML =
-          '<div style="padding:2rem;text-align:center"><audio controls style="width:100%;max-width:480px" src="' +
-          url +
-          '"></audio></div>';
+    if (preferredDocId) {
+      const d = await ChoirAPI.get("/documents/" + preferredDocId);
+      if (d.work_id) {
+        work = await ChoirAPI.get("/works/" + d.work_id);
+        await loadWorkDocs(d.work_id);
+        scoreDoc = pickPrimaryScore(preferredDocId);
       } else {
-        page.innerHTML =
-          '<div style="padding:1rem"><button type="button" class="btn btn-gold" id="btnOpenStream">在线打开</button></div>';
-        $("btnOpenStream")?.addEventListener("click", () => {
-          window.ChoirMedia.playAudioUrl(url, doc.title);
-        });
+        work = {
+          work_id: null,
+          name: d.title,
+          composer: "",
+          is_owner: true,
+        };
+        workDocs = [d];
+        scoreDoc = d.doc_type === "score" ? d : null;
       }
-    } catch (e) {
-      console.warn(e);
     }
+  }
+
+  async function patchDoc(docId, body) {
+    return ChoirAPI.patch("/documents/" + docId, body);
+  }
+
+  async function uploadAsset(file, docType, extra) {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("title", file.name);
+    fd.append("doc_type", docType);
+    fd.append("work_id", String(work.work_id));
+    if (extra?.voice_parts) {
+      fd.append("voice_parts", JSON.stringify(extra.voice_parts));
+    }
+    if (extra?.video_url) fd.append("video_url", extra.video_url);
+    return ChoirAPI.postForm("/documents/upload", fd);
+  }
+
+  async function refresh() {
+    const wid = work?.work_id;
+    if (!wid) return;
+    await loadWorkDocs(wid);
+    const sid = scoreDoc?.document_id;
+    scoreDoc = pickPrimaryScore(sid);
+    renderAll();
+  }
+
+  async function deleteDoc(docId) {
+    if (!confirm("确定删除该文件？")) return;
+    await ChoirAPI.del("/documents/" + docId);
+    if (scoreDoc?.document_id === docId) scoreDoc = null;
+    await refresh();
+  }
+
+  function bindWriteActions() {
+    const show = canWrite();
+    document.querySelectorAll("[data-write-only]").forEach((el) => {
+      el.hidden = !show;
+    });
+  }
+
+  function renderIntro() {
+    const el = $("introText");
+    if (!el) return;
+    const text = scoreDoc?.description || "";
+    if (text) {
+      el.innerHTML = esc(text).replace(/\n/g, "<br>");
+    } else {
+      el.innerHTML =
+        '<p style="color:var(--text-muted)">暂无介绍，' +
+        (canWrite() ? "点击「编辑」添加乐谱介绍。" : "") +
+        "</p>";
+    }
+  }
+
+  function renderMeta() {
+    const d = scoreDoc;
+    if ($("diWork")) {
+      $("diWork").textContent = work
+        ? (work.name || "") + (work.composer ? " · " + work.composer : "")
+        : "—";
+    }
+    if ($("diCategory")) $("diCategory").textContent = d?.category || "—";
+    if ($("diStyle")) $("diStyle").textContent = d?.style || "—";
+    if ($("diCollection")) {
+      $("diCollection").textContent = d?.collection || d?.collection_name || "—";
+    }
+    if ($("diKey")) $("diKey").textContent = d?.musical_key || "—";
+    if ($("diUploader")) $("diUploader").textContent = d?.uploader || "—";
+    if ($("diDate")) $("diDate").textContent = (d?.created_at || "").slice(0, 10);
+    if ($("diSize")) $("diSize").textContent = formatSize(d?.file_size);
+    if ($("diPages")) $("diPages").textContent = "—";
+
+    const tags = $("diTags");
+    if (tags && d) {
+      const parts = [];
+      if (d.category) parts.push('<span class="detail-tag tag-cat">' + esc(d.category) + "</span>");
+      if (d.style) parts.push('<span class="detail-tag tag-style">' + esc(d.style) + "</span>");
+      if (d.collection) parts.push('<span class="detail-tag tag-coll">' + esc(d.collection) + "</span>");
+      tags.innerHTML = parts.join("");
+    }
+
+    const dlMain = $("btnDownloadScore");
+    if (dlMain) dlMain.hidden = !d?.document_id;
+  }
+
+  async function resolvePreviewUrl(doc) {
+    if (!doc?.document_id) return null;
+    try {
+      const play = await ChoirAPI.get("/documents/" + doc.document_id + "/play-url");
+      if (play.kind === "external") return null;
+      return play.url;
+    } catch {
+      return null;
+    }
+  }
+
+  async function renderScoreViewer() {
+    const page = $("scorePage");
+    const nav = $("scorePageNav");
+    if (!page) return;
+
+    if (!scoreDoc) {
+      scorePreviewUrl = null;
+      page.classList.remove("score-page--clickable");
+      page.innerHTML =
+        '<div class="score-page-placeholder">' +
+        "<p>尚未上传乐谱 PDF</p>" +
+        (canWrite()
+          ? '<p class="hint">点击下方「上传乐谱」添加</p>'
+          : '<p class="hint">请联系管理员上传</p>') +
+        "</div>";
+      if (nav) nav.hidden = true;
+      return;
+    }
+
+    if (nav) nav.hidden = true;
+    page.classList.add("score-page--clickable");
+    scorePreviewUrl = await resolvePreviewUrl(scoreDoc);
+    const mime = (scoreDoc.mime_type || "").toLowerCase();
+    const isPdf =
+      mime.includes("pdf") ||
+      (scoreDoc.file_name || "").toLowerCase().endsWith(".pdf");
+
+    if (scorePreviewUrl && isPdf) {
+      page.innerHTML =
+        '<iframe class="score-preview-frame" title="乐谱预览" src="' +
+        esc(scorePreviewUrl) +
+        '"></iframe>' +
+        '<div class="score-expand-hint">点击放大查看</div>';
+    } else if (scorePreviewUrl && mime.startsWith("image/")) {
+      page.innerHTML =
+        '<img class="score-preview-img" alt="乐谱" src="' +
+        esc(scorePreviewUrl) +
+        '"/>' +
+        '<div class="score-expand-hint">点击放大查看</div>';
+    } else if (scorePreviewUrl) {
+      page.innerHTML =
+        '<div class="score-page-placeholder"><button type="button" class="btn btn-gold" id="btnOpenScore">在线打开乐谱</button></div>';
+      $("btnOpenScore")?.addEventListener("click", () =>
+        window.ChoirMedia.playDocument(scoreDoc.document_id)
+      );
+    } else {
+      page.innerHTML =
+        '<div class="score-page-placeholder"><p>' +
+        esc(scoreDoc.title || scoreDoc.file_name || "乐谱") +
+        '</p><p class="hint">预览加载失败，请尝试下载</p></div>';
+    }
+
+    page.onclick = () => {
+      if (scorePreviewUrl && (isPdf || mime.startsWith("image/"))) {
+        openScoreExpand(scorePreviewUrl, isPdf);
+      }
+    };
+  }
+
+  function openScoreExpand(url, isPdf) {
+    const modal = $("scoreExpandModal");
+    const body = $("scoreExpandBody");
+    if (!modal || !body) return;
+    if (isPdf) {
+      body.innerHTML =
+        '<iframe title="乐谱全屏" style="width:100%;height:min(90vh,900px);border:0;background:#fff" src="' +
+        esc(url) +
+        '"></iframe>';
+    } else {
+      body.innerHTML =
+        '<img alt="乐谱" style="max-width:100%;max-height:90vh;margin:0 auto" src="' +
+        esc(url) +
+        '"/>';
+    }
+    modal.hidden = false;
+  }
+
+  function closeScoreExpand() {
+    const modal = $("scoreExpandModal");
+    const body = $("scoreExpandBody");
+    if (modal) modal.hidden = true;
+    if (body) body.innerHTML = "";
+  }
+
+  function renderDemoList() {
+    const list = $("demoAudioList");
+    if (!list) return;
+    const items = demoAudios();
+    if (!items.length) {
+      list.innerHTML =
+        '<p class="section-empty">暂无演示音频</p>';
+      return;
+    }
+    list.innerHTML = items
+      .map((d) => {
+        const title = d.title || d.file_name || "演示音频";
+        let actions =
+          '<button type="button" class="audio-play-btn" data-play="' +
+          d.document_id +
+          '" title="播放"><svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>';
+        if (canWrite()) {
+          actions +=
+            '<button type="button" class="audio-dl-btn" data-del="' +
+            d.document_id +
+            '">删除</button>';
+        }
+        return (
+          '<div class="demo-player">' +
+          '<button type="button" class="demo-play-btn" data-play="' +
+          d.document_id +
+          '"><svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>' +
+          '<div class="demo-track-info"><div class="demo-track-name">' +
+          esc(title) +
+          "</div><div class=\"demo-track-sub\">" +
+          formatSize(d.file_size) +
+          "</div></div>" +
+          '<div style="display:flex;gap:0.35rem;align-items:center">' +
+          actions +
+          "</div></div>"
+        );
+      })
+      .join("");
+    bindPlayButtons(list);
+    list.querySelectorAll("[data-del]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteDoc(parseInt(btn.dataset.del, 10));
+      });
+    });
   }
 
   function renderPartList() {
     const list = $("partAudioList");
     if (!list) return;
-    const parts = doc.voice_parts || [];
-    if (!parts.length) {
-      list.innerHTML = '<p style="font-size:0.75rem;color:var(--text-muted);padding:0.5rem">暂无分部信息</p>';
+    const items = partAudios();
+    if (!items.length) {
+      list.innerHTML = '<p class="section-empty">暂无分声部音频</p>';
       return;
     }
-    list.innerHTML = parts
-      .map(
-        (p) =>
-          '<div class="audio-item"><div class="audio-info"><div class="audio-name">' +
-          (VOICE[p] || "声部 " + p) +
-          '</div></div><button type="button" class="audio-play-btn" data-play-doc="' +
-          doc.document_id +
-          '"><svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg></button></div>'
-      )
+    list.innerHTML = items
+      .map((d) => {
+        const part = (d.voice_parts || [])[0];
+        const label = VOICE[part] || "声部 " + part;
+        const title = d.title || d.file_name || label;
+        let actions =
+          '<button type="button" class="audio-play-btn" data-play="' +
+          d.document_id +
+          '"><svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>' +
+          '<button type="button" class="audio-dl-btn" data-dl="' +
+          d.document_id +
+          '">下载</button>';
+        if (canWrite()) {
+          actions +=
+            '<button type="button" class="audio-dl-btn" data-del="' +
+            d.document_id +
+            '">删除</button>';
+        }
+        return (
+          '<div class="audio-item">' +
+          '<div class="audio-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/></svg></div>' +
+          '<div class="audio-info"><div class="audio-name">' +
+          esc(title) +
+          '</div><div class="audio-dur">' +
+          esc(label) +
+          " · " +
+          formatSize(d.file_size) +
+          "</div></div>" +
+          actions +
+          "</div>"
+        );
+      })
       .join("");
-    list.querySelectorAll("[data-play-doc]").forEach((btn) => {
+    bindPlayButtons(list);
+    list.querySelectorAll("[data-dl]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        window.ChoirMedia.playDocument(doc.document_id);
+        const doc = workDocs.find((x) => x.document_id === parseInt(btn.dataset.dl, 10));
+        window.ChoirMedia.downloadDocument(
+          parseInt(btn.dataset.dl, 10),
+          doc?.file_name || doc?.title
+        ).catch((e) => alert(e.message || "下载失败"));
+      });
+    });
+    list.querySelectorAll("[data-del]").forEach((btn) => {
+      btn.addEventListener("click", () => deleteDoc(parseInt(btn.dataset.del, 10)));
+    });
+  }
+
+  function bindPlayButtons(root) {
+    root.querySelectorAll("[data-play]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.ChoirMedia.playDocument(parseInt(btn.dataset.play, 10)).catch((err) =>
+          alert(err.message || "无法播放")
+        );
       });
     });
   }
 
-  function renderVideoSection() {
-    if ($("demoTrackName")) $("demoTrackName").textContent = doc.title || "示范音频";
-    if ($("demoTrackSub")) $("demoTrackSub").textContent = doc.uploader || "";
-    const demoBtn = $("demoPlayBtn");
-    if (demoBtn) {
-      demoBtn.onclick = async () => {
-        if (doc.video_url) {
-          window.openVideoModal(doc.video_url, doc.title);
-        } else if (doc.cde_file_id) {
-          await window.ChoirMedia.playDocument(doc.document_id);
-        } else {
-          alert("暂无示范音视频");
-        }
-      };
+  function renderVideo() {
+    const embed = $("videoEmbed");
+    const descEl = $("videoDesc");
+    const v = primaryVideo();
+    if (descEl) {
+      descEl.textContent = v?.description || v?.title || "暂无视频摘要";
     }
-    if ($("relatedList")) {
-      let related =
-        '<a class="related-item" href="极简中式-资料管理.html">← 返回资料列表</a>';
-      if (doc.work_id) {
-        related +=
-          '<a class="related-item" href="极简中式-作品详情.html?work_id=' +
-          doc.work_id +
-          '">作品资料（伴奏等）</a>';
-      }
-      $("relatedList").innerHTML = related;
+    if (!embed) return;
+    if (!v) {
+      embed.innerHTML =
+        '<div class="placeholder"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg><p>暂无视频</p></div>';
+      embed.onclick = null;
+      return;
+    }
+    if (v.video_url) {
+      embed.innerHTML =
+        '<div class="placeholder" style="cursor:pointer"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg><p>点击播放</p></div>';
+      embed.onclick = () => playVideoDoc(v);
+    } else if (v.cde_file_id) {
+      embed.innerHTML =
+        '<div class="placeholder" style="cursor:pointer"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg><p>点击播放</p></div>';
+      embed.onclick = () => playVideoDoc(v);
+    } else {
+      embed.innerHTML = '<div class="placeholder"><p>无可播放文件</p></div>';
     }
   }
 
-  async function init() {
-    const user = await ChoirAuth.requireLogin();
-    if (!user) return;
-    const id = getDocId();
-    if (id) {
-      await loadDocument(id);
+  async function playVideoDoc(v) {
+    if (v.video_url) {
+      window.openVideoModal(v.video_url, v.title);
       return;
     }
-    const workId = getWorkId();
-    if (workId) {
-      const work = await ChoirAPI.get("/works/" + workId);
-      if (work.primary_score_id) {
-        const qs = new URLSearchParams(window.location.search);
-        qs.delete("work_id");
-        qs.set("id", String(work.primary_score_id));
-        window.location.replace(
-          "极简中式-乐谱详情.html?" + qs.toString()
-        );
-        return;
+    await window.ChoirMedia.playDocument(v.document_id);
+  }
+
+  function renderRelated() {
+    const list = $("relatedList");
+    if (!list) return;
+    let html = '<a class="related-item" href="极简中式-资料管理.html">← 返回资料列表</a>';
+    const others = scoreDocs().filter(
+      (d) => d.document_id !== scoreDoc?.document_id
+    );
+    others.forEach((d) => {
+      html +=
+        '<a class="related-item" href="极简中式-乐谱详情.html?id=' +
+        d.document_id +
+        '"><div class="related-info"><div class="related-name">' +
+        esc(d.title || d.file_name) +
+        '</div><div class="related-meta">相关乐谱</div></div></a>';
+    });
+    if (work?.work_id) {
+      html +=
+        '<a class="related-item" href="极简中式-作品详情.html?work_id=' +
+        work.work_id +
+        '"><div class="related-info"><div class="related-name">作品资料（伴奏等）</div></div></a>';
+    }
+    list.innerHTML = html;
+  }
+
+  function renderAll() {
+    setBreadcrumb();
+    setViewerTitle();
+    bindWriteActions();
+    renderIntro();
+    renderMeta();
+    renderScoreViewer();
+    renderDemoList();
+    renderPartList();
+    renderVideo();
+    renderRelated();
+  }
+
+  async function editIntro() {
+    if (!scoreDoc?.document_id) {
+      alert("请先上传乐谱后再编辑介绍");
+      return;
+    }
+    const val = prompt("乐谱介绍（支持多行）", scoreDoc.description || "");
+    if (val === null) return;
+    scoreDoc = await patchDoc(scoreDoc.document_id, { description: val });
+    renderIntro();
+  }
+
+  async function editMeta() {
+    if (!scoreDoc?.document_id) {
+      alert("请先上传乐谱");
+      return;
+    }
+    const category = prompt("分类", scoreDoc.category || "");
+    if (category === null) return;
+    const style = prompt("风格", scoreDoc.style || "");
+    if (style === null) return;
+    const collection = prompt("合集", scoreDoc.collection || scoreDoc.collection_name || "");
+    if (collection === null) return;
+    const musical_key = prompt("调性", scoreDoc.musical_key || "");
+    if (musical_key === null) return;
+    scoreDoc = await patchDoc(scoreDoc.document_id, {
+      category,
+      style,
+      collection_name: collection,
+      musical_key,
+    });
+    renderMeta();
+  }
+
+  async function editVideoSummary() {
+    const v = primaryVideo();
+    if (!v) {
+      alert("请先上传视频");
+      return;
+    }
+    const val = prompt("视频摘要", v.description || "");
+    if (val === null) return;
+    await patchDoc(v.document_id, { description: val });
+    await refresh();
+  }
+
+  function pickFile(accept, multiple, onPick) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.multiple = !!multiple;
+    input.hidden = true;
+    document.body.appendChild(input);
+    input.addEventListener("change", () => {
+      const files = Array.from(input.files || []);
+      input.remove();
+      if (files.length) onPick(files);
+    });
+    input.click();
+  }
+
+  async function uploadScore(files) {
+    for (const file of files) {
+      const uploaded = await uploadAsset(file, "score");
+      scoreDoc = uploaded;
+    }
+    await refresh();
+    if (scoreDoc?.document_id) {
+      const qs = new URLSearchParams(window.location.search);
+      qs.set("id", String(scoreDoc.document_id));
+      qs.delete("work_id");
+      history.replaceState(null, "", "?" + qs.toString());
+    }
+  }
+
+  async function uploadDemo(files) {
+    for (const file of files) await uploadAsset(file, "accompaniment");
+    await refresh();
+  }
+
+  async function uploadPart(files) {
+    const partStr = prompt(
+      "声部编号：1女高 2女低 3男高 4男低 5-8扩展",
+      "1"
+    );
+    if (partStr === null) return;
+    const part = parseInt(partStr, 10);
+    if (!VOICE[part]) {
+      alert("无效声部");
+      return;
+    }
+    for (const file of files) {
+      await uploadAsset(file, "accompaniment", { voice_parts: [part] });
+    }
+    await refresh();
+  }
+
+  async function uploadVideo(files) {
+    if (files.length && files[0].size > 0) {
+      await uploadAsset(files[0], "performance_video");
+    } else {
+      const url = prompt("视频链接（可选，留空仅上传文件）", "");
+      if (url === null) return;
+      if (url) {
+        const title = prompt("视频标题", "献唱视频") || "献唱视频";
+        const fd = new FormData();
+        fd.append("file", new Blob(["link"], { type: "text/plain" }), "link.txt");
+        fd.append("title", title);
+        fd.append("doc_type", "performance_video");
+        fd.append("work_id", String(work.work_id));
+        fd.append("video_url", url);
+        await ChoirAPI.postForm("/documents/upload", fd);
       }
-      showNoScoreForWork(work);
+    }
+    await refresh();
+  }
+
+  function bindUi() {
+    $("btnEditIntro")?.addEventListener("click", () => editIntro().catch((e) => alert(e.message)));
+    $("btnEditMeta")?.addEventListener("click", () => editMeta().catch((e) => alert(e.message)));
+    $("btnEditVideoDesc")?.addEventListener("click", () =>
+      editVideoSummary().catch((e) => alert(e.message))
+    );
+    $("btnUploadScore")?.addEventListener("click", () => {
+      pickFile(".pdf,application/pdf,image/*", false, (files) =>
+        uploadScore(files).catch((e) => alert(e.message || "上传失败"))
+      );
+    });
+    $("btnUploadDemo")?.addEventListener("click", () => {
+      pickFile("audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg", true, (files) =>
+        uploadDemo(files).catch((e) => alert(e.message || "上传失败"))
+      );
+    });
+    $("btnUploadPart")?.addEventListener("click", () => {
+      pickFile("audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg", true, (files) =>
+        uploadPart(files).catch((e) => alert(e.message || "上传失败"))
+      );
+    });
+    $("btnUploadVideo")?.addEventListener("click", () => {
+      pickFile("video/*,.mp4,.mov,.webm", false, (files) => {
+        if (files.length) {
+          uploadVideo(files).catch((e) => alert(e.message || "上传失败"));
+        } else {
+          uploadVideo([]).catch((e) => alert(e.message || "上传失败"));
+        }
+      });
+    });
+    $("btnDeleteVideo")?.addEventListener("click", () => {
+      const v = primaryVideo();
+      if (v) deleteDoc(v.document_id);
+    });
+    $("btnDownloadScore")?.addEventListener("click", () => {
+      if (!scoreDoc) return;
+      window.ChoirMedia.downloadDocument(
+        scoreDoc.document_id,
+        scoreDoc.file_name || scoreDoc.title
+      ).catch((e) => alert(e.message || "下载失败"));
+    });
+    $("btnScoreExpandClose")?.addEventListener("click", closeScoreExpand);
+    $("scoreExpandModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "scoreExpandModal") closeScoreExpand();
+    });
+    $("btnAddVideoLink")?.addEventListener("click", () => {
+      uploadVideo([]).catch((e) => alert(e.message || "失败"));
+    });
+  }
+
+  async function init() {
+    currentUser = await ChoirAuth.requireLogin();
+    if (!currentUser) return;
+
+    const docId = getDocId();
+    const workId = getWorkId();
+
+    if (docId) {
+      await loadContext(docId, 0);
+    } else if (workId) {
+      await loadContext(0, workId);
+    } else {
+      alert("缺少作品或乐谱参数");
+      window.location.href = "极简中式-资料管理.html";
       return;
     }
-    alert("缺少资料 ID");
-    window.location.href = "极简中式-资料管理.html";
+
+    if (!work) {
+      alert("作品不存在");
+      window.location.href = "极简中式-资料管理.html";
+      return;
+    }
+
+    bindUi();
+    renderAll();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
