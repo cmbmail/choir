@@ -58,25 +58,6 @@
     );
   }
 
-  function canWriteWork() {
-    if (currentUser?.system_super_admin) return true;
-    if (!work?.is_owner) return false;
-    return (
-      window.ChoirAuth.hasPermission(currentUser, "works.write") ||
-      window.ChoirAuth.hasPermission(currentUser, "works.*") ||
-      window.ChoirAuth.hasPermission(currentUser, "documents.write") ||
-      window.ChoirAuth.hasPermission(currentUser, "documents.*")
-    );
-  }
-
-  function canDeleteWork() {
-    if (currentUser?.system_super_admin) return !!work?.is_owner;
-    if (!work?.is_owner) return false;
-    return ["super_admin", "conductor", "general_affairs"].includes(
-      currentUser?.role_code || ""
-    );
-  }
-
   /** @deprecated use canWriteDocs */
   function canWrite() {
     return canWriteDocs();
@@ -228,72 +209,9 @@
 
   function bindWriteActions() {
     const showDocs = canWriteDocs();
-    const showWork = canWriteWork();
-    const showDelete = canDeleteWork();
     document.querySelectorAll("[data-write-only]").forEach((el) => {
       el.hidden = !showDocs;
     });
-    document.querySelectorAll("[data-write-work-only]").forEach((el) => {
-      if (el.id === "btnDeleteWork") {
-        el.hidden = !showDelete;
-      } else {
-        el.hidden = !showWork;
-      }
-    });
-  }
-
-  function renderWorkInfo() {
-    if ($("wiName")) $("wiName").textContent = work?.name || "—";
-    if ($("wiComposer")) $("wiComposer").textContent = work?.composer || "—";
-    const card = $("workInfoCard");
-    if (card) card.hidden = !work?.work_id;
-  }
-
-  function openWorkEditModal() {
-    if (!canWriteWork() || !work?.work_id) return;
-    if ($("workEditName")) $("workEditName").value = work.name || "";
-    if ($("workEditComposer")) $("workEditComposer").value = work.composer || "";
-    const modal = $("workEditModal");
-    if (modal) {
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
-    }
-  }
-
-  function closeWorkEditModal() {
-    const modal = $("workEditModal");
-    if (modal) {
-      modal.classList.remove("open");
-      modal.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  async function saveWorkEditModal() {
-    if (!work?.work_id) return;
-    const name = ($("workEditName")?.value || "").trim();
-    if (!name) {
-      await ChoirDialog.alert("作品名称不能为空");
-      return;
-    }
-    const composer = ($("workEditComposer")?.value || "").trim();
-    work = await ChoirAPI.patch("/works/" + work.work_id, {
-      name,
-      composer,
-    });
-    setBreadcrumb();
-    setViewerTitle();
-    renderWorkInfo();
-    closeWorkEditModal();
-  }
-
-  async function deleteWorkToTrash() {
-    if (!work?.work_id || !canDeleteWork()) return;
-    const msg =
-      `确定将作品「${work.name || ""}」移入回收站？\n` +
-      "将同时隐藏该作品下的全部资料，可在回收站恢复。";
-    if (!(await ChoirDialog.confirm(msg, "移入回收站"))) return;
-    await ChoirAPI.del("/works/" + work.work_id);
-    window.location.href = "极简中式-资料管理.html";
   }
 
   function renderIntroHtml(raw) {
@@ -327,13 +245,6 @@
 
   function renderMeta() {
     const d = scoreDoc;
-    renderWorkInfo();
-    if ($("diWorkRow")) $("diWorkRow").hidden = true;
-    if ($("diWork")) {
-      $("diWork").textContent = work
-        ? (work.name || "") + (work.composer ? " · " + work.composer : "")
-        : "—";
-    }
     if ($("diCategory")) $("diCategory").textContent = d?.category || "—";
     if ($("diStyle")) $("diStyle").textContent = d?.style || "—";
     if ($("diCollection")) {
@@ -893,17 +804,6 @@
   }
 
   function bindUi() {
-    $("btnEditWork")?.addEventListener("click", openWorkEditModal);
-    $("workEditCancel")?.addEventListener("click", closeWorkEditModal);
-    $("workEditSave")?.addEventListener("click", () =>
-      saveWorkEditModal().catch((e) => ChoirDialog.alert(e.message || "保存失败"))
-    );
-    $("workEditModal")?.addEventListener("click", (e) => {
-      if (e.target.id === "workEditModal") closeWorkEditModal();
-    });
-    $("btnDeleteWork")?.addEventListener("click", () =>
-      deleteWorkToTrash().catch((e) => ChoirDialog.alert(e.message || "删除失败"))
-    );
     $("btnEditIntro")?.addEventListener("click", () => editIntro().catch((e) => ChoirDialog.alert(e.message || "失败")));
     $("btnEditMeta")?.addEventListener("click", () =>
       openMetaModal().catch((e) => ChoirDialog.alert(e.message || "打开失败"))

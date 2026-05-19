@@ -122,7 +122,18 @@
   function canWrite() {
     return (
       currentUser?.system_super_admin ||
-      window.ChoirAuth.hasPermission(currentUser, "documents.write")
+      window.ChoirAuth.hasPermission(currentUser, "documents.write") ||
+      window.ChoirAuth.hasPermission(currentUser, "documents.*")
+    );
+  }
+
+  function canWriteWork(w) {
+    if (currentUser?.system_super_admin) return true;
+    if (w && w.is_owner === false) return false;
+    return (
+      canWrite() ||
+      window.ChoirAuth.hasPermission(currentUser, "works.write") ||
+      window.ChoirAuth.hasPermission(currentUser, "works.*")
     );
   }
 
@@ -134,11 +145,7 @@
     );
   }
 
-  function canEditWorkMeta(w) {
-    if (!canWrite()) return false;
-    if (w && w.is_owner === false) return false;
-    return true;
-  }
+  let editingWorkId = null;
 
   function canManageTrash() {
     return canDeleteWork({ is_owner: true });
@@ -477,7 +484,7 @@
     if (!body) return;
     if (!list.length) {
       body.innerHTML =
-        '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无作品，可点击「新建」或「导入」批量添加 PDF 歌谱</td></tr>';
+        '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无作品，可点击「新建」或「导入」批量添加 PDF 歌谱</td></tr>';
       return;
     }
     body.innerHTML = list
@@ -488,6 +495,21 @@
               esc(w.owner_choir_name) +
               "</span>"
             : "";
+        let actions = "";
+        if (w.is_owner !== false) {
+          if (canWriteWork(w)) {
+            actions +=
+              '<button type="button" class="doc-action-btn" data-edit-work="' +
+              w.work_id +
+              '">编辑</button> ';
+          }
+          if (canDeleteWork(w)) {
+            actions +=
+              '<button type="button" class="doc-action-btn" style="color:var(--cinnabar)" data-del-work="' +
+              w.work_id +
+              '">删除</button>';
+          }
+        }
         return (
           "<tr>" +
           '<td><div class="doc-name-cell">' +
@@ -512,10 +534,29 @@
           "<td>" +
           formatDate(w.created_at) +
           "</td>" +
+          '<td style="white-space:nowrap">' +
+          actions +
+          "</td>" +
           "</tr>"
         );
       })
       .join("");
+    body.querySelectorAll("[data-edit-work]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openWorkEditModal(parseInt(btn.dataset.editWork, 10));
+      });
+    });
+    body.querySelectorAll("[data-del-work]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const wid = parseInt(btn.dataset.delWork, 10);
+        const w = works.find((x) => x.work_id === wid);
+        deleteWork(wid, w?.name).catch((err) =>
+          toast(err.message || "删除失败", true)
+        );
+      });
+    });
   }
 
   function closeNewWorkModal() {
@@ -858,25 +899,47 @@
     tbody.querySelector(".import-name-input")?.focus();
   }
 
-  async function renameWork(workId, currentName) {
-    const name = await ChoirDialog.prompt({
-      title: "修改作品名称",
-      label: "作品名称",
-      value: currentName || "",
-      required: true,
-      maxlength: 100,
-    });
-    if (name === null) return;
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast("作品名称不能为空");
+  function openWorkEditModal(workId) {
+    const w = works.find((x) => x.work_id === workId);
+    if (!w || !canWriteWork(w)) return;
+    editingWorkId = workId;
+    const nameInput = document.getElementById("workEditName");
+    const composerInput = document.getElementById("workEditComposer");
+    const modal = document.getElementById("workEditModal");
+    if (!modal || !nameInput) return;
+    nameInput.value = w.name || "";
+    if (composerInput) composerInput.value = w.composer || "";
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    nameInput.focus();
+  }
+
+  function closeWorkEditModal() {
+    editingWorkId = null;
+    const modal = document.getElementById("workEditModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  async function saveWorkEditModal() {
+    if (!editingWorkId) return;
+    const name = (document.getElementById("workEditName")?.value || "").trim();
+    if (!name) {
+      toast("作品名称不能为空", true);
       return;
     }
+    const composer = (
+      document.getElementById("workEditComposer")?.value || ""
+    ).trim();
     try {
-      await ChoirAPI.patch(`/works/${workId}`, { name: trimmed });
+      await ChoirAPI.patch(`/works/${editingWorkId}`, { name, composer });
+      closeWorkEditModal();
       await loadWorks();
+      toast("已保存");
     } catch (e) {
-      toast(e.message || "保存失败");
+      toast(e.message || "保存失败", true);
     }
   }
 
@@ -1125,6 +1188,18 @@
     });
     document.getElementById("newWorkModal")?.addEventListener("click", (e) => {
       if (e.target.id === "newWorkModal") closeNewWorkModal();
+    });
+
+    document.getElementById("workEditCancel")?.addEventListener("click", closeWorkEditModal);
+    document.getElementById("workEditSave")?.addEventListener("click", () => {
+      saveWorkEditModal().catch((e) => toast(e.message || "保存失败", true));
+    });
+    document.getElementById("workEditForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveWorkEditModal().catch((err) => toast(err.message || "保存失败", true));
+    });
+    document.getElementById("workEditModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "workEditModal") closeWorkEditModal();
     });
 
     const importInput = document.getElementById("importPdfInput");
