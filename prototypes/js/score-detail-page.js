@@ -186,7 +186,7 @@
   }
 
   async function deleteDoc(docId) {
-    if (!confirm("确定删除该文件？")) return;
+    if (!(await ChoirDialog.confirm("确定删除该文件？", "删除文件"))) return;
     await ChoirAPI.del("/documents/" + docId);
     if (scoreDoc?.document_id === docId) scoreDoc = null;
     await refresh();
@@ -458,7 +458,7 @@
         window.ChoirMedia.downloadDocument(
           parseInt(btn.dataset.dl, 10),
           doc?.file_name || doc?.title
-        ).catch((e) => alert(e.message || "下载失败"));
+        ).catch((e) => ChoirDialog.alert(e.message || "下载失败"));
       });
     });
     list.querySelectorAll("[data-del]").forEach((btn) => {
@@ -471,7 +471,7 @@
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         window.ChoirMedia.playDocument(parseInt(btn.dataset.play, 10)).catch((err) =>
-          alert(err.message || "无法播放")
+          ChoirDialog.alert(err.message || "无法播放")
         );
       });
     });
@@ -553,11 +553,11 @@
 
   async function editIntro() {
     if (!scoreDoc?.document_id) {
-      alert("请先上传乐谱后再编辑介绍");
+      await ChoirDialog.alert("请先上传乐谱后再编辑介绍");
       return;
     }
     if (!window.ChoirRichEditor) {
-      alert("富文本编辑器加载失败，请刷新页面重试");
+      await ChoirDialog.alert("富文本编辑器加载失败，请刷新页面重试");
       return;
     }
     let html;
@@ -567,7 +567,7 @@
         html: scoreDoc.description || "",
       });
     } catch (e) {
-      alert(e.message || "无法打开编辑器");
+      await ChoirDialog.alert(e.message || "无法打开编辑器");
       return;
     }
     if (html === null) return;
@@ -596,14 +596,14 @@
 
   async function openMetaModal() {
     if (!scoreDoc?.document_id) {
-      alert("请先上传乐谱");
+      await ChoirDialog.alert("请先上传乐谱");
       return;
     }
     await loadChoirWorks();
     const sel = $("metaEditWork");
     if (!sel) return;
     if (!choirWorks.length) {
-      alert("暂无可用作品，请先在资料管理中创建作品");
+      await ChoirDialog.alert("暂无可用作品，请先在资料管理中创建作品");
       return;
     }
     const currentWorkId = work?.work_id || scoreDoc.work_id;
@@ -647,7 +647,7 @@
     const sel = $("metaEditWork");
     const workId = sel ? parseInt(sel.value, 10) : NaN;
     if (!Number.isFinite(workId)) {
-      alert("请选择所属作品");
+      await ChoirDialog.alert("请选择所属作品");
       return;
     }
 
@@ -680,10 +680,16 @@
   async function editVideoSummary() {
     const v = primaryVideo();
     if (!v) {
-      alert("请先上传视频");
+      await ChoirDialog.alert("请先上传视频");
       return;
     }
-    const val = prompt("视频摘要", v.description || "");
+    const val = await ChoirDialog.prompt({
+      title: "编辑视频摘要",
+      label: "摘要",
+      value: v.description || "",
+      multiline: true,
+      maxlength: 2000,
+    });
     if (val === null) return;
     await patchDoc(v.document_id, { description: val });
     await refresh();
@@ -724,14 +730,25 @@
   }
 
   async function uploadPart(files) {
-    const partStr = prompt(
-      "声部编号：1=S1 2=S2 3=A1 4=A2 5=T1 6=T2 7=B1 8=B2",
-      "1"
-    );
-    if (partStr === null) return;
-    const part = parseInt(partStr, 10);
+    const picked = await ChoirDialog.form({
+      title: "上传分部伴奏",
+      hint: "选择该伴奏对应的声部",
+      wide: false,
+      fields: [
+        {
+          key: "part",
+          label: "声部",
+          type: "select",
+          required: true,
+          value: "1",
+          options: ChoirDialog.voiceOptions,
+        },
+      ],
+    });
+    if (!picked) return;
+    const part = parseInt(picked.part, 10);
     if (!VOICE[part]) {
-      alert("无效声部");
+      await ChoirDialog.alert("无效声部");
       return;
     }
     for (const file of files) {
@@ -744,10 +761,26 @@
     if (files.length && files[0].size > 0) {
       await uploadAsset(files[0], "performance_video");
     } else {
-      const url = prompt("视频链接（可选，留空仅上传文件）", "");
-      if (url === null) return;
+      const data = await ChoirDialog.form({
+        title: "添加视频链接",
+        fields: [
+          {
+            key: "url",
+            label: "视频链接",
+            placeholder: "https://...",
+          },
+          {
+            key: "title",
+            label: "视频标题",
+            value: "献唱视频",
+            maxlength: 100,
+          },
+        ],
+      });
+      if (!data) return;
+      const url = (data.url || "").trim();
       if (url) {
-        const title = prompt("视频标题", "献唱视频") || "献唱视频";
+        const title = (data.title || "献唱视频").trim() || "献唱视频";
         const fd = new FormData();
         fd.append("file", new Blob(["link"], { type: "text/plain" }), "link.txt");
         fd.append("title", title);
@@ -761,41 +794,41 @@
   }
 
   function bindUi() {
-    $("btnEditIntro")?.addEventListener("click", () => editIntro().catch((e) => alert(e.message)));
+    $("btnEditIntro")?.addEventListener("click", () => editIntro().catch((e) => ChoirDialog.alert(e.message || "失败")));
     $("btnEditMeta")?.addEventListener("click", () =>
-      openMetaModal().catch((e) => alert(e.message || "打开失败"))
+      openMetaModal().catch((e) => ChoirDialog.alert(e.message || "打开失败"))
     );
     $("metaEditCancel")?.addEventListener("click", closeMetaModal);
     $("metaEditSave")?.addEventListener("click", () =>
-      saveMetaModal().catch((e) => alert(e.message || "保存失败"))
+      saveMetaModal().catch((e) => ChoirDialog.alert(e.message || "保存失败"))
     );
     $("metaEditModal")?.addEventListener("click", (e) => {
       if (e.target.id === "metaEditModal") closeMetaModal();
     });
     $("btnEditVideoDesc")?.addEventListener("click", () =>
-      editVideoSummary().catch((e) => alert(e.message))
+      editVideoSummary().catch((e) => ChoirDialog.alert(e.message || "失败"))
     );
     $("btnUploadScore")?.addEventListener("click", () => {
       pickFile(".pdf,application/pdf,image/*", false, (files) =>
-        uploadScore(files).catch((e) => alert(e.message || "上传失败"))
+        uploadScore(files).catch((e) => ChoirDialog.alert(e.message || "上传失败"))
       );
     });
     $("btnUploadDemo")?.addEventListener("click", () => {
       pickFile("audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg", true, (files) =>
-        uploadDemo(files).catch((e) => alert(e.message || "上传失败"))
+        uploadDemo(files).catch((e) => ChoirDialog.alert(e.message || "上传失败"))
       );
     });
     $("btnUploadPart")?.addEventListener("click", () => {
       pickFile("audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg", true, (files) =>
-        uploadPart(files).catch((e) => alert(e.message || "上传失败"))
+        uploadPart(files).catch((e) => ChoirDialog.alert(e.message || "上传失败"))
       );
     });
     $("btnUploadVideo")?.addEventListener("click", () => {
       pickFile("video/*,.mp4,.mov,.webm", false, (files) => {
         if (files.length) {
-          uploadVideo(files).catch((e) => alert(e.message || "上传失败"));
+          uploadVideo(files).catch((e) => ChoirDialog.alert(e.message || "上传失败"));
         } else {
-          uploadVideo([]).catch((e) => alert(e.message || "上传失败"));
+          uploadVideo([]).catch((e) => ChoirDialog.alert(e.message || "上传失败"));
         }
       });
     });
@@ -808,14 +841,14 @@
       window.ChoirMedia.downloadDocument(
         scoreDoc.document_id,
         scoreDoc.file_name || scoreDoc.title
-      ).catch((e) => alert(e.message || "下载失败"));
+      ).catch((e) => ChoirDialog.alert(e.message || "下载失败"));
     });
     $("btnScoreExpandClose")?.addEventListener("click", closeScoreExpand);
     $("scoreExpandModal")?.addEventListener("click", (e) => {
       if (e.target.id === "scoreExpandModal") closeScoreExpand();
     });
     $("btnAddVideoLink")?.addEventListener("click", () => {
-      uploadVideo([]).catch((e) => alert(e.message || "失败"));
+      uploadVideo([]).catch((e) => ChoirDialog.alert(e.message || "失败"));
     });
   }
 
@@ -831,13 +864,13 @@
     } else if (workId) {
       await loadContext(0, workId);
     } else {
-      alert("缺少作品或乐谱参数");
+      await ChoirDialog.alert("缺少作品或乐谱参数");
       window.location.href = "极简中式-资料管理.html";
       return;
     }
 
     if (!work) {
-      alert("作品不存在");
+      await ChoirDialog.alert("作品不存在");
       window.location.href = "极简中式-资料管理.html";
       return;
     }
@@ -855,7 +888,7 @@
         e.status === 403
           ? "无权限查看该作品或乐谱，请确认已登录且有资料阅读权限。"
           : e.message || "加载失败";
-      alert(msg);
+      await ChoirDialog.alert(msg);
       if (e.status === 403 || e.status === 410) {
         window.location.href = "极简中式-资料管理.html";
       }

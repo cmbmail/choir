@@ -452,10 +452,13 @@ closeBtn.addEventListener('click', () => modal.classList.remove('show'));
 cancelBtn.addEventListener('click', () => modal.classList.remove('show'));
 modal.addEventListener('click', e => { if(e.target===modal) modal.classList.remove('show'); });
 
-document.getElementById('saveRehearsal').addEventListener('click', () => {
+document.getElementById('saveRehearsal').addEventListener('click', async () => {
   const title = document.getElementById('rehearsalTitle').value;
-  if(!title) { alert('请输入排练标题'); return; }
-  alert('排练已保存');
+  if (!title) {
+    await ChoirDialog.alert('请输入排练标题');
+    return;
+  }
+  await ChoirDialog.alert('排练已保存');
   modal.classList.remove('show');
 });
 
@@ -466,6 +469,7 @@ renderRehearsals();
 <script src="/js/api.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/permissions.js"></script>
+<script src="/js/ui-dialog.js?v=20260530"></script>
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script>document.addEventListener("DOMContentLoaded", () => {

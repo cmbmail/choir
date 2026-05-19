@@ -3,9 +3,13 @@
  */
 (function () {
   function toast(msg, isErr) {
+    if (window.ChoirDialog) {
+      ChoirDialog.toast(msg, isErr);
+      return;
+    }
     const el = document.getElementById("toast");
     if (!el) {
-      if (isErr) alert(msg);
+      if (isErr) void ChoirDialog.alert(msg);
       return;
     }
     el.textContent = msg;
@@ -117,7 +121,7 @@
 
   async function setChoirStatus(choirId, status) {
     const label = status === "suspended" ? "停用" : "恢复";
-    if (!confirm(`确定要${label}该合唱团？`)) return;
+    if (!(await ChoirDialog.confirm(`确定要${label}该合唱团？`, label + "合唱团"))) return;
     try {
       await ChoirAPI.patch(`/choirs/${choirId}/status`, { status });
       toast(`已${label}`);
@@ -177,7 +181,13 @@
   }
 
   async function renameChoir(choirId, currentName) {
-    const name = prompt("合唱团名称", currentName);
+    const name = await ChoirDialog.prompt({
+      title: "修改合唱团名称",
+      label: "合唱团名称",
+      value: currentName || "",
+      required: true,
+      maxlength: 100,
+    });
     if (!name || name.trim() === currentName) return;
     try {
       await ChoirAPI.put(`/choirs/${choirId}`, { name: name.trim() });

@@ -58,7 +58,7 @@
     }
     sel.addEventListener("change", () => {
       sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
-      loadWorks().catch((e) => alert(e.message || "加载失败"));
+      loadWorks().catch((e) => ChoirDialog.alert(e.message || "加载失败"));
     });
   }
 
@@ -130,14 +130,24 @@
   }
 
   async function createWork() {
-    const name = prompt("作品名称");
-    if (!name || !name.trim()) return;
-    const composer = prompt("作曲者（可选）", "") || "";
-    const body = { name: name.trim(), composer: composer.trim() };
+    const data = await ChoirDialog.form({
+      title: "新建作品",
+      fields: [
+        { key: "name", label: "作品名称", required: true, maxlength: 100 },
+        { key: "composer", label: "作曲者（可选）", maxlength: 50 },
+      ],
+    });
+    if (!data) return;
+    const name = (data.name || "").trim();
+    if (!name) {
+      await ChoirDialog.alert("请输入作品名称");
+      return;
+    }
+    const body = { name, composer: (data.composer || "").trim() };
     if (currentUser.system_super_admin) {
       const cid = getAdminChoirId();
       if (!cid) {
-        alert("请选择所属合唱团");
+        await ChoirDialog.alert("请选择所属合唱团");
         return;
       }
       body.choir_id = cid;
@@ -150,7 +160,7 @@
         window.location.href = workEntryHref(res);
       }
     } catch (e) {
-      alert(e.message || "创建失败");
+      await ChoirDialog.alert(e.message || "创建失败");
     }
   }
 
@@ -174,7 +184,7 @@
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
     init().catch((e) => {
-      if (e.message !== "未登录") alert(e.message || "加载失败");
+      if (e.message !== "未登录") ChoirDialog.alert(e.message || "加载失败");
     });
   });
 })();

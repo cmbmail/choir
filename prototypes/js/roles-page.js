@@ -27,7 +27,7 @@
   function toast(msg, isErr) {
     const el = document.getElementById("toast");
     if (!el) {
-      if (isErr) alert(msg);
+      if (isErr) ChoirDialog.alert(msg); else ChoirDialog.toast(msg);
       return;
     }
     el.textContent = msg;

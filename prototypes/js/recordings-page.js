@@ -145,19 +145,19 @@
         try {
           await window.ChoirMedia.playRecording(btn.dataset.play);
         } catch (err) {
-          alert(err.message || "播放失败");
+          ChoirDialog.alert(err.message || "播放失败");
         }
       });
     });
     container.querySelectorAll("[data-del-rec]").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        if (!confirm("确定删除该录音？")) return;
+        if (!(await ChoirDialog.confirm("确定删除该录音？", "删除录音"))) return;
         try {
           await ChoirAPI.del(`/recordings/${btn.dataset.delRec}`);
           await loadWorks();
         } catch (err) {
-          alert(err.message || "删除失败");
+          ChoirDialog.alert(err.message || "删除失败");
         }
       });
     });
@@ -216,9 +216,26 @@
       const file = input.files[0];
       input.value = "";
       if (!file) return;
-      const name =
-        prompt("录音名称", file.name.replace(/\.[^.]+$/, "")) || file.name;
-      const partsRaw = prompt("关联声部编号（1-8，逗号分隔，可留空）", "");
+      const meta = await ChoirDialog.form({
+        title: "上传录音",
+        fields: [
+          {
+            key: "name",
+            label: "录音名称",
+            value: file.name.replace(/\.[^.]+$/, ""),
+            required: true,
+            maxlength: 100,
+          },
+          {
+            key: "parts",
+            label: "关联声部（1-8，逗号分隔，可留空）",
+            placeholder: "如 1,2,5",
+          },
+        ],
+      });
+      if (!meta) return;
+      const name = meta.name || file.name;
+      const partsRaw = meta.parts || "";
       const fd = new FormData();
       fd.append("file", file);
       fd.append("name", name);
@@ -239,21 +256,35 @@
           if (toggle) toggle.classList.add("expanded");
         }
       } catch (err) {
-        alert(err.message || "上传失败");
+        ChoirDialog.alert(err.message || "上传失败");
       }
     };
     input.click();
   }
 
   async function createWork() {
-    const name = prompt("作品名称");
-    if (!name || !name.trim()) return;
-    const composer = prompt("作曲者（可选）", "") || "";
+    const data = await ChoirDialog.form({
+      title: "新建作品",
+      hint: "创建后可上传录音",
+      fields: [
+        { key: "name", label: "作品名称", required: true, maxlength: 100 },
+        { key: "composer", label: "作曲者（可选）", maxlength: 50 },
+      ],
+    });
+    if (!data) return;
+    const name = (data.name || "").trim();
+    if (!name) {
+      await ChoirDialog.alert("请输入作品名称");
+      return;
+    }
     try {
-      await ChoirAPI.post("/works", { name: name.trim(), composer: composer.trim() });
+      await ChoirAPI.post("/works", {
+        name,
+        composer: (data.composer || "").trim(),
+      });
       await loadWorks();
     } catch (err) {
-      alert(err.message || "创建失败");
+      await ChoirDialog.alert(err.message || "创建失败");
     }
   }
 
@@ -282,7 +313,7 @@
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
     init().catch((e) => {
-      if (e.message !== "未登录") alert(e.message || "加载失败");
+      if (e.message !== "未登录") ChoirDialog.alert(e.message || "加载失败");
     });
   });
 })();

@@ -83,8 +83,10 @@
     return canDeleteWork({ is_owner: true });
   }
 
-  function toast(msg) {
-    alert(msg);
+  function toast(msg, isErr) {
+    if (window.ChoirDialog) ChoirDialog.toast(msg, isErr);
+    else if (isErr) console.error(msg);
+    else console.log(msg);
   }
 
   function isWorksListTab() {
@@ -306,7 +308,7 @@
     const msg =
       `确定将作品「${workName || ""}」移入回收站？\n` +
       `将同时隐藏该作品下的全部资料（歌谱、伴奏等），保留 ${trashRetentionDays} 天后可永久清理。`;
-    if (!confirm(msg)) return;
+    if (!(await ChoirDialog.confirm(msg, "移入回收站"))) return;
     try {
       await ChoirAPI.del(`/works/${workId}`);
       await loadWorks();
@@ -317,7 +319,7 @@
   }
 
   async function restoreWork(workId) {
-    if (!confirm("确定恢复该作品及全部资料？")) return;
+    if (!(await ChoirDialog.confirm("确定恢复该作品及全部资料？", "恢复作品"))) return;
     try {
       await ChoirAPI.post(`/works/${workId}/restore`, {});
       await loadTrash();
@@ -329,9 +331,10 @@
 
   async function purgeWorkPermanent(workId) {
     if (
-      !confirm(
-        "永久删除后无法恢复，将清除作品及全部资料文件。确定继续？"
-      )
+      !(await ChoirDialog.confirm(
+        "永久删除后无法恢复，将清除作品及全部资料文件。确定继续？",
+        "永久删除"
+      ))
     ) {
       return;
     }
@@ -602,7 +605,13 @@
   }
 
   async function renameWork(workId, currentName) {
-    const name = prompt("修改作品名称", currentName || "");
+    const name = await ChoirDialog.prompt({
+      title: "修改作品名称",
+      label: "作品名称",
+      value: currentName || "",
+      required: true,
+      maxlength: 100,
+    });
     if (name === null) return;
     const trimmed = name.trim();
     if (!trimmed) {
@@ -789,7 +798,7 @@
 
     body.querySelectorAll("[data-play-video]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        window.openVideoModal(btn.dataset.playVideo, btn.dataset.title);
+        ChoirDialog.openVideo(btn.dataset.playVideo, btn.dataset.title);
       });
     });
     body.querySelectorAll("[data-play-stream]").forEach((btn) => {
@@ -803,7 +812,7 @@
     });
     body.querySelectorAll("[data-del]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (!confirm("确定删除该资料？")) return;
+        if (!(await ChoirDialog.confirm("确定删除该资料？", "删除资料"))) return;
         try {
           await ChoirAPI.del(`/documents/${btn.dataset.del}`);
           await loadDocs();

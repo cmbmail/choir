@@ -23,6 +23,10 @@
   let members = [];
 
   function toast(msg, isErr) {
+    if (window.ChoirDialog) {
+      ChoirDialog.toast(msg, isErr);
+      return;
+    }
     const el = document.getElementById("toast");
     if (!el) return;
     el.textContent = msg;
@@ -273,7 +277,7 @@
   }
 
   async function revokeInvite(id) {
-    if (!confirm("确定作废该邀请码？")) return;
+    if (!(await ChoirDialog.confirm("确定作废该邀请码？", "作废邀请码"))) return;
     try {
       await ChoirAPI.del(`/invites/${id}`);
       toast("已作废");
@@ -332,7 +336,7 @@
   }
 
   async function unlockMember(id) {
-    if (!confirm("确定解锁该账号？")) return;
+    if (!(await ChoirDialog.confirm("确定解锁该账号？", "解锁账号"))) return;
     try {
       await ChoirAPI.post(`/members/${id}/unlock`, {});
       toast("已解锁");
@@ -343,7 +347,7 @@
   }
 
   async function deleteMember(id) {
-    if (!confirm("确定删除该成员？不可恢复")) return;
+    if (!(await ChoirDialog.confirm("确定删除该成员？不可恢复", "删除成员"))) return;
     try {
       await ChoirAPI.del(`/members/${id}`);
       toast("已删除");

@@ -39,7 +39,7 @@
         row.style.cursor = "pointer";
         row.addEventListener("click", (e) => {
           e.preventDefault();
-          if (confirm("确定退出登录？")) ChoirAuth.logout();
+          ChoirDialog.confirm("确定退出登录？", "退出登录").then((ok) => { if (ok) ChoirAuth.logout(); });
         });
       }
     });

@@ -10,32 +10,36 @@
     if (document.getElementById("modal-password")) return;
     const el = document.createElement("div");
     el.id = "modal-password";
-    el.style.cssText =
-      "position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:900;padding:1rem";
+    el.className = "choir-dialog-overlay";
+    el.setAttribute("aria-hidden", "true");
     el.innerHTML = `
-  <div style="background:#F8F6F0;border:1px solid rgba(28,28,28,0.1);border-radius:8px;padding:1.5rem;width:min(400px,96%)">
-    <h2 style="font-size:1.1rem;font-weight:400;margin-bottom:1rem">修改密码</h2>
-    <form id="form-password">
-      <label style="display:block;font-size:0.8rem;margin:0.5rem 0 0.25rem">原密码</label>
-      <input id="pwd-old" type="password" required style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;margin-bottom:0.5rem" />
-      <label style="display:block;font-size:0.8rem;margin:0.5rem 0 0.25rem">新密码（至少8位，含字母与数字）</label>
-      <input id="pwd-new" type="password" required minlength="8" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;margin-bottom:0.5rem" />
-      <label style="display:block;font-size:0.8rem;margin:0.5rem 0 0.25rem">确认新密码</label>
-      <input id="pwd-new2" type="password" required minlength="8" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;margin-bottom:0.5rem" />
-      <p id="pwd-msg" style="font-size:0.8rem;color:#b03030;min-height:1.2em"></p>
-      <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.75rem">
-        <button type="button" data-close-pwd style="padding:0.5rem 1rem;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer">取消</button>
-        <button type="submit" style="padding:0.5rem 1rem;border:none;border-radius:4px;background:#B8860B;color:#fff;cursor:pointer">保存</button>
+  <div class="choir-dialog-box" style="width:min(400px,96%)">
+    <h2 class="choir-dialog-title">修改密码</h2>
+    <form id="form-password" class="choir-dialog-form">
+      <div><label for="pwd-old">原密码</label>
+      <input id="pwd-old" type="password" required autocomplete="current-password" /></div>
+      <div><label for="pwd-new">新密码（至少8位，含字母与数字）</label>
+      <input id="pwd-new" type="password" required minlength="8" autocomplete="new-password" /></div>
+      <div><label for="pwd-new2">确认新密码</label>
+      <input id="pwd-new2" type="password" required minlength="8" autocomplete="new-password" /></div>
+      <p id="pwd-msg" class="choir-dialog-error" style="min-height:1.2em"></p>
+      <div class="choir-dialog-actions" style="margin-top:0.5rem">
+        <button type="button" class="choir-dialog-btn" data-close-pwd>取消</button>
+        <button type="submit" class="choir-dialog-btn choir-dialog-btn--gold">保存</button>
       </div>
     </form>
   </div>`;
     document.body.appendChild(el);
 
+
     el.querySelector("[data-close-pwd]").addEventListener("click", () => {
-      el.style.display = "none";
+      el.classList.remove("open"); el.setAttribute("aria-hidden", "true");
     });
     el.addEventListener("click", (e) => {
-      if (e.target === el) el.style.display = "none";
+      if (e.target === el) {
+        el.classList.remove("open");
+        el.setAttribute("aria-hidden", "true");
+      }
     });
     document.getElementById("form-password").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -50,8 +54,8 @@
       }
       try {
         await ChoirAPI.put("/auth/password", { old_password: oldP, new_password: n1 });
-        el.style.display = "none";
-        alert("密码已修改，请重新登录");
+        el.classList.remove("open"); el.setAttribute("aria-hidden", "true");
+        await ChoirDialog.alert("密码已修改，请重新登录");
         ChoirAuth.logout();
       } catch (err) {
         msg.textContent = err.message;
@@ -66,7 +70,7 @@
     document.getElementById("pwd-new").value = "";
     document.getElementById("pwd-new2").value = "";
     document.getElementById("pwd-msg").textContent = "";
-    el.style.display = "flex";
+    el.classList.add("open"); el.setAttribute("aria-hidden", "false");
   }
 
   function brandTitle(user) {
@@ -108,7 +112,7 @@
     document.querySelectorAll("[data-logout], #logoutBtn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
-        if (confirm("确定退出登录？")) ChoirAuth.logout();
+        ChoirDialog.confirm("确定退出登录？", "退出登录").then((ok) => { if (ok) ChoirAuth.logout(); });
       });
     });
     document.querySelectorAll("[data-change-password], #changePwdBtn").forEach((btn) => {
@@ -156,12 +160,12 @@
       return null;
     }
     if (opts.systemAdminOnly && !user.system_super_admin) {
-      alert("仅系统超管可访问此页面");
+      ChoirDialog.alert("仅系统超管可访问此页面");
       location.href = (window.CHOIR_UI_BASE || "/ui/") + "极简中式-桌面端.html";
       return null;
     }
     if (opts.requiredPerm && !ChoirAuth.hasPermission(user, opts.requiredPerm)) {
-      alert("无权限访问此页面");
+      ChoirDialog.alert("无权限访问此页面");
       location.href = (window.CHOIR_UI_BASE || "/ui/") + "极简中式-桌面端.html";
       return null;
     }
