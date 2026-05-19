@@ -37,6 +37,16 @@
   let filterCollection = "all";
   let filterStyle = "all";
   let pendingImportFiles = [];
+  let pendingDocImportFiles = [];
+  let pendingDocImportType = "";
+  let pendingNewDocTitle = "";
+
+  const TAB_LABELS = {
+    all: "作品",
+    perf: "演出资料",
+    rehearsal: "排练资料",
+    rule: "规章制度",
+  };
 
   function esc(s) {
     return String(s ?? "")
@@ -95,6 +105,15 @@
 
   function isTrashTab() {
     return currentTab === "trash";
+  }
+
+  function isDocCategoryTab() {
+    return ["perf", "rehearsal", "rule"].includes(currentTab);
+  }
+
+  function docTitleFromFilename(filename) {
+    const base = (filename || "").replace(/\.[^.]+$/, "").trim();
+    return base || "未命名资料";
   }
 
   function getAdminChoirId() {
@@ -158,7 +177,7 @@
   function updateListChrome() {
     const worksMode = isWorksListTab();
     const trashMode = isTrashTab();
-    const actions = document.getElementById("workListActions");
+    const actions = document.getElementById("listTabActions");
     const stats = document.getElementById("docsStatsRow");
     const subFilters = document.getElementById("scoreFilters");
     const worksHead = document.getElementById("worksTableHeadRow");
@@ -170,7 +189,7 @@
     const tabTrash = document.getElementById("tabTrash");
 
     if (tabTrash) tabTrash.hidden = !canManageTrash();
-    if (actions) actions.hidden = !worksMode || !canWrite();
+    if (actions) actions.hidden = trashMode || !canWrite();
     if (stats) stats.hidden = worksMode || trashMode;
     if (subFilters) subFilters.style.display = "none";
     if (worksHead) worksHead.hidden = !worksMode;
@@ -547,6 +566,181 @@
     document.getElementById("importPdfInput")?.click();
   }
 
+  function handleTabImport() {
+    if (!canWrite()) return;
+    if (isWorksListTab()) openPdfImport();
+    else if (isDocCategoryTab()) document.getElementById("importDocInput")?.click();
+  }
+
+  function handleTabNew() {
+    if (!canWrite()) return;
+    if (isWorksListTab()) createWork();
+    else if (isDocCategoryTab()) openNewDoc();
+  }
+
+  async function uploadChoirDocument(file, title, docType) {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return null;
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("title", (title || file.name || "未命名").slice(0, 200));
+    fd.append("doc_type", docType);
+    if (currentUser.system_super_admin) fd.append("choir_id", String(choirId));
+    return ChoirAPI.postForm("/documents/upload", fd);
+  }
+
+  function closeImportDocModal() {
+    const modal = document.getElementById("importDocModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    pendingDocImportFiles = [];
+    pendingDocImportType = "";
+    const tbody = document.getElementById("importDocRows");
+    if (tbody) tbody.innerHTML = "";
+    const status = document.getElementById("importDocStatus");
+    if (status) status.textContent = "";
+    const confirmBtn = document.getElementById("importDocConfirm");
+    const cancelBtn = document.getElementById("importDocCancel");
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+  }
+
+  function showImportDocModal(fileList) {
+    const files = Array.from(fileList || []).filter((f) => f && f.name);
+    if (!files.length) {
+      toast("请选择要导入的文件");
+      return;
+    }
+    if (!requireChoirIdForWrite()) return;
+
+    pendingDocImportFiles = files;
+    pendingDocImportType = currentTab;
+    const label = TAB_LABELS[currentTab] || "资料";
+    const titleEl = document.getElementById("importDocModalTitle");
+    const hintEl = document.getElementById("importDocModalHint");
+    if (titleEl) titleEl.textContent = `批量导入${label}`;
+    if (hintEl) {
+      hintEl.textContent = `每个文件将上传为「${label}」，可在下方修改显示名称。`;
+    }
+
+    const tbody = document.getElementById("importDocRows");
+    const modal = document.getElementById("importDocModal");
+    if (!tbody || !modal) {
+      toast("页面组件未加载完整，请强制刷新后重试");
+      return;
+    }
+    tbody.innerHTML = files
+      .map(
+        (file, i) =>
+          "<tr>" +
+          '<td class="import-file" title="' +
+          esc(file.name) +
+          '">' +
+          esc(file.name) +
+          "</td>" +
+          '<td><input type="text" class="import-name-input" data-doc-idx="' +
+          i +
+          '" value="' +
+          esc(docTitleFromFilename(file.name).slice(0, 200)) +
+          '" maxlength="200"/></td>' +
+          "</tr>"
+      )
+      .join("");
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    tbody.querySelector(".import-name-input")?.focus();
+  }
+
+  async function confirmDocImport() {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId || !pendingDocImportType) return;
+
+    const inputs = document.querySelectorAll("#importDocRows .import-name-input");
+    const entries = [];
+    inputs.forEach((input) => {
+      const idx = parseInt(input.dataset.docIdx, 10);
+      const file = pendingDocImportFiles[idx];
+      if (!file) return;
+      const title =
+        (input.value || "").trim() || docTitleFromFilename(file.name);
+      entries.push({ file, title: title.slice(0, 200) });
+    });
+    if (!entries.length) return;
+
+    const confirmBtn = document.getElementById("importDocConfirm");
+    const cancelBtn = document.getElementById("importDocCancel");
+    const status = document.getElementById("importDocStatus");
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    let ok = 0;
+    const errors = [];
+    for (let i = 0; i < entries.length; i++) {
+      const { file, title } = entries[i];
+      if (status) status.textContent = `导入中 ${i + 1}/${entries.length}…`;
+      try {
+        await uploadChoirDocument(file, title, pendingDocImportType);
+        ok += 1;
+      } catch (e) {
+        errors.push(`${file.name}: ${e.message || "失败"}`);
+      }
+    }
+
+    const typeLabel = TAB_LABELS[pendingDocImportType] || "资料";
+    closeImportDocModal();
+    await loadDocs();
+    if (errors.length && ok) {
+      toast(`成功 ${ok} 个，失败 ${errors.length} 个：\n` + errors.slice(0, 5).join("\n"));
+    } else if (errors.length) {
+      toast("导入失败：\n" + errors.slice(0, 8).join("\n"));
+    } else {
+      toast(`已成功导入 ${ok} 个${typeLabel}`);
+    }
+  }
+
+  async function openNewDoc() {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return;
+    const label = TAB_LABELS[currentTab] || "资料";
+    const data = await ChoirDialog.form({
+      title: `新建${label}`,
+      fields: [
+        { key: "title", label: "资料名称", required: true, maxlength: 200 },
+      ],
+    });
+    if (!data) return;
+    const title = (data.title || "").trim();
+    if (!title) {
+      toast("请输入资料名称");
+      return;
+    }
+    pendingNewDocTitle = title;
+    document.getElementById("newDocFileInput")?.click();
+  }
+
+  async function onNewDocFileSelected(fileList) {
+    const file = (fileList && fileList[0]) || null;
+    const input = document.getElementById("newDocFileInput");
+    if (input) input.value = "";
+    const title = pendingNewDocTitle;
+    pendingNewDocTitle = "";
+    if (!file) {
+      if (title) toast("未选择文件，已取消");
+      return;
+    }
+    if (!title) return;
+    try {
+      await uploadChoirDocument(file, title, currentTab);
+      await loadDocs();
+      toast("已上传");
+    } catch (e) {
+      toast(e.message || "上传失败");
+    }
+  }
+
   function closeImportModal() {
     const modal = document.getElementById("importPdfModal");
     if (modal) {
@@ -717,7 +911,7 @@
     if (!body) return;
     if (!list.length) {
       body.innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无资料</td></tr>';
+        '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无资料，可点击搜索栏右侧「新建」或「导入」</td></tr>';
       return;
     }
     body.innerHTML = list
@@ -855,8 +1049,8 @@
     setActiveTab(tabFromUrl());
     updateListChrome();
 
-    const btnNew = document.getElementById("btnNewWork");
-    if (btnNew && canWrite()) btnNew.addEventListener("click", createWork);
+    document.getElementById("btnTabNew")?.addEventListener("click", handleTabNew);
+    document.getElementById("btnTabImport")?.addEventListener("click", handleTabImport);
 
     document.getElementById("newWorkCancel")?.addEventListener("click", closeNewWorkModal);
     document.getElementById("newWorkConfirm")?.addEventListener("click", () => {
@@ -869,9 +1063,6 @@
     document.getElementById("newWorkModal")?.addEventListener("click", (e) => {
       if (e.target.id === "newWorkModal") closeNewWorkModal();
     });
-
-    const btnImport = document.getElementById("btnImportPdf");
-    if (btnImport && canWrite()) btnImport.addEventListener("click", openPdfImport);
 
     const importInput = document.getElementById("importPdfInput");
     if (importInput) {
@@ -889,6 +1080,30 @@
     document.getElementById("importPdfModal")?.addEventListener("click", (e) => {
       if (e.target.id === "importPdfModal") closeImportModal();
     });
+
+    const importDocInput = document.getElementById("importDocInput");
+    if (importDocInput) {
+      importDocInput.addEventListener("change", () => {
+        const files = Array.from(importDocInput.files || []);
+        importDocInput.value = "";
+        if (files.length) showImportDocModal(files);
+      });
+    }
+    document.getElementById("importDocCancel")?.addEventListener("click", closeImportDocModal);
+    document.getElementById("importDocConfirm")?.addEventListener("click", () => {
+      confirmDocImport().catch((e) => toast(e.message || "导入失败"));
+    });
+    document.getElementById("importDocModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "importDocModal") closeImportDocModal();
+    });
+
+    const newDocFileInput = document.getElementById("newDocFileInput");
+    if (newDocFileInput) {
+      newDocFileInput.addEventListener("change", () => {
+        const files = newDocFileInput.files;
+        onNewDocFileSelected(files).catch((e) => toast(e.message || "上传失败"));
+      });
+    }
 
     bindTabs();
     initFilter("filterCategory", "category");

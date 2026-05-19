@@ -99,8 +99,9 @@ a{color:inherit;text-decoration:none}
 .stat-value{font-size:1.5rem;font-weight:400;color:var(--ink-black);margin-bottom:0.25rem}
 .stat-label{font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}
 
-.search-bar{display:flex;gap:0.75rem;margin-bottom:1.5rem}
-.search-input{flex:1;padding:0.625rem 1rem;border:1px solid var(--border);border-radius:4px;font-size:0.85rem;color:var(--text-primary);background:var(--silk-white);transition:border-color var(--transition)}
+.search-bar{display:flex;gap:0.75rem;align-items:center;margin-bottom:1.5rem}
+.search-bar-actions{display:flex;gap:0.5rem;flex-shrink:0}
+.search-input{flex:1;min-width:0;padding:0.625rem 1rem;border:1px solid var(--border);border-radius:4px;font-size:0.85rem;color:var(--text-primary);background:var(--silk-white);transition:border-color var(--transition)}
 .search-input:focus{border-color:var(--ink-gold);outline:none}
 .search-input::placeholder{color:var(--text-muted)}
 
@@ -267,17 +268,6 @@ a{color:inherit;text-decoration:none}
         </div>
         <p class="page-subtitle">作品与团内资料集中管理</p>
       </div>
-      <div class="page-actions" id="workListActions" hidden>
-        <button type="button" class="btn btn-outline" id="btnImportPdf" data-perm="documents.write">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          导入
-        </button>
-        <button type="button" class="btn btn-gold" id="btnNewWork" data-perm="documents.write">
-          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          新建
-        </button>
-        <input type="file" id="importPdfInput" accept=".pdf,application/pdf" multiple hidden/>
-      </div>
     </div>
 
     <div class="stats-row" id="docsStatsRow">
@@ -348,6 +338,19 @@ a{color:inherit;text-decoration:none}
 
     <div class="search-bar">
       <input type="text" class="search-input" id="searchInput" placeholder="搜索资料名称、合集、风格、分类..."/>
+      <div class="search-bar-actions" id="listTabActions" hidden>
+        <button type="button" class="btn btn-outline" id="btnTabImport" data-perm="documents.write">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          导入
+        </button>
+        <button type="button" class="btn btn-gold" id="btnTabNew" data-perm="documents.write">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新建
+        </button>
+        <input type="file" id="importPdfInput" accept=".pdf,application/pdf" multiple hidden/>
+        <input type="file" id="importDocInput" multiple hidden/>
+        <input type="file" id="newDocFileInput" hidden/>
+      </div>
     </div>
 
     <div class="card">
@@ -415,6 +418,27 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
+<!-- 批量导入团内资料 -->
+<div id="importDocModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-box" style="width:min(720px,100%)">
+    <h2 id="importDocModalTitle">批量导入资料</h2>
+    <p class="modal-hint" id="importDocModalHint">每个文件将上传为当前分类下的资料，可在下方修改显示名称。</p>
+    <div class="modal-scroll">
+      <table class="import-table">
+        <thead>
+          <tr><th>文件名</th><th>资料名称</th></tr>
+        </thead>
+        <tbody id="importDocRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <span id="importDocStatus"></span>
+      <button type="button" class="btn btn-outline" id="importDocCancel">取消</button>
+      <button type="button" class="btn btn-gold" id="importDocConfirm">开始导入</button>
+    </div>
+  </div>
+</div>
+
 <!-- 批量导入 PDF -->
 <div id="importPdfModal" class="modal-overlay" aria-hidden="true">
   <div class="modal-box" style="width:min(720px,100%)">
@@ -443,7 +467,7 @@ a{color:inherit;text-decoration:none}
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260527b"></script>
+<script src="/js/documents-page.js?v=20260531"></script>
 
 </body>
 </html>
