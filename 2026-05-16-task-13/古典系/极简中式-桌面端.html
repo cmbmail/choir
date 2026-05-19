@@ -155,36 +155,6 @@ a{color:inherit;text-decoration:none}
 .sidebar-user-name{font-size:0.8rem;font-weight:400;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-user-role{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Role toggle switch */
-.role-toggle{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0.5rem 0.75rem;
-  background:rgba(28,28,28,0.04);
-  border-radius:6px;
-  border:1px solid var(--border);
-}
-.role-toggle-label{
-  font-size:0.7rem;color:var(--text-muted);
-  display:flex;align-items:center;gap:0.375rem;
-}
-.role-toggle-label svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.role-toggle-label.active{color:var(--ink-gold)}
-.toggle-switch{
-  position:relative;width:44px;height:22px;
-  background:var(--text-muted);border-radius:11px;
-  cursor:pointer;transition:all var(--transition);
-  border:none;padding:0;
-}
-.toggle-switch::after{
-  content:'';position:absolute;
-  top:2px;left:2px;
-  width:18px;height:18px;border-radius:50%;
-  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);
-  transition:all var(--transition);
-}
-.toggle-switch.admin{background:var(--ink-gold)}
-.toggle-switch.admin::after{left:24px}
-
 .content{flex:1;padding:1.25rem;overflow-y:auto;min-height:0}
 
 /* === PAGE HEADER === */
@@ -468,17 +438,6 @@ a{color:inherit;text-decoration:none}
           <div class="sidebar-user-role" id="sidebarUserRole">系统管理员</div>
         </div>
       </div>
-      <div class="role-toggle" id="roleToggle">
-        <div class="role-toggle-label" id="memberLabel">
-          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          团员
-        </div>
-        <button class="toggle-switch admin" id="toggleSwitch" title="切换界面模式"></button>
-        <div class="role-toggle-label" id="adminLabel">
-          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          管理员
-        </div>
-      </div>
     </div>
   </aside>
 
@@ -711,55 +670,6 @@ confirmModal.addEventListener('click',(e)=>{
   }
 });
 
-/* Role toggle */
-const toggleSwitch = document.getElementById('toggleSwitch');
-const memberLabel = document.getElementById('memberLabel');
-const adminLabel = document.getElementById('adminLabel');
-const sidebarUserAvatar = document.getElementById('sidebarUserAvatar');
-const sidebarUserName = document.getElementById('sidebarUserName');
-const sidebarUserRole = document.getElementById('sidebarUserRole');
-
-let isAdmin = true;
-
-function updateRoleUI() {
-  if (isAdmin) {
-    toggleSwitch.classList.add('admin');
-    adminLabel.classList.add('active');
-    memberLabel.classList.remove('active');
-    sidebarUserAvatar.textContent = '刘';
-    sidebarUserName.textContent = '刘管理员';
-    sidebarUserRole.textContent = '系统管理员';
-    // Admin menu items visible
-    document.querySelectorAll('.sidebar-item').forEach((item, idx) => {
-      item.style.display = '';
-      if (idx === 0) item.classList.add('active');
-      else item.classList.remove('active');
-    });
-  } else {
-    toggleSwitch.classList.remove('admin');
-    memberLabel.classList.add('active');
-    adminLabel.classList.remove('active');
-    sidebarUserAvatar.textContent = '刘';
-    sidebarUserName.textContent = '刘团员';
-    sidebarUserRole.textContent = '普通团员';
-    // Show only member-relevant items: 我的首页, 排练计划, 献唱计划, 作业提交
-    document.querySelectorAll('.sidebar-item').forEach((item, idx) => {
-      if (idx < 4) {
-        item.style.display = '';
-        if (idx === 0) item.classList.add('active');
-        else item.classList.remove('active');
-      } else {
-        item.style.display = 'none';
-      }
-    });
-  }
-}
-
-toggleSwitch.addEventListener('click', () => {
-  isAdmin = !isAdmin;
-  updateRoleUI();
-});
-
 /* Home cards data and render */
 const notifications = [
   { tag: 'important', tagText: '重要', title: '六月汇演彩排时间调整为5月25日，请全体团员准时参加', time: '今天 09:00' },
@@ -786,7 +696,6 @@ function renderNotifications() {
 }
 
 // Initialize
-updateRoleUI();
 renderRehearsals();
 renderNotifications();
 
