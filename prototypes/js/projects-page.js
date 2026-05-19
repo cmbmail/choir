@@ -136,12 +136,32 @@
     if (searchQ.trim()) parts.push(`q=${encodeURIComponent(searchQ.trim())}`);
     if (currentUser?.system_super_admin && !choirQuery()) {
       projects = [];
+      selectedId = null;
+      detail = null;
       renderList();
+      renderDetail();
       return;
     }
     const data = await ChoirAPI.get("/projects" + (parts.length ? "?" + parts.join("&") : ""));
     projects = data.projects || [];
-    renderList();
+    await syncDefaultSelection();
+  }
+
+  /** 列表有数据时默认选中第一条（按 updated_at 降序，与 API 一致） */
+  async function syncDefaultSelection() {
+    if (!projects.length) {
+      selectedId = null;
+      detail = null;
+      renderList();
+      renderDetail();
+      return;
+    }
+    const visible = selectedId && projects.some((p) => p.project_id === selectedId);
+    if (!visible) {
+      await selectProject(projects[0].project_id);
+    } else {
+      renderList();
+    }
   }
 
   function renderList() {
