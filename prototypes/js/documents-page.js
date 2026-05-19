@@ -456,23 +456,87 @@
     });
   }
 
-  async function createWork() {
+  function closeNewWorkModal() {
+    const modal = document.getElementById("newWorkModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    const errEl = document.getElementById("newWorkError");
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = "";
+    }
+    const confirmBtn = document.getElementById("newWorkConfirm");
+    const cancelBtn = document.getElementById("newWorkCancel");
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+  }
+
+  function openNewWorkModal() {
     const choirId = requireChoirIdForWrite();
     if (!choirId) return;
-    const name = prompt("作品名称");
-    if (!name || !name.trim()) return;
-    const composer = prompt("作曲者（可选）", "") || "";
-    const body = { name: name.trim(), composer: composer.trim() };
+    const modal = document.getElementById("newWorkModal");
+    const nameInput = document.getElementById("newWorkName");
+    const composerInput = document.getElementById("newWorkComposer");
+    if (!modal || !nameInput) {
+      toast("页面组件未加载完整，请强制刷新后重试");
+      return;
+    }
+    nameInput.value = "";
+    if (composerInput) composerInput.value = "";
+    const errEl = document.getElementById("newWorkError");
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = "";
+    }
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    nameInput.focus();
+  }
+
+  async function submitNewWork() {
+    const choirId = requireChoirIdForWrite();
+    if (!choirId) return;
+    const nameInput = document.getElementById("newWorkName");
+    const composerInput = document.getElementById("newWorkComposer");
+    const errEl = document.getElementById("newWorkError");
+    const name = (nameInput?.value || "").trim();
+    const composer = (composerInput?.value || "").trim();
+    if (!name) {
+      if (errEl) {
+        errEl.textContent = "请输入作品名称";
+        errEl.hidden = false;
+      }
+      nameInput?.focus();
+      return;
+    }
+    const confirmBtn = document.getElementById("newWorkConfirm");
+    const cancelBtn = document.getElementById("newWorkCancel");
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    const body = { name: name.slice(0, 100), composer: composer.slice(0, 50) };
     if (currentUser.system_super_admin) body.choir_id = choirId;
     try {
       const res = await ChoirAPI.post("/works", body);
+      closeNewWorkModal();
       await loadWorks();
-      if (res.work_id) {
-        navigateToWork(res);
-      }
+      if (res.work_id) navigateToWork(res);
     } catch (e) {
-      toast(e.message || "创建失败");
+      const msg = e.message || "创建失败";
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.hidden = false;
+      }
+      toast(msg);
+    } finally {
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (cancelBtn) cancelBtn.disabled = false;
     }
+  }
+
+  function createWork() {
+    openNewWorkModal();
   }
 
   function openPdfImport() {
@@ -784,6 +848,18 @@
 
     const btnNew = document.getElementById("btnNewWork");
     if (btnNew && canWrite()) btnNew.addEventListener("click", createWork);
+
+    document.getElementById("newWorkCancel")?.addEventListener("click", closeNewWorkModal);
+    document.getElementById("newWorkConfirm")?.addEventListener("click", () => {
+      submitNewWork().catch((e) => toast(e.message || "创建失败"));
+    });
+    document.getElementById("newWorkForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitNewWork().catch((err) => toast(err.message || "创建失败"));
+    });
+    document.getElementById("newWorkModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "newWorkModal") closeNewWorkModal();
+    });
 
     const btnImport = document.getElementById("btnImportPdf");
     if (btnImport && canWrite()) btnImport.addEventListener("click", openPdfImport);
