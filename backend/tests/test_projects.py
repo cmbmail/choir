@@ -1,3 +1,6 @@
+import io
+
+
 def test_projects_crud_and_complete(client, choir_admin_headers):
     h = choir_admin_headers
     meta = client.get("/api/projects/meta?choir_id=1", headers=h)
@@ -53,3 +56,33 @@ def test_projects_crud_and_complete(client, choir_admin_headers):
     lst = client.get("/api/projects?choir_id=1&year=2026", headers=h)
     assert lst.status_code == 200
     assert lst.get_json()["total"] >= 1
+
+    txn2 = client.post(
+        f"/api/projects/{pid}/transactions",
+        json={"direction": "income", "amount": 100},
+        headers=h,
+    )
+    assert txn2.status_code == 400
+
+    asset = client.post(
+        f"/api/projects/{pid}/assets",
+        data={
+            "media_kind": "text",
+            "title": "总结稿",
+            "file": (io.BytesIO(b"hello"), "note.txt"),
+        },
+        headers=h,
+        content_type="multipart/form-data",
+    )
+    assert asset.status_code == 201, asset.get_json()
+    aid = asset.get_json()["asset_id"]
+
+    detail = client.get(f"/api/projects/{pid}", headers=h)
+    assert detail.status_code == 200
+    assets = detail.get_json().get("assets") or []
+    assert any(a["asset_id"] == aid for a in assets)
+
+    stream = client.get(f"/api/projects/{pid}/assets/{aid}/stream", headers=h)
+    assert stream.status_code in (302, 200)
+
+    client.delete(f"/api/projects/{pid}/assets/{aid}", headers=h)

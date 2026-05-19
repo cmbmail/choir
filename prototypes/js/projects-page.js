@@ -1,5 +1,5 @@
 /**
- * 项目管理：编年纪类型、流水账、进度、待办、完成摘要
+ * 项目管理：编年纪类型、流水账、进度、待办；完成后摘要与项目资料（影视/图/文）
  */
 (function () {
   const ADMIN_CHOIR_KEY = "choir_admin_selected_choir_id";
@@ -18,6 +18,14 @@
   let filterType = "all";
   let filterStatus = "all";
   let searchQ = "";
+  let assetTab = "video";
+
+  const ASSET_ACCEPT = {
+    video: ".mp4,.mov,.webm,.mkv,.m4v,.avi",
+    image: ".jpg,.jpeg,.png,.gif,.webp,.bmp,.heic",
+    text: ".pdf,.doc,.docx,.txt,.rtf,.odt,.xls,.xlsx,.ppt,.pptx",
+  };
+  const ASSET_LABELS = { video: "影视", image: "图", text: "文" };
 
   function esc(s) {
     return String(s ?? "")
@@ -197,11 +205,27 @@
     const p = detail;
     const completed = p.status === "completed";
     const write = canWrite() && !completed;
+    const canEditSummary = canWrite() && completed;
 
     document.getElementById("detailTitle").textContent = p.title;
     document.getElementById("detailMeta").innerHTML =
       `<span>${p.year} 年</span><span>${esc(p.category_type)}</span>` +
       `<span class="status-${p.status}">${STATUS_LABELS[p.status] || p.status}</span>`;
+
+    const sectionSummaryTop = document.getElementById("sectionSummaryTop");
+    const sectionWorking = document.getElementById("sectionWorking");
+    const sectionMaterials = document.getElementById("sectionMaterials");
+    if (sectionSummaryTop) sectionSummaryTop.hidden = !completed;
+    if (sectionWorking) sectionWorking.hidden = completed;
+    if (sectionMaterials) sectionMaterials.hidden = !completed;
+
+    const summaryTop = document.getElementById("detailSummaryTop");
+    if (summaryTop) {
+      summaryTop.value = p.summary || "";
+      summaryTop.readOnly = !canEditSummary;
+    }
+    const btnSaveSummary = document.getElementById("btnSaveSummary");
+    if (btnSaveSummary) btnSaveSummary.hidden = !canEditSummary;
 
     const progress = document.getElementById("detailProgress");
     if (progress) {
@@ -209,13 +233,6 @@
       progress.readOnly = !write;
     }
     document.getElementById("btnSaveProgress").hidden = !write;
-
-    const summary = document.getElementById("detailSummary");
-    if (summary) {
-      summary.value = p.summary || "";
-      summary.readOnly = completed && !canWrite();
-    }
-    document.getElementById("summarySection").hidden = !p.summary && !completed;
     document.getElementById("btnComplete").hidden = !write;
     document.getElementById("btnDeleteProject").hidden = !canWrite();
 
@@ -284,6 +301,116 @@
       });
     }
     document.getElementById("todoAddRow").hidden = !write;
+
+    if (completed) renderMaterials(canWrite());
+  }
+
+  function renderMaterials(canEdit) {
+    const tabs = document.getElementById("materialTabs");
+    tabs?.querySelectorAll(".material-tab").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.kind === assetTab);
+    });
+    const btnVideoUrl = document.getElementById("btnAddVideoUrl");
+    if (btnVideoUrl) btnVideoUrl.hidden = assetTab !== "video" || !canEdit;
+    const toolbar = document.getElementById("materialToolbar");
+    if (toolbar) {
+      toolbar.querySelector("#btnImportAsset")?.toggleAttribute("hidden", !canEdit);
+    }
+
+    const assets = (detail?.assets || []).filter((a) => a.media_kind === assetTab);
+    const grid = document.getElementById("assetGrid");
+    const empty = document.getElementById("assetEmpty");
+    if (!grid) return;
+    if (!assets.length) {
+      grid.innerHTML = "";
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    grid.innerHTML = assets
+      .map((a) => {
+        const size =
+          a.file_size > 0
+            ? `${(a.file_size / 1024 / 1024).toFixed(1)} MB`
+            : a.video_url
+              ? "外链"
+              : "";
+        let open = "";
+        if (a.video_url) {
+          open = `<a href="${esc(a.video_url)}" target="_blank" rel="noopener">打开链接</a>`;
+        } else if (a.stream_url) {
+          open = `<a href="${esc(a.stream_url)}" target="_blank" rel="noopener">查看</a>`;
+        }
+        const del = canEdit
+          ? ` <button type="button" class="link-btn" data-del-asset="${a.asset_id}">删除</button>`
+          : "";
+        return (
+          `<article class="asset-card">` +
+          `<div class="asset-card-title">${esc(a.title)}</div>` +
+          `<div class="asset-card-meta">${esc(a.file_name || a.video_url || "—")}${size ? ` · ${size}` : ""}</div>` +
+          `<div class="asset-card-actions">${open}${del}</div></article>`
+        );
+      })
+      .join("");
+    grid.querySelectorAll("[data-del-asset]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        deleteAsset(parseInt(btn.dataset.delAsset, 10))
+      );
+    });
+  }
+
+  async function uploadAssets(files) {
+    if (!detail || !canWrite() || detail.status !== "completed") return;
+    for (const file of files) {
+      const title =
+        (await ChoirDialog.prompt({
+          title: `导入${ASSET_LABELS[assetTab] || "资料"}`,
+          label: "资料标题",
+          value: file.name.replace(/\.[^.]+$/, ""),
+          maxlength: 200,
+        })) || file.name;
+      const fd = new FormData();
+      fd.append("media_kind", assetTab);
+      fd.append("title", title.trim() || file.name);
+      fd.append("file", file);
+      await ChoirAPI.postForm(`/projects/${detail.project_id}/assets`, fd);
+    }
+    await selectProject(detail.project_id);
+    toast("已导入");
+  }
+
+  async function addVideoUrl() {
+    if (!detail || !canWrite()) return;
+    const data = await ChoirDialog.form({
+      title: "添加视频链接",
+      fields: [
+        { key: "title", label: "标题", maxlength: 200 },
+        { key: "video_url", label: "视频 URL", required: true, maxlength: 500 },
+      ],
+    });
+    if (!data) return;
+    const fd = new FormData();
+    fd.append("media_kind", "video");
+    fd.append("title", (data.title || "").trim() || "视频链接");
+    fd.append("video_url", (data.video_url || "").trim());
+    await ChoirAPI.postForm(`/projects/${detail.project_id}/assets`, fd);
+    await selectProject(detail.project_id);
+    toast("已添加");
+  }
+
+  async function deleteAsset(assetId) {
+    if (!(await ChoirDialog.confirm("确定删除该资料？", "删除资料"))) return;
+    await ChoirAPI.del(`/projects/${detail.project_id}/assets/${assetId}`);
+    await selectProject(detail.project_id);
+    toast("已删除");
+  }
+
+  async function saveSummary() {
+    if (!detail || !canWrite() || detail.status !== "completed") return;
+    const summary = document.getElementById("detailSummaryTop")?.value || "";
+    detail = await ChoirAPI.patch(`/projects/${detail.project_id}`, { summary });
+    toast("摘要已保存");
+    renderDetail();
   }
 
   async function createProject() {
@@ -424,7 +551,6 @@
       return;
     }
     detail = await ChoirAPI.post(`/projects/${detail.project_id}/complete`, {});
-    document.getElementById("summarySection").hidden = false;
     renderDetail();
     await loadProjects();
     toast("项目已完成，摘要已生成");
@@ -467,6 +593,30 @@
     );
     document.getElementById("btnDeleteProject")?.addEventListener("click", () =>
       deleteProject().catch((e) => toast(e.message || "删除失败", true))
+    );
+    document.getElementById("btnSaveSummary")?.addEventListener("click", () =>
+      saveSummary().catch((e) => toast(e.message || "保存失败", true))
+    );
+    document.getElementById("materialTabs")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".material-tab");
+      if (!btn?.dataset.kind) return;
+      assetTab = btn.dataset.kind;
+      renderMaterials(canWrite());
+    });
+    document.getElementById("btnImportAsset")?.addEventListener("click", () => {
+      const input = document.getElementById("assetFileInput");
+      if (!input) return;
+      input.accept = ASSET_ACCEPT[assetTab] || "";
+      input.value = "";
+      input.click();
+    });
+    document.getElementById("assetFileInput")?.addEventListener("change", (e) => {
+      const files = [...(e.target.files || [])];
+      if (!files.length) return;
+      uploadAssets(files).catch((err) => toast(err.message || "导入失败", true));
+    });
+    document.getElementById("btnAddVideoUrl")?.addEventListener("click", () =>
+      addVideoUrl().catch((e) => toast(e.message || "失败", true))
     );
 
     document.getElementById("filterYear")?.addEventListener("change", (e) => {

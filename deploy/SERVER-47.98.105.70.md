@@ -315,6 +315,9 @@ cd /opt/choir && git pull   # 或重新 scp 覆盖
 source backend/.venv/bin/activate && pip install -r backend/requirements.txt
 # 阶段二（已有库升级时执行一次）
 mysql -u choir -p choir_db < scripts/migrate_phase2.sql
+# 项目管理（按需执行，见 scripts/migrations/）
+mysql -u choir -p choir_db < scripts/migrations/20260601_projects.sql
+mysql -u choir -p choir_db < scripts/migrations/20260602_project_assets.sql
 mkdir -p /opt/choir/storage && chown choir:choir /opt/choir/storage
 systemctl restart choir-api
 ```

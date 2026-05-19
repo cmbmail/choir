@@ -75,6 +75,15 @@ textarea.detail-text{width:100%;min-height:88px;padding:0.65rem;border:1px solid
 .link-btn{background:none;border:none;color:var(--ink-gold);cursor:pointer;font-size:0.75rem;padding:0}
 .detail-actions{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
 .empty-hint{text-align:center;color:var(--text-muted);padding:2rem 1rem;font-size:0.85rem}
+.material-tabs{display:flex;gap:0.35rem;margin-bottom:0.75rem;flex-wrap:wrap}
+.material-tab{padding:0.35rem 0.75rem;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:0.8rem;cursor:pointer}
+.material-tab.active{border-color:var(--ink-gold);color:var(--ink-gold);background:rgba(184,134,11,0.06)}
+.material-toolbar{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem}
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem}
+.asset-card{border:1px solid var(--border);border-radius:4px;padding:0.65rem;font-size:0.75rem;background:#fff}
+.asset-card-title{font-size:0.8rem;margin-bottom:0.35rem;word-break:break-all}
+.asset-card-meta{color:var(--text-muted);margin-bottom:0.35rem}
+.asset-card-actions{display:flex;flex-wrap:wrap;gap:0.35rem}
 @media(max-width:960px){.project-layout{grid-template-columns:1fr}.sidebar{display:none}}
   </style>
   <script>
@@ -120,7 +129,7 @@ textarea.detail-text{width:100%;min-height:88px;padding:0.65rem;border:1px solid
             <select class="filter-select" id="adminChoirSelect"></select>
           </div>
         </div>
-        <p class="page-subtitle">编年纪类型 · 流水账 · 进度与待办 · 完成摘要</p>
+        <p class="page-subtitle">编年纪类型 · 进行中记流水与待办 · 完成后归档摘要与项目资料</p>
       </div>
       <button type="button" class="btn btn-gold" id="btnNewProject" data-perm="projects.write">新建事项</button>
     </div>
@@ -145,6 +154,12 @@ textarea.detail-text{width:100%;min-height:88px;padding:0.65rem;border:1px solid
         <div id="projectDetail" hidden class="detail-scroll">
           <h2 id="detailTitle"></h2>
           <div id="detailMeta"></div>
+          <section class="detail-section" id="sectionSummaryTop" hidden>
+            <h3>完成摘要</h3>
+            <textarea class="detail-text" id="detailSummaryTop" style="min-height:160px"></textarea>
+            <button type="button" class="btn btn-outline" id="btnSaveSummary" style="margin-top:0.5rem" hidden>保存摘要</button>
+          </section>
+          <div id="sectionWorking">
           <section class="detail-section">
             <h3>当前进度</h3>
             <textarea class="detail-text" id="detailProgress" placeholder="记录项目当前进展…"></textarea>
@@ -170,9 +185,21 @@ textarea.detail-text{width:100%;min-height:88px;padding:0.65rem;border:1px solid
               <tbody id="txnBody"></tbody>
             </table>
           </section>
-          <section class="detail-section" id="summarySection" hidden>
-            <h3>完成摘要</h3>
-            <textarea class="detail-text" id="detailSummary" readonly style="min-height:160px"></textarea>
+          </div>
+          <section class="detail-section" id="sectionMaterials" hidden>
+            <h3>项目资料</h3>
+            <div class="material-tabs" id="materialTabs">
+              <button type="button" class="material-tab active" data-kind="video">影视</button>
+              <button type="button" class="material-tab" data-kind="image">图</button>
+              <button type="button" class="material-tab" data-kind="text">文</button>
+            </div>
+            <div class="material-toolbar" id="materialToolbar">
+              <button type="button" class="btn btn-outline" id="btnImportAsset">导入</button>
+              <button type="button" class="btn btn-outline" id="btnAddVideoUrl" hidden>添加视频链接</button>
+              <input type="file" id="assetFileInput" hidden multiple/>
+            </div>
+            <div class="asset-grid" id="assetGrid"></div>
+            <p class="col-muted" id="assetEmpty" hidden>暂无资料，点击「导入」上传</p>
           </section>
           <div class="detail-actions">
             <button type="button" class="btn btn-gold" id="btnComplete">完成项目并生成摘要</button>
@@ -189,6 +216,6 @@ textarea.detail-text{width:100%;min-height:88px;padding:0.65rem;border:1px solid
 <script src="/js/ui-dialog.js?v=20260530"></script>
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
-<script src="/js/projects-page.js?v=20260601b"></script>
+<script src="/js/projects-page.js?v=20260602"></script>
 </body>
 </html>

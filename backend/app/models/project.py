@@ -34,6 +34,12 @@ class Project(db.Model):
         cascade="all, delete-orphan",
         order_by="ProjectTodo.sort_order.asc()",
     )
+    assets = db.relationship(
+        "ProjectAsset",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectAsset.created_at.desc()",
+    )
 
     def to_dict(self, include_detail: bool = False) -> Dict[str, Any]:
         income = Decimal("0")
@@ -67,6 +73,7 @@ class Project(db.Model):
         if include_detail:
             row["transactions"] = [t.to_dict() for t in self.transactions]
             row["todos"] = [t.to_dict() for t in self.todos]
+            row["assets"] = [a.to_dict(include_stream=True) for a in self.assets]
         return row
 
 
@@ -123,3 +130,45 @@ class ProjectTodo(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }
+
+
+class ProjectAsset(db.Model):
+    __tablename__ = "project_assets"
+
+    asset_id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.project_id"), nullable=False
+    )
+    media_kind = db.Column(db.String(16), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    file_name = db.Column(db.String(255))
+    mime_type = db.Column(db.String(128))
+    file_size = db.Column(db.BigInteger)
+    cde_file_id = db.Column(db.String(128))
+    video_url = db.Column(db.String(500))
+    created_by = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    project = db.relationship("Project", back_populates="assets")
+
+    def to_dict(self, include_stream: bool = False) -> Dict[str, Any]:
+        ext = ""
+        if self.file_name and "." in self.file_name:
+            ext = self.file_name.rsplit(".", 1)[-1].lower()
+        row: Dict[str, Any] = {
+            "asset_id": self.asset_id,
+            "project_id": self.project_id,
+            "media_kind": self.media_kind,
+            "title": self.title,
+            "file_name": self.file_name or "",
+            "mime_type": self.mime_type or "",
+            "file_size": self.file_size or 0,
+            "video_url": self.video_url or "",
+            "ext": ext,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+        if include_stream and self.asset_id and self.cde_file_id:
+            row["stream_url"] = (
+                f"/api/projects/{self.project_id}/assets/{self.asset_id}/stream"
+            )
+        return row
