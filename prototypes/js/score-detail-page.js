@@ -3,14 +3,14 @@
  */
 (function () {
   const VOICE = {
-    1: "女高音 (Soprano)",
-    2: "女低音 (Alto)",
-    3: "男高音 (Tenor)",
-    4: "男低音 (Bass)",
-    5: "声部五",
-    6: "声部六",
-    7: "声部七",
-    8: "声部八",
+    1: "S1 女高音 1",
+    2: "S2 女高音 2",
+    3: "A1 女低音 1",
+    4: "A2 女低音 2",
+    5: "T1 男高音 1",
+    6: "T2 男高音 2",
+    7: "B1 男低音 1",
+    8: "B2 男低音 2",
   };
 
   let currentUser = null;
@@ -688,7 +688,7 @@
 
   async function uploadPart(files) {
     const partStr = prompt(
-      "声部编号：1女高 2女低 3男高 4男低 5-8扩展",
+      "声部编号：1=S1 2=S2 3=A1 4=A2 5=T1 6=T2 7=B1 8=B2",
       "1"
     );
     if (partStr === null) return;

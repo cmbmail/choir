@@ -143,6 +143,8 @@ def works_trash_purge():
 def works_get(work_id: int):
     user = get_current_user()
     work = Work.query.get_or_404(work_id)
+    if work.deleted_at:
+        return jsonify({"error": "作品已在回收站"}), 410
     if not can_read_work(user, work):
         return jsonify({"error": "无权限"}), 403
     if (

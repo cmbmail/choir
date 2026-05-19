@@ -54,6 +54,9 @@ def test_work_soft_delete_restore_and_purge(client, choir_admin_headers, app_pha
     res = client.get(f"/api/documents?work_id={work_id}", headers=choir_admin_headers)
     assert res.status_code == 410
 
+    res = client.get(f"/api/works/{work_id}", headers=choir_admin_headers)
+    assert res.status_code == 410
+
     res = client.delete(
         f"/api/works/{work_id}/permanent", headers=choir_admin_headers
     )

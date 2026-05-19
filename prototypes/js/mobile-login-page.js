@@ -71,6 +71,7 @@
         showIdentityPicker(data.identities, account, password);
         return;
       }
+      accountStore?.saveAfterLogin(account, password);
       ChoirAuth.saveSession(data);
       showToast("登录成功，正在跳转…");
       setTimeout(() => ChoirAuth.routeAfterLogin(data.user), 400);
