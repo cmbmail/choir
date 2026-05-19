@@ -183,14 +183,17 @@
   function renderDetail() {
     const panel = document.getElementById("projectDetail");
     const empty = document.getElementById("projectDetailEmpty");
+    const layout = document.querySelector(".project-layout");
     if (!panel || !empty) return;
     if (!detail) {
       panel.hidden = true;
       empty.hidden = false;
+      layout?.classList.remove("has-detail");
       return;
     }
     panel.hidden = false;
     empty.hidden = true;
+    layout?.classList.add("has-detail");
     const p = detail;
     const completed = p.status === "completed";
     const write = canWrite() && !completed;
