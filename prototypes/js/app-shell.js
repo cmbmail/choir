@@ -126,6 +126,35 @@
     });
   }
 
+  function loadMobileSidebar() {
+    const page = (location.pathname.split("/").pop() || "").split("?")[0];
+    const skip = new Set([
+      "极简中式-手机登录.html",
+      "极简中式-手机注册.html",
+      "极简中式-手机端.html",
+      "极简中式-展示页.html",
+      "login.html",
+      "register.html",
+    ]);
+    if (skip.has(page)) return;
+    if (!document.querySelector(".page-body > .sidebar, .page-body > aside.sidebar")) {
+      return;
+    }
+
+    const run = () => window.ChoirMobileSidebar?.mount();
+    if (window.ChoirMobileSidebar) {
+      run();
+      return;
+    }
+    if (document.querySelector("script[data-choir-mobile-sidebar]")) return;
+    const s = document.createElement("script");
+    s.src = "/js/mobile-sidebar.js?v=20260608";
+    s.dataset.choirMobileSidebar = "1";
+    s.onload = run;
+    s.onerror = () => {};
+    document.body.appendChild(s);
+  }
+
   function loadMobileTabbar(user) {
     const page = (location.pathname.split("/").pop() || "").split("?")[0];
     const skip = new Set([
@@ -176,6 +205,7 @@
     if (window.ChoirPermissions) {
       ChoirPermissions.applyNavPermissions(user);
     }
+    loadMobileSidebar();
     loadMobileTabbar(user);
     if (typeof opts.onReady === "function") opts.onReady(user);
     return user;

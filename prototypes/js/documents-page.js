@@ -1261,19 +1261,7 @@
     await reloadList();
   }
 
-  function applyMobileSidebarLayout() {
-    const sidebar = document.querySelector(".page-body > .sidebar");
-    if (!sidebar) return;
-    const mq = window.matchMedia("(max-width: 1200px)");
-    const sync = () => {
-      sidebar.hidden = mq.matches;
-    };
-    sync();
-    mq.addEventListener("change", sync);
-  }
-
   document.addEventListener("DOMContentLoaded", () => {
-    applyMobileSidebarLayout();
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
     init().catch((e) => {
