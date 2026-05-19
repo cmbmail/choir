@@ -8,6 +8,7 @@
 
   function injectPasswordModal() {
     if (document.getElementById("modal-password")) return;
+    window.ChoirDialog?.ensureStyles?.();
     const el = document.createElement("div");
     el.id = "modal-password";
     el.className = "choir-dialog-overlay";

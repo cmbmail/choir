@@ -488,8 +488,12 @@
     toast,
     openVideo,
     closeVideo,
+    ensureStyles: injectStyles,
     voiceOptions: VOICE_OPTS,
   };
   window.openVideoModal = openVideo;
   window.closeVideoModal = closeVideo;
+
+  /* 页面加载即注入样式，避免 app-shell 改密弹窗在首次 ChoirDialog 调用前无样式露出 */
+  injectStyles();
 })();
