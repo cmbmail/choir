@@ -342,12 +342,38 @@ a{color:inherit;text-decoration:none}
       <!-- RIGHT: Detail Panel -->
       <div class="detail-panel">
 
-        <!-- Info Card -->
+        <!-- 作品基本信息 -->
+        <div class="info-card" id="workInfoCard">
+          <div class="info-card-header">
+            <span style="display:flex;align-items:center;gap:0.5rem">
+              <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              作品基本信息
+            </span>
+            <button type="button" class="btn-mini" id="btnEditWork" data-write-work-only hidden>编辑</button>
+          </div>
+          <div class="info-card-body">
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span class="meta-label">作品名称</span>
+                <span class="meta-value" id="wiName">—</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">作曲者</span>
+                <span class="meta-value" id="wiComposer">—</span>
+              </div>
+            </div>
+            <div class="card-actions" style="margin-top:0.75rem" data-write-work-only hidden>
+              <button type="button" class="btn-mini danger" id="btnDeleteWork">移入回收站</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 乐谱信息 -->
         <div class="info-card">
           <div class="info-card-header">
             <span style="display:flex;align-items:center;gap:0.5rem">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              基本信息
+              乐谱信息
             </span>
             <button type="button" class="btn-mini" id="btnEditMeta" data-write-only hidden>编辑</button>
           </div>
@@ -471,7 +497,7 @@ a{color:inherit;text-decoration:none}
 <!-- 编辑基本信息 -->
 <div id="metaEditModal" class="modal-overlay" aria-hidden="true">
   <div class="modal-box">
-    <h2>编辑基本信息</h2>
+    <h2>编辑乐谱信息</h2>
     <form class="meta-form" id="metaEditForm">
       <div>
         <label for="metaEditWork">所属作品</label>
@@ -524,6 +550,27 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
+<!-- 编辑作品信息 -->
+<div id="workEditModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-box">
+    <h2>编辑作品信息</h2>
+    <form class="meta-form" id="workEditForm">
+      <div>
+        <label for="workEditName">作品名称</label>
+        <input id="workEditName" required maxlength="100"/>
+      </div>
+      <div>
+        <label for="workEditComposer">作曲者</label>
+        <input id="workEditComposer" maxlength="50" placeholder="可选"/>
+      </div>
+    </form>
+    <div class="modal-actions">
+      <button type="button" class="btn-mini" id="workEditCancel">取消</button>
+      <button type="button" class="btn-mini" style="background:var(--ink-gold);color:#fff;border-color:var(--ink-gold)" id="workEditSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/permissions.js"></script>
@@ -532,6 +579,6 @@ a{color:inherit;text-decoration:none}
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
 <script src="/js/rich-editor.js?v=20260529"></script>
-<script src="/js/score-detail-page.js?v=20260529"></script>
+<script src="/js/score-detail-page.js?v=20260605"></script>
 </body>
 </html>

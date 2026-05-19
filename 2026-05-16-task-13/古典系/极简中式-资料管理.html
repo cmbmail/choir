@@ -173,8 +173,24 @@ a{color:inherit;text-decoration:none}
 .modal-error{font-size:0.75rem;color:var(--error);margin-right:auto;align-self:center}
 #importStatus{font-size:0.75rem;color:var(--text-muted);margin-right:auto;align-self:center}
 
-@media(max-width:1200px){.sidebar{display:none}.page-body{flex-direction:column}.stats-row{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.topbar{padding:0 1rem}.content{padding:1rem}.doc-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1200px){
+  aside.sidebar,.page-body>.sidebar{display:none!important;width:0!important;min-width:0!important;border:none!important}
+  .page-body{flex-direction:column}
+  .content{flex:1;width:100%;max-width:100%;min-width:0}
+  /* 手机端不展示统计磁贴，直接列表 */
+  #docsStatsRow{display:none}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{flex-shrink:0;padding:0.65rem 1rem;font-size:0.8rem}
+  .page-header{margin-bottom:1rem;padding-bottom:1rem}
+  .search-bar{flex-wrap:wrap}
+  .search-bar-actions{width:100%;justify-content:flex-end}
+  .doc-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:768px){
+  .topbar{padding:0 1rem}
+  .content{padding:1rem}
+  .doc-grid{display:none}
+}
   </style>
   <script>
     if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
@@ -371,7 +387,6 @@ a{color:inherit;text-decoration:none}
             <th>乐谱</th>
             <th>资料</th>
             <th>创建时间</th>
-            <th>操作</th>
           </tr>
           <tr id="trashTableHeadRow" hidden>
             <th>作品名称</th>
@@ -469,7 +484,7 @@ a{color:inherit;text-decoration:none}
 <script src="/js/ui-common.js"></script>
 <script src="/js/app-shell.js"></script>
 <script src="/js/media-player.js"></script>
-<script src="/js/documents-page.js?v=20260601b"></script>
+<script src="/js/documents-page.js?v=20260606"></script>
 
 </body>
 </html>

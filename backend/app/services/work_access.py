@@ -50,8 +50,13 @@ def can_write_work(user: User, work: Work) -> bool:
         return True
     if work.choir_id != user.choir_id:
         return False
-    return has_permission(user, "documents.write") or has_permission(
-        user, "recordings.write"
+    return (
+        has_permission(user, "works.write")
+        or has_permission(user, "works.*")
+        or has_permission(user, "documents.write")
+        or has_permission(user, "documents.*")
+        or has_permission(user, "recordings.write")
+        or has_permission(user, "recordings.*")
     )
 
 

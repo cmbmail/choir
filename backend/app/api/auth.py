@@ -10,6 +10,7 @@ from app.auth.decorators import get_current_user, login_required
 from app.extensions import db
 from app.models import Choir, InvitationCode, User
 from app.services.captcha import create_captcha, verify_captcha
+from app.services.choir_context import list_choir_contexts
 from app.services.choir_bootstrap import get_member_role
 from app.services.invite_code import hash_code, verify_code
 from app.services.jwt_tokens import issue_token
@@ -267,6 +268,15 @@ def register():
 def me():
     user = get_current_user()
     return jsonify(user.to_me_dict())
+
+
+@api_bp.get("/auth/choir-contexts")
+@login_required
+def auth_choir_contexts():
+    """当前账号可操作的合唱团列表；仅 multiple=true 时前端展示「所属团」。"""
+    user = get_current_user()
+    choirs = list_choir_contexts(user)
+    return jsonify({"choirs": choirs, "multiple": len(choirs) > 1})
 
 
 @api_bp.post("/auth/logout")

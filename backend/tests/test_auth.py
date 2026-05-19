@@ -106,6 +106,45 @@ def test_login_identity_select(client, app):
     assert res2.get_json().get("access_token")
 
 
+def test_choir_contexts_multi_and_single(client, app, choir_admin_headers):
+    res = client.get("/api/auth/choir-contexts", headers=choir_admin_headers)
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body["multiple"] is False
+    assert len(body["choirs"]) == 1
+
+    with app.app_context():
+        from app.models import Choir, ChoirRole, User
+        from app.services.choir_bootstrap import next_choir_slug, seed_builtin_roles
+
+        slug = next_choir_slug()
+        choir2 = Choir(name="上下文二团", slug=slug, max_members=100, status="active")
+        db.session.add(choir2)
+        db.session.flush()
+        seed_builtin_roles(choir2)
+        admin_user = User.query.filter_by(username="13900000001").first()
+        member_role = ChoirRole.query.filter_by(
+            choir_id=choir2.choir_id, role_code="member"
+        ).first()
+        db.session.add(
+            User(
+                choir_id=choir2.choir_id,
+                role_id=member_role.role_id,
+                username=admin_user.username,
+                password_hash=admin_user.password_hash,
+                name="双团管理",
+                status="active",
+            )
+        )
+        db.session.commit()
+
+    res2 = client.get("/api/auth/choir-contexts", headers=choir_admin_headers)
+    assert res2.status_code == 200
+    body2 = res2.get_json()
+    assert body2["multiple"] is True
+    assert len(body2["choirs"]) == 2
+
+
 def test_register_with_invite(client, app):
     with app.app_context():
         choir = User.query.filter_by(username="13900000001").first().choir

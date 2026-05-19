@@ -45,13 +45,12 @@ from app.services.work_trash import (
     restore_work,
     soft_delete_work,
 )
+from app.services.choir_context import resolve_choir_scope
 from app.services.upload_validation import validate_upload
 
 
 def _choir_id(user):
-    if user.system_super_admin:
-        return request.args.get("choir_id", type=int) or request.form.get("choir_id", type=int)
-    return user.choir_id
+    return resolve_choir_scope(user)
 
 
 def _work_payload(work: Work, choir_id, include_recordings=False, trash_meta=False):

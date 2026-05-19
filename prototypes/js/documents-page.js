@@ -30,6 +30,8 @@
   let works = [];
   let trashWorks = [];
   let choirs = [];
+  let choirContexts = [];
+  let choirContextMultiple = false;
   let currentTab = "all";
   let trashRetentionDays = 7;
   let searchKeyword = "";
@@ -172,20 +174,29 @@
     return Number.isFinite(cid) ? cid : null;
   }
 
+  /** 当前操作使用的 choir_id；仅多团时从下拉读取 */
+  function effectiveChoirId() {
+    if (choirContextMultiple) return getAdminChoirId();
+    if (currentUser?.choir_id) return currentUser.choir_id;
+    if (choirContexts.length === 1) return choirContexts[0].choir_id;
+    return null;
+  }
+
   function requireChoirIdForWrite() {
-    if (currentUser?.system_super_admin) {
-      const cid = getAdminChoirId();
-      if (!cid) {
-        toast("请先选择所属合唱团");
-        return null;
-      }
-      return cid;
-    }
-    if (!currentUser?.choir_id) {
-      toast("当前账号未绑定合唱团，无法操作");
+    const cid = effectiveChoirId();
+    if (!cid) {
+      toast(
+        choirContextMultiple ? "请先选择所属团" : "当前账号未绑定合唱团，无法操作"
+      );
       return null;
     }
-    return currentUser.choir_id;
+    return cid;
+  }
+
+  function appendChoirIdParam(params) {
+    const cid = effectiveChoirId();
+    if (choirContextMultiple && cid) params.set("choir_id", String(cid));
+    return cid;
   }
 
   function workNameFromPdfFilename(filename) {
@@ -268,24 +279,36 @@
     syncDocFileInputs();
   }
 
-  async function loadChoirsForAdmin() {
+  async function loadChoirContextSelector() {
     const wrap = document.getElementById("adminChoirWrap");
     const sel = document.getElementById("adminChoirSelect");
-    if (!currentUser?.system_super_admin || !wrap || !sel) return;
+    choirContexts = [];
+    choirContextMultiple = false;
+    choirs = [];
+    if (!wrap || !sel) return;
+    wrap.hidden = true;
+    const data = await ChoirAPI.get("/auth/choir-contexts");
+    choirContexts = data.choirs || [];
+    choirContextMultiple = !!data.multiple;
+    choirs = choirContexts;
+    if (!choirContextMultiple) return;
     wrap.hidden = false;
-    const data = await ChoirAPI.get("/choirs");
-    choirs = data.choirs || [];
-    sel.innerHTML = choirs
-      .map((c) => `<option value="${c.choir_id}">${esc(c.name)}</option>`)
+    sel.innerHTML = choirContexts
+      .map((c) => `<option value="${c.choir_id}">${esc(c.choir_name)}</option>`)
       .join("");
     const saved = sessionStorage.getItem(ADMIN_CHOIR_KEY);
-    if (saved && choirs.some((c) => String(c.choir_id) === saved)) {
+    if (saved && choirContexts.some((c) => String(c.choir_id) === saved)) {
       sel.value = saved;
+    } else if (
+      currentUser?.choir_id &&
+      choirContexts.some((c) => c.choir_id === currentUser.choir_id)
+    ) {
+      sel.value = String(currentUser.choir_id);
     }
-    sel.addEventListener("change", () => {
+    sel.onchange = () => {
       sessionStorage.setItem(ADMIN_CHOIR_KEY, sel.value);
       reloadList().catch((e) => toast(e.message || "加载失败"));
-    });
+    };
   }
 
   async function reloadList() {
@@ -296,8 +319,8 @@
 
   async function loadTrash() {
     let path = "/works/trash";
-    if (currentUser?.system_super_admin) {
-      const cid = getAdminChoirId();
+    if (choirContextMultiple) {
+      const cid = effectiveChoirId();
       if (!cid) {
         trashWorks = [];
         renderTrash();
@@ -425,8 +448,8 @@
 
   async function loadWorks() {
     let path = "/works?include_recordings=0";
-    if (currentUser?.system_super_admin) {
-      const cid = getAdminChoirId();
+    if (choirContextMultiple) {
+      const cid = effectiveChoirId();
       if (!cid) {
         works = [];
         renderWorks();
@@ -457,7 +480,7 @@
     if (!body) return;
     if (!list.length) {
       body.innerHTML =
-        '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无作品，可点击「新建」或「导入」批量添加 PDF 歌谱</td></tr>';
+        '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无作品，可点击「新建」或「导入」批量添加 PDF 歌谱</td></tr>';
       return;
     }
     body.innerHTML = list
@@ -492,47 +515,10 @@
           "<td>" +
           formatDate(w.created_at) +
           "</td>" +
-          '<td style="display:flex;flex-wrap:wrap;gap:4px;">' +
-          '<a class="doc-action-btn" href="' +
-          workEntryHref(w) +
-          '">' +
-          workEntryLabel() +
-          "</a>" +
-          (canEditWorkMeta(w)
-            ? '<button type="button" class="doc-action-btn" data-rename-work="' +
-              w.work_id +
-              '" data-work-name="' +
-              esc(w.name) +
-              '">改名</button>'
-            : "") +
-          (canDeleteWork(w)
-            ? '<button type="button" class="doc-action-btn" style="color:var(--cinnabar)" data-del-work="' +
-              w.work_id +
-              '" data-work-name="' +
-              esc(w.name) +
-              '">删除</button>'
-            : "") +
-          "</td>" +
           "</tr>"
         );
       })
       .join("");
-    body.querySelectorAll("[data-del-work]").forEach((btn) => {
-      btn.addEventListener("click", () =>
-        deleteWork(
-          parseInt(btn.dataset.delWork, 10),
-          btn.getAttribute("data-work-name")
-        )
-      );
-    });
-    body.querySelectorAll("[data-rename-work]").forEach((btn) => {
-      btn.addEventListener("click", () =>
-        renameWork(
-          parseInt(btn.dataset.renameWork, 10),
-          btn.getAttribute("data-work-name")
-        )
-      );
-    });
   }
 
   function closeNewWorkModal() {
@@ -595,7 +581,7 @@
     if (confirmBtn) confirmBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
     const body = { name: name.slice(0, 100), composer: composer.slice(0, 50) };
-    if (currentUser.system_super_admin) body.choir_id = choirId;
+    if (choirContextMultiple) body.choir_id = choirId;
     try {
       const res = await ChoirAPI.post("/works", body);
       closeNewWorkModal();
@@ -644,7 +630,7 @@
     fd.append("doc_type", docType);
     const meta = TAB_META[docType];
     if (meta?.category) fd.append("category", meta.category);
-    if (currentUser.system_super_admin) fd.append("choir_id", String(choirId));
+    if (choirContextMultiple) fd.append("choir_id", String(choirId));
     return ChoirAPI.postForm("/documents/upload", fd);
   }
 
@@ -927,7 +913,7 @@
       if (status) status.textContent = `导入中 ${i + 1}/${entries.length}…`;
       try {
         const body = { name, composer: "" };
-        if (currentUser.system_super_admin) body.choir_id = choirId;
+        if (choirContextMultiple) body.choir_id = choirId;
         const work = await ChoirAPI.post("/works", body);
         const fd = new FormData();
         fd.append("file", file);
@@ -965,14 +951,13 @@
     if (filterCategory !== "all") p.set("category", filterCategory);
     if (filterCollection !== "all") p.set("collection", filterCollection);
     if (searchKeyword) p.set("q", searchKeyword);
-    if (currentUser?.system_super_admin) {
-      const cid = getAdminChoirId();
+    if (choirContextMultiple) {
+      const cid = appendChoirIdParam(p);
       if (!cid) {
         docs = [];
         renderDocs();
         return;
       }
-      p.set("choir_id", String(cid));
     }
     const qs = p.toString() ? `?${p}` : "";
     const data = await ChoirAPI.get(`/documents${qs}`);
@@ -1200,11 +1185,23 @@
       });
     }
 
-    await loadChoirsForAdmin();
+    await loadChoirContextSelector();
     await reloadList();
   }
 
+  function applyMobileSidebarLayout() {
+    const sidebar = document.querySelector(".page-body > .sidebar");
+    if (!sidebar) return;
+    const mq = window.matchMedia("(max-width: 1200px)");
+    const sync = () => {
+      sidebar.hidden = mq.matches;
+    };
+    sync();
+    mq.addEventListener("change", sync);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    applyMobileSidebarLayout();
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
     init().catch((e) => {

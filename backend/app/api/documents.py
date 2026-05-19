@@ -21,6 +21,7 @@ from app.services.cde_service import (
     verify_stream_token,
 )
 from app.services import pds_storage
+from app.services.choir_context import resolve_choir_scope
 from app.services.document_access import (
     can_delete_document,
     can_edit_document,
@@ -34,10 +35,7 @@ from app.services.work_access import can_read_work, can_write_work, works_for_ch
 
 
 def _choir_scope(user):
-    if user.system_super_admin:
-        choir_id = request.args.get("choir_id", type=int)
-        return choir_id
-    return user.choir_id
+    return resolve_choir_scope(user)
 
 
 @api_bp.get("/documents")
