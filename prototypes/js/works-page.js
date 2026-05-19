@@ -29,9 +29,6 @@
   }
 
   function workEntryHref(w) {
-    if (w.primary_score_id) {
-      return "极简中式-乐谱详情.html?id=" + w.primary_score_id;
-    }
     return "极简中式-乐谱详情.html?work_id=" + w.work_id;
   }
 

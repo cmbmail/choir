@@ -137,7 +137,14 @@
 
   function setViewerTitle() {
     const el = $("viewerTitle");
-    if (el) el.textContent = work?.name || scoreDoc?.work_name || "作品";
+    if (!el) return;
+    if (scoreDoc) {
+      const fn = scoreDoc.file_name || "";
+      el.textContent =
+        scoreDoc.title || fn || work?.name || scoreDoc.work_name || "乐谱";
+    } else {
+      el.textContent = work?.name ? work.name + "（尚未上传乐谱）" : "尚未上传乐谱";
+    }
   }
 
   async function loadWorkDocs(workId) {
@@ -962,10 +969,10 @@
     const docId = getDocId();
     const workId = getWorkId();
 
-    if (docId) {
+    if (workId) {
+      await loadContext(docId, workId);
+    } else if (docId) {
       await loadContext(docId, 0);
-    } else if (workId) {
-      await loadContext(0, workId);
     } else {
       await ChoirDialog.alert("缺少作品或乐谱参数");
       window.location.href = "极简中式-资料管理.html";
@@ -985,7 +992,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     ChoirUI.initUserDropdown();
     ChoirAppShell.init();
-    init().catch((e) => {
+    init().catch(async (e) => {
       if (e.message === "未登录") return;
       const msg =
         e.status === 403
