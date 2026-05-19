@@ -11,6 +11,7 @@
     "极简中式-系统管理.html": "__system_admin__",
     "极简中式-资料管理.html": "documents.read",
     "极简中式-录音管理.html": "recordings.read",
+    "极简中式-项目管理.html": "projects.read",
   };
 
   function canAccess(user, perm) {

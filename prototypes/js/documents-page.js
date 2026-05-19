@@ -20,7 +20,7 @@
     text: { cls: "tag-doc", label: "文本" },
     audio: { cls: "tag-img", label: "音频" },
     perf: { cls: "tag-ppt", label: "演出资料" },
-    rule: { cls: "tag-doc", label: "规章制度" },
+    rule: { cls: "tag-doc", label: "图文档案" },
     rehearsal: { cls: "tag-img", label: "排练资料" },
     other: { cls: "tag-doc", label: "其他" },
   };
@@ -47,6 +47,55 @@
     rehearsal: "排练资料",
     rule: "规章制度",
   };
+
+  /** 各 Tab 导入/列表文案；规章制度 Tab 导入内容为图文档案 */
+  const RULE_ARCHIVE_ACCEPT =
+    ".pdf,.doc,.docx,.txt,.rtf,.odt,.xls,.xlsx,.ppt,.pptx,.wps,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.tif,.tiff";
+  const RULE_ARCHIVE_EXT = new Set(
+    "pdf,doc,docx,txt,rtf,odt,xls,xlsx,ppt,pptx,wps,jpg,jpeg,png,gif,webp,bmp,heic,tif,tiff".split(
+      ","
+    )
+  );
+  const TAB_META = {
+    perf: { importLabel: "演出资料", listTitle: "演出资料" },
+    rehearsal: { importLabel: "排练资料", listTitle: "排练资料" },
+    rule: {
+      importLabel: "图文档案",
+      listTitle: "图文档案",
+      accept: RULE_ARCHIVE_ACCEPT,
+      category: "图文档案",
+    },
+  };
+
+  function tabImportLabel(tab) {
+    return TAB_META[tab]?.importLabel || TAB_LABELS[tab] || "资料";
+  }
+
+  function isRuleArchiveFile(file) {
+    const ext = ((file?.name || "").split(".").pop() || "").toLowerCase();
+    return RULE_ARCHIVE_EXT.has(ext);
+  }
+
+  function filterFilesForCurrentTab(files) {
+    const list = Array.from(files || []);
+    if (currentTab !== "rule") return list;
+    const ok = list.filter(isRuleArchiveFile);
+    const skipped = list.length - ok.length;
+    if (skipped) {
+      toast(
+        `已忽略 ${skipped} 个不符合格式的文件。图文档案支持：PDF、Word、Excel、PPT、常见图片等`
+      );
+    }
+    return ok;
+  }
+
+  function syncDocFileInputs() {
+    const accept = TAB_META[currentTab]?.accept || "";
+    const importDoc = document.getElementById("importDocInput");
+    const newDoc = document.getElementById("newDocFileInput");
+    if (importDoc) importDoc.accept = accept;
+    if (newDoc) newDoc.accept = accept;
+  }
 
   function esc(s) {
     return String(s ?? "")
@@ -185,11 +234,17 @@
     const docsHead = document.getElementById("docsTableHeadRow");
     const cardTitle = document.getElementById("listCardTitle");
     const search = document.getElementById("searchInput");
+    const searchBar = document.getElementById("searchBar");
     const trashHint = document.getElementById("trashHint");
     const tabTrash = document.getElementById("tabTrash");
 
     if (tabTrash) tabTrash.hidden = !canManageTrash();
+    if (searchBar) searchBar.hidden = trashMode;
     if (actions) actions.hidden = trashMode || !canWrite();
+    if (trashMode) {
+      searchKeyword = "";
+      if (search) search.value = "";
+    }
     if (stats) stats.hidden = worksMode || trashMode;
     if (subFilters) subFilters.style.display = "none";
     if (worksHead) worksHead.hidden = !worksMode;
@@ -201,14 +256,16 @@
         ? "回收站"
         : worksMode
           ? "作品列表"
-          : "资料列表";
+          : TAB_META[currentTab]?.listTitle || "资料列表";
     }
-    if (search) {
-      search.placeholder =
-        worksMode || trashMode
-          ? "搜索作品名称、作曲者..."
+    if (search && !trashMode) {
+      search.placeholder = worksMode
+        ? "搜索作品名称、作曲者..."
+        : currentTab === "rule"
+          ? "搜索图文档案名称..."
           : "搜索资料名称、合集、风格、分类...";
     }
+    syncDocFileInputs();
   }
 
   async function loadChoirsForAdmin() {
@@ -585,6 +642,8 @@
     fd.append("file", file);
     fd.append("title", (title || file.name || "未命名").slice(0, 200));
     fd.append("doc_type", docType);
+    const meta = TAB_META[docType];
+    if (meta?.category) fd.append("category", meta.category);
     if (currentUser.system_super_admin) fd.append("choir_id", String(choirId));
     return ChoirAPI.postForm("/documents/upload", fd);
   }
@@ -608,21 +667,29 @@
   }
 
   function showImportDocModal(fileList) {
-    const files = Array.from(fileList || []).filter((f) => f && f.name);
+    let files = Array.from(fileList || []).filter((f) => f && f.name);
+    files = filterFilesForCurrentTab(files);
     if (!files.length) {
-      toast("请选择要导入的文件");
+      toast(
+        currentTab === "rule"
+          ? "请选择图文档案文件（PDF、Word、Excel、PPT、图片等）"
+          : "请选择要导入的文件"
+      );
       return;
     }
     if (!requireChoirIdForWrite()) return;
 
     pendingDocImportFiles = files;
     pendingDocImportType = currentTab;
-    const label = TAB_LABELS[currentTab] || "资料";
+    const label = tabImportLabel(currentTab);
     const titleEl = document.getElementById("importDocModalTitle");
     const hintEl = document.getElementById("importDocModalHint");
     if (titleEl) titleEl.textContent = `批量导入${label}`;
     if (hintEl) {
-      hintEl.textContent = `每个文件将上传为「${label}」，可在下方修改显示名称。`;
+      hintEl.textContent =
+        currentTab === "rule"
+          ? "每个文件将作为规章制度下的图文档案上传，可在下方修改显示名称。"
+          : `每个文件将上传为「${label}」，可在下方修改显示名称。`;
     }
 
     const tbody = document.getElementById("importDocRows");
@@ -689,7 +756,7 @@
       }
     }
 
-    const typeLabel = TAB_LABELS[pendingDocImportType] || "资料";
+    const typeLabel = tabImportLabel(pendingDocImportType);
     closeImportDocModal();
     await loadDocs();
     if (errors.length && ok) {
@@ -704,25 +771,31 @@
   async function openNewDoc() {
     const choirId = requireChoirIdForWrite();
     if (!choirId) return;
-    const label = TAB_LABELS[currentTab] || "资料";
+    const label = tabImportLabel(currentTab);
     const data = await ChoirDialog.form({
       title: `新建${label}`,
       fields: [
-        { key: "title", label: "资料名称", required: true, maxlength: 200 },
+        {
+          key: "title",
+          label: currentTab === "rule" ? "档案名称" : "资料名称",
+          required: true,
+          maxlength: 200,
+        },
       ],
     });
     if (!data) return;
     const title = (data.title || "").trim();
     if (!title) {
-      toast("请输入资料名称");
+      toast(currentTab === "rule" ? "请输入档案名称" : "请输入资料名称");
       return;
     }
     pendingNewDocTitle = title;
+    syncDocFileInputs();
     document.getElementById("newDocFileInput")?.click();
   }
 
   async function onNewDocFileSelected(fileList) {
-    const file = (fileList && fileList[0]) || null;
+    let file = (fileList && fileList[0]) || null;
     const input = document.getElementById("newDocFileInput");
     if (input) input.value = "";
     const title = pendingNewDocTitle;
@@ -732,6 +805,10 @@
       return;
     }
     if (!title) return;
+    if (currentTab === "rule" && !isRuleArchiveFile(file)) {
+      toast("请选择图文档案文件（PDF、Word、Excel、PPT、图片等）");
+      return;
+    }
     try {
       await uploadChoirDocument(file, title, currentTab);
       await loadDocs();
@@ -911,7 +988,11 @@
     if (!body) return;
     if (!list.length) {
       body.innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">暂无资料，可点击搜索栏右侧「新建」或「导入」</td></tr>';
+        '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">' +
+        (currentTab === "rule"
+          ? "暂无图文档案，可点击搜索栏右侧「新建」或「导入」"
+          : "暂无资料，可点击搜索栏右侧「新建」或「导入」") +
+        "</td></tr>";
       return;
     }
     body.innerHTML = list

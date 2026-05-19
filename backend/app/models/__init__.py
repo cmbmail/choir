@@ -8,6 +8,7 @@ from app.models.document import Document
 from app.models.work import Work
 from app.models.work_share import WorkShare
 from app.models.recording import Recording
+from app.models.project import Project, ProjectTodo, ProjectTransaction
 
 __all__ = [
     "Choir",
@@ -21,4 +22,7 @@ __all__ = [
     "Work",
     "WorkShare",
     "Recording",
+    "Project",
+    "ProjectTodo",
+    "ProjectTransaction",
 ]

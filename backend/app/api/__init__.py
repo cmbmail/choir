@@ -8,6 +8,7 @@ from app.api import (  # noqa: E402, F401
     documents,
     invites,
     members,
+    projects,
     roles,
     system,
     works,

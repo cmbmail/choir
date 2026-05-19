@@ -18,6 +18,9 @@
     "recordings.read": "查看录音",
     "recordings.write": "上传/管理录音",
     "recordings.*": "录音管理（全部）",
+    "projects.read": "查看项目管理",
+    "projects.write": "编辑项目管理",
+    "projects.*": "项目管理（全部）",
   };
 
   let catalog = [];

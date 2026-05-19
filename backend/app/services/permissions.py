@@ -12,6 +12,7 @@ FULL_ADMIN = [
     "system.monitor",
     "documents.*",
     "recordings.*",
+    "projects.*",
 ]
 
 CONDUCTOR_DEFAULT = [p for p in FULL_ADMIN if p != "choir.suspend"] + [
@@ -35,6 +36,9 @@ ALL_PHASE1_PERMISSIONS = [
     "recordings.read",
     "recordings.write",
     "recordings.*",
+    "projects.read",
+    "projects.write",
+    "projects.*",
 ]
 
 # 兼容旧引用
@@ -61,7 +65,11 @@ BUILTIN_ROLE_TEMPLATES = [
         "声部长",
         ["members.read", "members.write", "documents.read", "documents.write"],
     ),
-    ("general_affairs", "总务", ["members.read", "documents.*", "recordings.*"]),
+    (
+        "general_affairs",
+        "总务",
+        ["members.read", "documents.*", "recordings.*", "projects.*"],
+    ),
     ("member", "团员", ["documents.read", "recordings.read"]),
 ]
 
