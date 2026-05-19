@@ -199,13 +199,28 @@
     });
   }
 
+  function renderIntroHtml(raw) {
+    const editor = window.ChoirRichEditor;
+    if (!raw) return "";
+    if (editor) {
+      return editor.sanitizeHtml(editor.plainToHtml(raw));
+    }
+    return esc(raw).replace(/\n/g, "<br>");
+  }
+
   function renderIntro() {
     const el = $("introText");
     if (!el) return;
     const text = scoreDoc?.description || "";
     if (text) {
-      el.innerHTML = esc(text).replace(/\n/g, "<br>");
+      el.classList.add("intro-rich");
+      el.innerHTML = renderIntroHtml(text);
+      el.querySelectorAll("a[href]").forEach((a) => {
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+      });
     } else {
+      el.classList.remove("intro-rich");
       el.innerHTML =
         '<p style="color:var(--text-muted)">暂无介绍，' +
         (canWrite() ? "点击「编辑」添加乐谱介绍。" : "") +
@@ -528,14 +543,36 @@
     renderRelated();
   }
 
+  function isEmptyRichHtml(html) {
+    const plain = String(html || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .trim();
+    return !plain;
+  }
+
   async function editIntro() {
     if (!scoreDoc?.document_id) {
       alert("请先上传乐谱后再编辑介绍");
       return;
     }
-    const val = prompt("乐谱介绍（支持多行）", scoreDoc.description || "");
-    if (val === null) return;
-    scoreDoc = await patchDoc(scoreDoc.document_id, { description: val });
+    if (!window.ChoirRichEditor) {
+      alert("富文本编辑器加载失败，请刷新页面重试");
+      return;
+    }
+    let html;
+    try {
+      html = await window.ChoirRichEditor.openEditorModal({
+        title: "编辑乐谱介绍",
+        html: scoreDoc.description || "",
+      });
+    } catch (e) {
+      alert(e.message || "无法打开编辑器");
+      return;
+    }
+    if (html === null) return;
+    const saved = isEmptyRichHtml(html) ? null : html;
+    scoreDoc = await patchDoc(scoreDoc.document_id, { description: saved });
     renderIntro();
   }
 
