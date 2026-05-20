@@ -275,6 +275,18 @@
     return (window.location.origin || "") + path;
   }
 
+  function isMobileViewport() {
+    return window.matchMedia("(max-width: 1200px)").matches;
+  }
+
+  function isPdfDoc(doc) {
+    const mime = (doc?.mime_type || "").toLowerCase();
+    return (
+      mime.includes("pdf") ||
+      (doc?.file_name || "").toLowerCase().endsWith(".pdf")
+    );
+  }
+
   async function resolvePreviewUrl(doc) {
     if (!doc?.document_id) return null;
     try {
@@ -289,10 +301,43 @@
     }
   }
 
+  function renderMobilePdfPlaceholder(page, doc) {
+    const label = esc(doc.title || doc.file_name || "乐谱 PDF");
+    page.classList.add("score-page--clickable", "score-page--mobile-collapsed");
+    page.innerHTML =
+      '<button type="button" class="score-open-preview-btn" id="btnOpenScorePreview">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+      '<span class="score-open-title">' +
+      label +
+      "</span>" +
+      '<span class="score-open-hint">点击预览乐谱 PDF</span>' +
+      "</button>";
+    $("btnOpenScorePreview")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openMobilePdfPreview(doc).catch((err) =>
+        ChoirDialog.alert(err.message || "预览加载失败")
+      );
+    });
+  }
+
+  async function openMobilePdfPreview(doc) {
+    const url = await resolvePreviewUrl(doc);
+    if (!url) {
+      await ChoirDialog.alert("预览加载失败，请尝试下载");
+      return;
+    }
+    scorePreviewUrl = url;
+    openScoreExpand(url, true);
+  }
+
   async function renderScoreViewer() {
     const page = $("scorePage");
     const nav = $("scorePageNav");
     if (!page) return;
+
+    page.classList.remove("score-page--mobile-collapsed");
+    page.onclick = null;
 
     if (!scoreDoc) {
       scorePreviewUrl = null;
@@ -309,12 +354,18 @@
     }
 
     if (nav) nav.hidden = true;
+
+    const mime = (scoreDoc.mime_type || "").toLowerCase();
+    const isPdf = isPdfDoc(scoreDoc);
+
+    if (isMobileViewport() && isPdf) {
+      scorePreviewUrl = null;
+      renderMobilePdfPlaceholder(page, scoreDoc);
+      return;
+    }
+
     page.classList.add("score-page--clickable");
     scorePreviewUrl = await resolvePreviewUrl(scoreDoc);
-    const mime = (scoreDoc.mime_type || "").toLowerCase();
-    const isPdf =
-      mime.includes("pdf") ||
-      (scoreDoc.file_name || "").toLowerCase().endsWith(".pdf");
 
     if (scorePreviewUrl && isPdf) {
       page.innerHTML =
