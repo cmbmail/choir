@@ -264,7 +264,7 @@ a{color:inherit;text-decoration:none}
 .cal-day.selected{background:rgba(184,134,11,0.15);color:var(--ink-gold);font-weight:400}
 
 /* === REHEARSAL CARDS === */
-.rehearsal-list{display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem}
+.rehearsal-list{display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem 1rem 0.25rem}
 .rehearsal-card{display:flex;gap:1rem;padding:1rem;background:var(--silk-white);border:1px solid var(--border);border-radius:4px;transition:all var(--transition);cursor:pointer}
 .rehearsal-card:hover{box-shadow:0 4px 12px rgba(28,28,28,0.08);border-color:var(--ink-gold)}
 .rc-date{flex-shrink:0;width:48px;background:var(--ink-black);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.5rem 0}
@@ -282,8 +282,14 @@ a{color:inherit;text-decoration:none}
 .rc-meta svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .rc-att{font-size:0.75rem;font-weight:400;color:var(--text-muted)}
 
-/* === HOME CARDS GRID === */
-.home-cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1.5rem}
+/* === HOME SECTIONS：公告 → 排练 → 献唱 → 待办 → 作业 === */
+.home-sections{display:flex;flex-direction:column;gap:1rem;margin-top:1.5rem}
+#sectionAnnouncements{order:1}
+#sectionRehearsals{order:2}
+#sectionPerformances{order:3}
+#sectionTodos{order:4}
+#sectionAssignments{order:5}
+.home-card-footer{padding:0.5rem 1rem 0.75rem;border-top:1px solid rgba(28,28,28,0.06)}
 .home-card{background:var(--silk-white);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:all var(--transition)}
 .home-card:hover{box-shadow:0 4px 16px rgba(28,28,28,0.08);border-color:var(--ink-gold)}
 .home-card-header{display:flex;align-items:center;gap:0.5rem;padding:0.875rem 1rem;border-bottom:1px solid var(--border)}
@@ -327,18 +333,36 @@ a{color:inherit;text-decoration:none}
 .plan-status-confirmed{background:rgba(58,125,68,0.1);color:#3a7d44}
 .plan-status-recording{background:rgba(139,92,246,0.1);color:#8b5cf6}
 
+/* Todo list */
+.todo-list{list-style:none}
+.todo-item{display:flex;align-items:flex-start;gap:0.6rem;padding:0.65rem 0;border-bottom:1px solid rgba(28,28,28,0.06)}
+.todo-item:last-child{border-bottom:none}
+.todo-check{flex-shrink:0;width:18px;height:18px;border:1px solid var(--border-gold);border-radius:3px;margin-top:0.1rem}
+.todo-item.done .todo-check{background:var(--ink-gold);border-color:var(--ink-gold)}
+.todo-item.done .todo-title{text-decoration:line-through;color:var(--text-muted)}
+.todo-title{font-size:0.8rem;color:var(--text-primary);line-height:1.4}
+.todo-meta{font-size:0.65rem;color:var(--text-muted);margin-top:0.15rem}
+
+/* Assignment list */
+.assign-list{list-style:none}
+.assign-item{padding:0.75rem 0;border-bottom:1px solid rgba(28,28,28,0.06)}
+.assign-item:last-child{border-bottom:none}
+.assign-title{font-size:0.8rem;font-weight:400;color:var(--text-primary)}
+.assign-meta{font-size:0.65rem;color:var(--text-muted);margin-top:0.25rem;display:flex;flex-wrap:wrap;gap:0.75rem}
+.assign-status{display:inline-flex;padding:0.1rem 0.4rem;border-radius:2px;font-size:0.6rem;margin-top:0.35rem}
+.assign-status-pending{background:rgba(192,122,30,0.12);color:#c07a1e}
+.assign-status-done{background:rgba(58,125,68,0.1);color:#3a7d44}
+
 /* === RESPONSIVE === */
 @media(max-width:1200px){
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .main-grid{grid-template-columns:1fr}
-  .home-cards-grid{grid-template-columns:repeat(2,1fr)}
   .sidebar{display:none}
   .page-body{flex-direction:column}
   .main-layout{height:auto;overflow:visible}
 }
 @media(max-width:768px){
   .stats-grid{grid-template-columns:1fr}
-  .home-cards-grid{grid-template-columns:1fr}
   .topbar{padding:0 1rem}
   .content{padding:1rem}
   .page-header{flex-direction:column;align-items:stretch}
@@ -463,82 +487,86 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-label">排练计划</span>
-          <div class="stat-icon stat-icon-blue">
-            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-        </div>
-        <div class="stat-value">4</div>
-        <div class="stat-change neutral">本月排练场次</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-label">献唱计划</span>
-          <div class="stat-icon stat-icon-green">
-            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </div>
-        </div>
-        <div class="stat-value">2</div>
-        <div class="stat-change neutral">待演出活动</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-label">录音计划</span>
-          <div class="stat-icon stat-icon-gold">
-            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </div>
-        </div>
-        <div class="stat-value">2</div>
-        <div class="stat-change neutral">进行中</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-label">通知公告</span>
-          <div class="stat-icon stat-icon-purple">
-            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </div>
-        </div>
-        <div class="stat-value">3</div>
-        <div class="stat-change neutral">条未读通知</div>
-      </div>
-    </div>
+    <!-- 首页模块：公告 → 排练 → 献唱 → 待办 → 作业 -->
+    <div class="home-sections">
 
-    <!-- 日程表 + 通知公告，日程表宽度2倍 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem">
-      <!-- 日程表 (固定800px) -->
-      <div class="card">
-        <div class="calendar-header">
-          <span class="cal-month">2026年5月</span>
-          <div class="cal-nav">
-            <button class="cal-nav-btn">
-              <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <button class="cal-nav-btn">
-              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="rehearsal-list" id="rehearsal-list"></div>
-      </div>
-
-      <!-- 通知 (自适应宽度) -->
-      <div class="home-card">
+      <section class="home-card" id="sectionAnnouncements">
         <div class="home-card-header">
           <div class="home-card-icon home-card-icon-gold">
             <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
-          <span class="home-card-title">通知公告</span>
-          <span class="home-card-badge" id="notifBadge">3</span>
+          <span class="home-card-title">公告</span>
+          <span class="home-card-badge" id="notifBadge">0</span>
         </div>
         <div class="home-card-body">
           <ul class="notif-list" id="notifList"></ul>
         </div>
-      </div>
+      </section>
+
+      <section class="home-card" id="sectionRehearsals">
+        <div class="home-card-header">
+          <div class="home-card-icon home-card-icon-blue">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <span class="home-card-title">排练计划</span>
+          <span class="home-card-badge" id="rehearsalBadge">0</span>
+        </div>
+        <div class="rehearsal-list" id="rehearsal-list"></div>
+        <div class="home-card-footer">
+          <a class="home-card-link" href="极简中式-排练计划.html">查看全部<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+        </div>
+      </section>
+
+      <section class="home-card" id="sectionPerformances">
+        <div class="home-card-header">
+          <div class="home-card-icon home-card-icon-green">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <span class="home-card-title">献唱计划</span>
+          <span class="home-card-badge" id="performanceBadge">0</span>
+        </div>
+        <div class="home-card-body">
+          <ul class="plan-list" id="performanceList"></ul>
+        </div>
+        <div class="home-card-footer">
+          <a class="home-card-link" href="极简中式-献唱计划.html">查看全部<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+        </div>
+      </section>
+
+      <section class="home-card" id="sectionTodos">
+        <div class="home-card-header">
+          <div class="home-card-icon home-card-icon-purple">
+            <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="home-card-title">待办</span>
+          <span class="home-card-badge" id="todoBadge">0</span>
+        </div>
+        <div class="home-card-body">
+          <ul class="todo-list" id="todoList"></ul>
+        </div>
+        <div class="home-card-footer">
+          <a class="home-card-link" href="极简中式-项目管理.html">查看全部<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+        </div>
+      </section>
+
+      <section class="home-card" id="sectionAssignments">
+        <div class="home-card-header">
+          <div class="home-card-icon home-card-icon-blue">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <span class="home-card-title">作业</span>
+          <span class="home-card-badge" id="assignmentBadge">0</span>
+        </div>
+        <div class="home-card-body">
+          <ul class="assign-list" id="assignmentList"></ul>
+        </div>
+        <div class="home-card-footer">
+          <a class="home-card-link" href="极简中式-作业提交.html">查看全部<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+        </div>
+      </section>
+
     </div>
+
   </main>
 </div>
 
@@ -604,7 +632,11 @@ const rehearsals=[
 ];
 function renderRehearsals(){
   const tagCls={regular:'tag-regular',performance:'tag-performance',sectional:'tag-sectional'};
-  document.getElementById('rehearsal-list').innerHTML=rehearsals.map(r=>{
+  const el=document.getElementById('rehearsal-list');
+  const badge=document.getElementById('rehearsalBadge');
+  if(badge) badge.textContent=String(rehearsals.length);
+  if(!el) return;
+  el.innerHTML=rehearsals.map(r=>{
     const tc=tagCls[r.type==='常规排练'?'regular':r.type==='声部分练'?'sectional':'performance'];
     return '<div class="rehearsal-card">'
       +'<div class="rc-date"><div class="rc-month">MAY</div><div class="rc-day">'+r.day+'</div><div class="rc-weekday">'+r.weekday+'</div></div>'
@@ -686,9 +718,81 @@ const notifications = [
   { tag: 'activity', tagText: '动态', title: '刘音乐当选为本季度优秀团员称号', time: '7天前' },
 ];
 
+const homePerformances=[
+  {title:'六月合唱汇演',date:'2026-06-28',venue:'大礼堂',status:'confirmed',statusText:'已确认'},
+  {title:'端午诗会演出',date:'2026-05-30',venue:'文化中心',status:'upcoming',statusText:'即将进行'},
+  {title:'中秋合唱音乐会',date:'2026-09-15',venue:'音乐厅',status:'upcoming',statusText:'计划中'},
+];
+
+const homeTodos=[
+  {content:'确认六月汇演服装尺码汇总',project:'六月汇演',done:false},
+  {content:'上传《春江花月夜》分声部伴奏',project:'资料准备',done:false},
+  {content:'完成上周排练考勤核对',project:'日常管理',done:true},
+  {content:'联系音乐厅确认彩排音响',project:'六月汇演',done:false},
+];
+
+const homeAssignments=[
+  {title:'《春江花月夜》歌词背诵',deadline:'2026-05-20',status:'pending',statusText:'待提交'},
+  {title:'声部分练音频录制',deadline:'2026-05-25',status:'pending',statusText:'待提交'},
+  {title:'六月汇演曲目熟练度自评',deadline:'2026-05-18',status:'done',statusText:'已提交'},
+];
+
+function parsePlanDate(iso){
+  const p=(iso||'').split('-');
+  if(p.length<3) return {month:'',day:'',label:iso};
+  return {month:parseInt(p[1],10)+'月',day:p[2],label:iso};
+}
+
+function renderPerformances(){
+  const el=document.getElementById('performanceList');
+  const badge=document.getElementById('performanceBadge');
+  if(badge) badge.textContent=String(homePerformances.length);
+  if(!el) return;
+  el.innerHTML=homePerformances.map(p=>{
+    const d=parsePlanDate(p.date);
+    const st='plan-status '+(p.status==='confirmed'?'plan-status-confirmed':'plan-status-upcoming');
+    return '<li class="plan-item">'
+      +'<div class="plan-date"><div class="plan-month">'+d.month+'</div><div class="plan-day-num">'+d.day+'</div></div>'
+      +'<div class="plan-info"><div class="plan-title">'+p.title+'</div>'
+      +'<div class="plan-meta">'+p.venue+' · '+d.label+'</div>'
+      +'<span class="'+st+'">'+p.statusText+'</span></div></li>';
+  }).join('');
+}
+
+function renderTodos(){
+  const el=document.getElementById('todoList');
+  const badge=document.getElementById('todoBadge');
+  const open=homeTodos.filter(t=>!t.done).length;
+  if(badge) badge.textContent=String(open);
+  if(!el) return;
+  el.innerHTML=homeTodos.map(t=>{
+    const cls=t.done?'todo-item done':'todo-item';
+    return '<li class="'+cls+'"><div class="todo-check" aria-hidden="true"></div>'
+      +'<div><div class="todo-title">'+t.content+'</div>'
+      +'<div class="todo-meta">'+t.project+'</div></div></li>';
+  }).join('');
+}
+
+function renderAssignments(){
+  const el=document.getElementById('assignmentList');
+  const badge=document.getElementById('assignmentBadge');
+  const pending=homeAssignments.filter(a=>a.status==='pending').length;
+  if(badge) badge.textContent=String(pending);
+  if(!el) return;
+  el.innerHTML=homeAssignments.map(a=>{
+    const st=a.status==='done'?'assign-status assign-status-done':'assign-status assign-status-pending';
+    return '<li class="assign-item"><div class="assign-title">'+a.title+'</div>'
+      +'<div class="assign-meta">截止 '+a.deadline+'</div>'
+      +'<span class="'+st+'">'+a.statusText+'</span></li>';
+  }).join('');
+}
+
 function renderNotifications() {
-  document.getElementById('notifBadge').textContent = notifications.length;
-  document.getElementById('notifList').innerHTML = notifications.map(n => {
+  const listEl=document.getElementById('notifList');
+  const badgeEl=document.getElementById('notifBadge');
+  if(badgeEl) badgeEl.textContent = notifications.length;
+  if(!listEl) return;
+  listEl.innerHTML = notifications.map(n => {
     const tagCls = n.tag === 'important' ? 'notif-tag-important' : n.tag === 'normal' ? 'notif-tag-normal' : 'notif-tag-activity';
     return '<li class="notif-item">'
       +'<div class="notif-item-header"><span class="notif-tag '+tagCls+'">'+n.tagText+'</span></div>'
@@ -698,8 +802,11 @@ function renderNotifications() {
 }
 
 // Initialize
-renderRehearsals();
 renderNotifications();
+renderRehearsals();
+renderPerformances();
+renderTodos();
+renderAssignments();
 
 </script>
 <script src="/js/api.js"></script>
